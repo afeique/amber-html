@@ -12,3 +12,6 @@ url.workspace = true
 chrono.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
+htmd.workspace = true
+dom_smoothie.workspace = true
+ureq.workspace = true

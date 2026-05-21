@@ -15,6 +15,14 @@ pub enum Error {
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
 
+    /// A network/HTTP fetch failed (transport, timeout, etc.).
+    #[error("HTTP fetch failed: {0}")]
+    Fetch(String),
+
+    /// The server returned a non-success HTTP status for the given URL.
+    #[error("HTTP {0} for {1}")]
+    HttpStatus(u16, String),
+
     /// A code path that is scaffolded but not yet implemented.
     #[error("not yet implemented: {0}")]
     NotImplemented(&'static str),

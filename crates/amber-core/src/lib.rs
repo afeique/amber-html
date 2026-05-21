@@ -11,7 +11,9 @@ pub mod browser;
 pub mod capture;
 pub mod detect;
 pub mod error;
+pub mod extract;
 pub mod fetch;
+pub mod http;
 pub mod naming;
 pub mod output;
 
@@ -46,8 +48,30 @@ pub struct Snapshot {
 impl Snapshot {
     /// Render a single format to bytes.
     pub fn render(&self, format: OutputFormat) -> Result<Vec<u8>> {
-        let _ = (&self.raw, format); // TODO(phase1): dispatch to output emitters.
-        Err(Error::NotImplemented("Snapshot::render (output emitters)"))
+        // Prefer browser-rendered HTML; fall back to the static fetch.
+        let html = self
+            .raw
+            .rendered_html
+            .as_deref()
+            .or(self.raw.static_html.as_deref());
+
+        match format {
+            OutputFormat::Markdown => {
+                let html = html.ok_or(Error::NotImplemented("no captured HTML for Markdown"))?;
+                Ok(extract::to_markdown(html).into_bytes())
+            }
+            OutputFormat::Readable => {
+                let html =
+                    html.ok_or(Error::NotImplemented("no captured HTML for readable text"))?;
+                Ok(extract::to_readable(html).into_bytes())
+            }
+            OutputFormat::Html => Err(Error::NotImplemented("single-file HTML emitter")),
+            OutputFormat::Mhtml => Err(Error::NotImplemented("MHTML emitter (needs browser)")),
+            OutputFormat::Warc => Err(Error::NotImplemented("WARC emitter")),
+            OutputFormat::Wacz => Err(Error::NotImplemented("WACZ emitter")),
+            OutputFormat::Screenshot => Err(Error::NotImplemented("screenshot (needs browser)")),
+            OutputFormat::Pdf => Err(Error::NotImplemented("PDF (needs browser)")),
+        }
     }
 
     /// Write `format` into `dir` using `name` (or the default URL+datetime name).

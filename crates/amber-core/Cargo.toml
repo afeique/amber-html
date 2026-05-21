@@ -1,0 +1,14 @@
+[package]
+name = "amber-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Local-first web-capture engine core (AmberHTML)."
+
+[dependencies]
+url.workspace = true
+chrono.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true

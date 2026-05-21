@@ -11,6 +11,7 @@
 *.swo
 .idea/
 .vscode/
+.obsidian/
 
 # Local environment
 .env

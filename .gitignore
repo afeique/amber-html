@@ -1,0 +1,25 @@
+# Rust
+/target
+**/*.rs.bk
+*.pdb
+
+# Note: Cargo.lock IS committed (this workspace produces binaries)
+
+# Editor / OS
+.DS_Store
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Local environment
+.env
+.env.local
+
+# Local harness state (Claude Code session/state artifacts)
+.claude/
+
+# Downloaded browser cache should live outside the repo (~/.cache/amber-html),
+# but ignore it defensively in case a local config points it here:
+/.amber-cache/
+/chromium/

@@ -272,9 +272,8 @@ outputs is a hard error. (This replaces any notion of a "default extractor.")
 | `--readable` | Readable plain text | `.txt` | maybe | Main-content extractor (candidates: `dom_smoothie`/`readability`) |
 | `--warc` | WARC archive | `.warc` | yes (hi-fi) | Network recording enabled before navigate |
 | `--wacz` | WACZ (replayable) | `.wacz` | yes (hi-fi) | Uses `warc`/`wacksy` crates |
-| `--screenshot` | Full-page PNG | `.png` | yes | *Proposed in set / `--all`; pending confirm* |
-| `--pdf` | PDF | `.pdf` | yes | `Page.printToPDF`; *proposed; pending confirm* |
-| `--all` | Every format above | — | yes | Convenience for "capture everything" |
+| `--screenshot` | Full-page PNG | `.png` | yes | `Page.captureScreenshot` |
+| `--pdf` | PDF | `.pdf` | yes | `Page.printToPDF` |
 
 **"No default" ≠ "no extraction code":** the faithful captures (HTML/MHTML/WARC/WACZ)
 need no content algorithm, but Markdown and readable text still require real
@@ -299,14 +298,14 @@ OUTPUT SELECTION  (at least one required — no default)
   --readable     readable plain text              → <name>.txt
   --warc         WARC archive                     → <name>.warc
   --wacz         WACZ archive                     → <name>.wacz
-  --screenshot   full-page PNG                    → <name>.png      (proposed)
-  --pdf          PDF                              → <name>.pdf      (proposed)
-  --all          enable EVERY format above
+  --screenshot   full-page PNG                    → <name>.png
+  --pdf          PDF                              → <name>.pdf
+  (no --all — select formats precisely)
 
 NAMING / LOCATION
   -o, --output-dir <DIR>   where to write (default: current dir; created if missing)
   -n, --name <NAME>        base filename, no extension; REQUIRES an arg when given
-                           omitted → MD5 of captured content
+                           omitted → "<safe-url> <YYYY-MM-DD> <HH-MM-SS>" (local time)
 
 RENDERING
   --render auto|always|never   (default auto — tiered fetch)
@@ -317,21 +316,16 @@ RENDERING
 **Example:**
 ```
 amber https://example.com -o ./my-output-dir --html --mhtml
-  → ./my-output-dir/<md5>.html
-  → ./my-output-dir/<md5>.mhtml
+  → "./my-output-dir/example.com 2026-05-21 14-30-05.html"
+  → "./my-output-dir/example.com 2026-05-21 14-30-05.mhtml"
 ```
 
 **Rules:**
-- Format flags are **boolean**; destination = `-o` dir, basename = `-n` or content MD5, extension derived from format.
+- Format flags are **boolean**; destination = `-o` dir, basename = `-n` or the default name, extension derived from format.
 - `-o` defaults to the current directory and is **created if missing**.
-- `-n` is optional but **requires an argument when present**; absent → `<md5>`.
-- `--all` enables the entire set in one invocation.
-- **≥1 output required** (a flag or `--all`), else a hard error.
-- **Idempotent:** same content → same MD5 → same filenames → overwrite. Content-addressed naming ties into the cache layer.
-
-*Pending micro-confirms:* (a) `--all`/the set includes `--screenshot` + `--pdf`
-(proposed: yes); (b) what the MD5 hashes — proposed: the **rendered HTML / serialized
-DOM** (alternatives: raw response bytes, or the MHTML).
+- `-n` is optional but **requires an argument when present**.
+- **Default name** (no `-n`): `<safe-url> <YYYY-MM-DD> <HH-MM-SS>` in **local time**, e.g. `example.com-blog-rust 2026-05-21 14-30-05`. `<safe-url>` = the fetched URL made filesystem-safe (scheme dropped; chars outside `[A-Za-z0-9._-]` → `-`; consecutive separators collapsed; trailing slash dropped; truncated to ~120 chars). Time uses `HH-MM-SS` because colons are illegal on Windows. *(Re-capturing the same URL later yields a new timestamp — the datetime is what keeps repeated captures distinct, since long URLs are truncated.)*
+- **No `--all`** — the user selects formats precisely. **≥1 output flag required**, else a hard error.
 
 ---
 
@@ -404,7 +398,7 @@ Legend — Priority: **P0** (MVP-critical) · **P1** (core) · **P2** (later/opt
 | Accessibility tree bundle | P1 | v0.5 | Vision/computer-use grounding |
 | Structured JSON (schema-driven) | P1 | v0.4 | See §C |
 | Provenance map (fact → DOM node + screenshot region + URL) | P1 | v0.4 | Grounding moat |
-| Content MD5 naming | P0 | v0.1 | CLI default name; cache key |
+| URL+datetime default naming | P0 | v0.1 | CLI default when `-n` omitted |
 
 ### C. Extraction intelligence
 | Feature | Pri | Phase | Notes |
@@ -434,7 +428,7 @@ Legend — Priority: **P0** (MVP-critical) · **P1** (core) · **P2** (later/opt
 ### E. Caching, storage & memory
 | Feature | Pri | Phase | Notes |
 |---|---|---|---|
-| Content-addressed cache (hash → result) | P1 | v0.3 | Ties to MD5 naming |
+| Content-addressed cache (hash → result) | P1 | v0.3 | Internal content hash (≠ output filename) |
 | Conditional requests (ETag / If-Modified-Since) | P1 | v0.3 | |
 | Crawl store/index | P1 | v0.3 | |
 | Local semantic memory (embeddings, offline search) | P2 | v0.7 | |
@@ -537,7 +531,7 @@ Evidence capture, training-corpus builder, page monitoring (as demand warrants).
 - **Browser:** always required; **managed, pinned Chrome for Testing**, checksum-verified, cached; `AMBER_CHROMIUM_PATH` escape hatch.
 - **HTML capture:** `Page.captureSnapshot` (MHTML) baseline; optional single-file-HTML transform.
 - **Output policy:** **no default output**; explicit selection (§8); render-once-emit-everything; output set configures the pass.
-- **CLI:** `-o` dir + boolean format flags + `-n` name (content-MD5 default) + `--all` (§9).
+- **CLI:** `-o` dir + boolean format flags + `-n` name (default `<safe-url> <date> <time>`); no `--all` (§9).
 - **Bindings:** UniFFI + C ABI, both first-tier; idiomatic per-language `Snapshot` facade (§10); WASM rejected.
 - **License:** dual **`MIT OR Apache-2.0`**.
 - **Naming:** package `amber-html`; brand `AmberHTML`.
@@ -575,14 +569,10 @@ Evidence capture, training-corpus builder, page monitoring (as demand warrants).
 
 ## 16. Open questions
 
-**CLI / output (micro-confirms):**
-1. Does `--all` / the format set include `--screenshot` and `--pdf`? *(proposed: yes)*
-2. What exactly is hashed for the MD5 name — rendered DOM, raw response bytes, or MHTML? *(proposed: rendered DOM)*
-
 **Implementation (decide per phase):**
-3. Markdown converter crate (`htmd`/`html2md`/`mdka`) and readable extractor crate (`dom_smoothie`/`readability`).
-4. MCP tool surface — how many tools (read/crawl/extract/screenshot) and their schemas (Phase 2).
-5. Token counting — which tokenizer(s) to report against (Phase 2).
-6. Structured-extraction LLM interface — OpenAI-compatible endpoint? local model? both? (Phase 4).
-7. Crawl/cache storage — embedded (SQLite/sled) vs flat files (Phase 3).
-8. Semantic memory — in `amber-core` (v0.7) or a separate companion crate?
+1. Markdown converter crate (`htmd`/`html2md`/`mdka`) and readable extractor crate (`dom_smoothie`/`readability`).
+2. MCP tool surface — how many tools (read/crawl/extract/screenshot) and their schemas (Phase 2).
+3. Token counting — which tokenizer(s) to report against (Phase 2).
+4. Structured-extraction LLM interface — OpenAI-compatible endpoint? local model? both? (Phase 4).
+5. Crawl/cache storage — embedded (SQLite/sled) vs flat files (Phase 3).
+6. Semantic memory — in `amber-core` (v0.7) or a separate companion crate?

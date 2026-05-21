@@ -190,14 +190,15 @@ Rust uniquely satisfies all three non-negotiables at once: **embeddable C-ABI co
                   │  CdpTransport trait (test-mock seam only)      │
                   └──────────────────────────────────────────────┘
                                      │
-                  hand-rolled WebSocket CDP client (the ONLY transport)
+          hand-rolled CDP client over the DEBUG PIPE (--remote-debugging-pipe;
+                 no open port; NUL-delimited JSON over inherited fd 3/4)
                                      │
                        managed, pinned Chrome for Testing
 ```
 
 **Layers:**
 - **`amber-core`** — single source of truth; async internally (tokio), **blocking public API** so FFI stays simple.
-- **Transport** — a **single hand-rolled WebSocket CDP client** (chromiumoxide is *not* used; see §13). The `CdpTransport` trait exists only as a thin seam for test mocking.
+- **Transport** — a **single hand-rolled CDP client over Chromium's debug pipe** (`--remote-debugging-pipe`): no open debugging port; NUL-delimited JSON over inherited file descriptors (fd 3 in / fd 4 out). WebSocket and chromiumoxide are *not* used (see §13). The `CdpTransport` trait exists only as a thin seam for test mocking.
 - **Browser management** — auto-download a pinned [Chrome for Testing](https://googlechromelabs.github.io/chrome-for-testing/) build, checksum-verified, cached; `AMBER_CHROMIUM_PATH` escape hatch. **Always required** — CDP drives a real browser; nothing bundles one.
 - **Bindings** — UniFFI (Python/Swift/Kotlin/Ruby) and a C ABI (cbindgen) for the long tail; napi-rs for Node; all thin, idiomatic facades over `amber-core` (see §10).
 
@@ -370,7 +371,7 @@ Legend — Priority: **P0** (MVP-critical) · **P1** (core) · **P2** (later/opt
 | Feature | Pri | Phase | Notes |
 |---|---|---|---|
 | Tiered fetch (HTTP-first, escalate) — see §7 | P0 | v0.1 | Biggest efficiency lever |
-| Hand-rolled WebSocket CDP client | P0 | v0.1 | The only transport |
+| Hand-rolled CDP pipe client (`--remote-debugging-pipe`) | P0 | v0.1 | The only transport; no open port |
 | Managed pinned Chrome for Testing (download/cache/verify) | P0 | v0.1 | Reproducibility |
 | Headless (`--headless=new`) render | P0 | v0.1 | |
 | Settle engine (lifecycle/network-idle/fonts/settle-delay) | P0 | v0.1 | Crux of fidelity |
@@ -527,7 +528,7 @@ Evidence capture, training-corpus builder, page monitoring (as demand warrants).
 ## 13. Locked technical decisions
 
 - **Language:** Rust (§5). `amber-core` async inside, **blocking public API**.
-- **CDP transport:** a **single hand-rolled WebSocket CDP client**. **chromiumoxide is NOT used** — not even as a dev/test dependency. No user-facing scenario prefers it; its only advantages were dev-side (faster MVP, full CDP coverage, a differential test oracle, pre-solved lifecycle/reconnection), all deliberately forgone to build a lean, controlled core. Implement only the ~20–40 CDP messages we use. **Correctness oracle = the real pinned browser (integration tests) + golden-file outputs.** `CdpTransport` trait kept only as a test-mock seam. *(Future hardening, parked: `--remote-debugging-pipe` over stdio vs the WebSocket TCP port.)*
+- **CDP transport:** a **single hand-rolled CDP client over Chromium's debug pipe** (`--remote-debugging-pipe`) — NUL-delimited JSON over inherited file descriptors (fd 3 in / fd 4 out), **no open debugging port and no WebSocket**. Chosen for **security** (a localhost debug *port* lets any local process hijack the browser — read cookies, navigate, exfiltrate; the pipe is reachable only by the parent that spawned the browser) and **leanness** (no WebSocket library). We always spawn our own pinned Chromium, so we never need to attach to a remote/existing browser — the *only* scenario WebSocket would serve. **chromiumoxide is NOT used.** Implement only the ~20–40 CDP messages we use. Correctness oracle = the real pinned browser (integration tests) + golden-file outputs. The `CdpTransport` trait is kept as a test-mock seam **and** as the slot where a WebSocket transport could be added later *if* attaching to a remote/existing browser (enterprise browser pool, cloud browser) is ever requested — out of scope today and counter to local-first.
 - **Browser:** always required; **managed, pinned Chrome for Testing**, checksum-verified, cached; `AMBER_CHROMIUM_PATH` escape hatch.
 - **HTML capture:** `Page.captureSnapshot` (MHTML) baseline; optional single-file-HTML transform.
 - **Output policy:** **no default output**; explicit selection (§8); render-once-emit-everything; output set configures the pass.

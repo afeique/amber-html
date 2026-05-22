@@ -205,7 +205,7 @@ mirrors. Public FFI surface is **blocking** (tokio hidden inside core).
 | Task | 内容 | DoD | Depends | Status |
 |------|------|-----|---------|--------|
 | 2.1 | MCP server (read/screenshot/extract tools) | An MCP client can request a capture and receive the output | Phase 1 | cc:TODO |
-| 2.2 | Token-budget-aware output + measured token count | Output trimmed to a budget; token count reported | 1.5, 1.6 | cc:TODO |
+| 2.2 | Token-budget-aware output + measured token count | Output trimmed to a budget; token count reported | 1.5, 1.6 | cc:完了 |
 | 2.3 | Token accounting & cost reporting | Per-capture token counts surfaced to the caller | 2.2 | cc:TODO |
 | 2.4 | Resource blocking (ads/trackers/optional images) | Blocked resource classes are not fetched; faster renders | 1.4 | cc:TODO |
 | 2.5 | Agent-native action primitives (navigate/click/fill/scroll/wait) | Actions executable via core API and MCP | 1.4, 2.1 | cc:TODO |

@@ -8,6 +8,7 @@
 #![allow(dead_code)]
 
 pub mod browser;
+pub mod budget;
 pub mod capture;
 pub mod cdp;
 pub mod chromium;
@@ -22,6 +23,7 @@ pub mod naming;
 pub mod output;
 pub mod render;
 
+pub use budget::{estimate_tokens, truncate_to_tokens};
 pub use capture::{CaptureOptions, RawCapture};
 pub use error::{Error, Result};
 pub use fetch::RenderMode;
@@ -82,6 +84,24 @@ impl Snapshot {
             .as_deref()
             .or(self.raw.static_html.as_deref())?;
         extract::detect_language(&extract::to_readable(html))
+    }
+
+    /// The page's Markdown trimmed to at most `max_tokens`, returned with its
+    /// estimated token count. The count is approximate and model-agnostic (see
+    /// [`budget::estimate_tokens`]); re-measure with a model's own tokenizer if
+    /// exact counts are required.
+    pub fn markdown_within(&self, max_tokens: usize) -> Result<(String, usize)> {
+        let bytes = self.render(OutputFormat::Markdown)?;
+        let text = String::from_utf8_lossy(&bytes).into_owned();
+        Ok(budget::truncate_to_tokens(&text, max_tokens))
+    }
+
+    /// The page's readable text trimmed to at most `max_tokens`, with its
+    /// estimated token count. See [`Snapshot::markdown_within`].
+    pub fn readable_within(&self, max_tokens: usize) -> Result<(String, usize)> {
+        let bytes = self.render(OutputFormat::Readable)?;
+        let text = String::from_utf8_lossy(&bytes).into_owned();
+        Ok(budget::truncate_to_tokens(&text, max_tokens))
     }
 
     /// Render a single format to bytes.
@@ -263,5 +283,26 @@ mod tests {
     fn snapshot_detected_language_none_without_html() {
         let snap = snapshot_from(RawCapture::default());
         assert_eq!(snap.detected_language(), None);
+    }
+
+    /// `markdown_within` trims the captured Markdown to a token budget and
+    /// reports the (approximate) count.
+    #[test]
+    fn snapshot_markdown_within_trims_to_budget() {
+        let para = "<p>word word word word word word word word</p>".repeat(40);
+        let snap = snapshot_from(RawCapture {
+            static_html: Some(format!("<html><body><article>{para}</article></body></html>")),
+            ..Default::default()
+        });
+
+        let full = String::from_utf8(snap.render(OutputFormat::Markdown).unwrap()).unwrap();
+        let (trimmed, count) = snap.markdown_within(15).unwrap();
+
+        assert!(count <= 15, "reported count {count} exceeds budget");
+        assert!(!trimmed.is_empty(), "should keep some content");
+        assert!(
+            trimmed.len() < full.len(),
+            "budgeted output should be shorter than the full Markdown"
+        );
     }
 }

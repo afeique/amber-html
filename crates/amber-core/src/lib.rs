@@ -89,6 +89,11 @@ pub fn snapshot(url: &str, formats: &[OutputFormat], opts: CaptureOptions) -> Re
     Ok(Snapshot { url: parsed, raw })
 }
 
+/// Current UTC instant as a WARC-style ISO 8601 timestamp (`2026-01-01T00:00:00Z`).
+fn capture_timestamp() -> String {
+    chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string()
+}
+
 /// The product of a capture pass; emits concrete formats on demand.
 #[derive(Debug)]
 pub struct Snapshot {
@@ -256,9 +261,34 @@ impl Snapshot {
                 })?;
                 Ok(inline::mhtml_to_single_file_html(mhtml).into_bytes())
             }
-            OutputFormat::Warc => Err(Error::NotImplemented("WARC emitter")),
-            OutputFormat::Wacz => Err(Error::NotImplemented("WACZ emitter")),
+            OutputFormat::Warc => self.to_warc(&capture_timestamp()),
+            OutputFormat::Wacz => {
+                let date = capture_timestamp();
+                let warc = self.to_warc(&date)?;
+                wacz::package(&warc, &[(self.url.as_str(), date.as_str())])
+            }
         }
+    }
+
+    /// Assemble a single-page WARC/1.1: a `warcinfo` record plus a `response`
+    /// record wrapping the captured HTML document (browser-rendered DOM
+    /// preferred, static fetch as fallback).
+    ///
+    /// This faithfully records the main document. Recording every subresource
+    /// exchange (CSS/JS/images) from the browser's network layer is the
+    /// remaining 5.3 integration; until then a WARC carries the page itself.
+    fn to_warc(&self, date: &str) -> Result<Vec<u8>> {
+        let html = self
+            .raw
+            .rendered_html
+            .as_deref()
+            .or(self.raw.static_html.as_deref())
+            .ok_or(Error::NotImplemented("no captured HTML for WARC"))?;
+        let mut w = warc::WarcWriter::new();
+        w.warcinfo(date, "software: AmberHTML\r\nformat: WARC File Format 1.1");
+        let block = warc::http_response_block(200, "text/html; charset=utf-8", html.as_bytes());
+        w.response(self.url.as_str(), date, &block);
+        Ok(w.into_bytes())
     }
 
     /// Write `format` into `dir` using `name` (or the default URL+datetime name).
@@ -348,6 +378,101 @@ mod tests {
             snap.render(OutputFormat::Html),
             Err(Error::Browser(_))
         ));
+    }
+
+    /// `render(Warc)` wraps the captured document in a WARC `response` record
+    /// (preceded by a `warcinfo` record) targeting the capture's URL.
+    #[test]
+    fn warc_emitter_wraps_captured_document() {
+        let snap = snapshot_from(RawCapture {
+            rendered_html: Some("<html><body><p>Amber</p></body></html>".to_string()),
+            ..Default::default()
+        });
+        let warc = snap.render(OutputFormat::Warc).expect("WARC should emit");
+        let s = String::from_utf8(warc).expect("WARC bytes are UTF-8 for an HTML page");
+
+        assert!(
+            s.starts_with("WARC/1.1\r\n"),
+            "starts with a WARC version line"
+        );
+        assert!(
+            s.contains("WARC-Type: warcinfo\r\n"),
+            "has a warcinfo record"
+        );
+        assert!(
+            s.contains("software: AmberHTML"),
+            "warcinfo names the software"
+        );
+        assert!(
+            s.contains("WARC-Type: response\r\n"),
+            "has a response record"
+        );
+        assert!(
+            s.contains("WARC-Target-URI: https://ex.com/\r\n"),
+            "response targets the capture URL"
+        );
+        assert!(
+            s.contains("HTTP/1.1 200 OK"),
+            "wraps an HTTP response message"
+        );
+        assert!(
+            s.contains("<p>Amber</p>"),
+            "carries the captured document body"
+        );
+    }
+
+    /// `render(Warc)` prefers the rendered DOM but falls back to the static
+    /// fetch; with neither it is a clean error, not a panic.
+    #[test]
+    fn warc_emitter_without_html_errors() {
+        let snap = snapshot_from(RawCapture::default());
+        assert!(matches!(
+            snap.render(OutputFormat::Warc),
+            Err(Error::NotImplemented(_))
+        ));
+    }
+
+    /// `render(Wacz)` packages the WARC into a WACZ (ZIP) whose `archive/data.warc`
+    /// entry is exactly the bytes `render(Warc)` would emit, and which lists the
+    /// captured URL in `pages/pages.jsonl`.
+    #[test]
+    fn wacz_emitter_packages_the_warc() {
+        use std::io::Read;
+
+        let snap = snapshot_from(RawCapture {
+            rendered_html: Some("<html><body>page</body></html>".to_string()),
+            ..Default::default()
+        });
+        let wacz = snap.render(OutputFormat::Wacz).expect("WACZ should emit");
+
+        let mut archive =
+            zip::ZipArchive::new(std::io::Cursor::new(wacz)).expect("WACZ is a valid ZIP");
+        let names: Vec<String> = (0..archive.len())
+            .map(|i| archive.by_index(i).unwrap().name().to_string())
+            .collect();
+        assert!(names.contains(&"archive/data.warc".to_string()));
+        assert!(names.contains(&"datapackage.json".to_string()));
+        assert!(names.contains(&"pages/pages.jsonl".to_string()));
+
+        // The embedded WARC is itself a well-formed WARC of the page.
+        let mut warc = String::new();
+        archive
+            .by_name("archive/data.warc")
+            .unwrap()
+            .read_to_string(&mut warc)
+            .unwrap();
+        assert!(warc.contains("WARC-Target-URI: https://ex.com/\r\n"));
+
+        let mut pages = String::new();
+        archive
+            .by_name("pages/pages.jsonl")
+            .unwrap()
+            .read_to_string(&mut pages)
+            .unwrap();
+        assert!(
+            pages.contains("https://ex.com/"),
+            "pages.jsonl lists the URL"
+        );
     }
 
     /// `Snapshot::metadata()` exposes page metadata extracted from the captured

@@ -65,6 +65,12 @@ fn sel(s: &str) -> Selector {
 /// the caller escalates to a browser (a wrong "static is fine" silently loses
 /// data; a wrong "needs browser" only costs time).
 pub fn assess(html: &str, content_floor: usize) -> Sufficiency {
+    let verdict = assess_inner(html, content_floor);
+    tracing::debug!(?verdict, content_floor, "sufficiency verdict");
+    verdict
+}
+
+fn assess_inner(html: &str, content_floor: usize) -> Sufficiency {
     let doc = Html::parse_document(html);
 
     // Hard signal: a <noscript> block telling the user to enable JavaScript.
@@ -245,5 +251,14 @@ mod tests {
         let html = format!("<html><body><div id=\"app\"></div><script>{js}</script></body></html>");
         // Script content is stripped, so this empty shell still needs a browser.
         assert_eq!(assess(&html, CONTENT_FLOOR), Sufficiency::NeedsBrowser);
+    }
+
+    #[tracing_test::traced_test]
+    #[test]
+    fn assess_emits_a_verdict_event() {
+        let _ = assess("<html><body><div id=\"root\"></div></body></html>", CONTENT_FLOOR);
+        // The single verdict event is emitted with the chosen Sufficiency.
+        assert!(logs_contain("sufficiency verdict"));
+        assert!(logs_contain("NeedsBrowser"));
     }
 }

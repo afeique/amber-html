@@ -27,3 +27,6 @@ base64 = "0.22"
 scraper = "0.27"
 encoding_rs = "0.8"
 whatlang = "0.18"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing-test = "0.2"

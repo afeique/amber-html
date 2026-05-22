@@ -7,7 +7,7 @@ use clap::Parser;
 
 use amber_core::{snapshot, CaptureOptions, Error, OutputFormat, RenderMode};
 
-/// AmberHTML — local-first web capture for AI agents.
+/// AmberHTML — faithful local web-page capture (library + CLI).
 #[derive(Parser, Debug)]
 #[command(name = "amber", version, about)]
 struct Cli {
@@ -104,7 +104,23 @@ impl Cli {
     }
 }
 
+/// Initialize structured logging. Level is controlled by `AMBER_LOG` (falling
+/// back to `RUST_LOG`), e.g. `AMBER_LOG=debug`; defaults to `warn`. Logs go to
+/// stderr so stdout stays reserved for the `wrote <path>` output lines.
+fn init_tracing() {
+    use tracing_subscriber::EnvFilter;
+    let filter = EnvFilter::try_from_env("AMBER_LOG")
+        .or_else(|_| EnvFilter::try_from_default_env())
+        .unwrap_or_else(|_| EnvFilter::new("warn"));
+    let _ = tracing_subscriber::fmt()
+        .with_env_filter(filter)
+        .with_writer(std::io::stderr)
+        .try_init();
+}
+
 fn main() -> ExitCode {
+    init_tracing();
+
     let cli = Cli::parse();
 
     let formats = cli.formats();

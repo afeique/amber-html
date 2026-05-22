@@ -24,6 +24,7 @@ const WAIT_FOR_TIMEOUT: Duration = Duration::from_secs(15);
 
 /// Capture `url` by rendering it in a real browser, producing the requested
 /// representations from a single pass.
+#[tracing::instrument(level = "debug", name = "render", skip_all, fields(url = %url))]
 pub(crate) fn capture(
     chromium: &Path,
     url: &Url,

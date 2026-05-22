@@ -197,7 +197,7 @@ mirrors. Public FFI surface is **blocking** (tokio hidden inside core).
 | 1.12 | Page metadata (title/lang/canonical/OpenGraph/links) | Metadata extracted and exposed on `Snapshot` | 1.1 | cc:完了 |
 | 1.13 | Timeout / retry / partial-result handling | Per-tier timeouts enforced; partial results returned where safe | 1.1, 1.4 | cc:WIP |
 | 1.14 | Process lifecycle / reconnection / crash recovery | Browser process is supervised; a crash is detected and surfaced cleanly | 0.4 | cc:TODO |
-| 1.15 | Structured logging + tracing | `tracing` spans across fetch/settle/capture; configurable level | 0.1 | cc:TODO |
+| 1.15 | Structured logging + tracing | `tracing` spans across fetch/settle/capture; configurable level | 0.1 | cc:完了 |
 | 1.16 | Local-first, zero telemetry; airgapped operation after browser cached | No network calls except the target + one-time browser download; works offline once cached | 0.3 | cc:TODO |
 
 ## Phase 2: v0.2 — Agent-native (P0/P1)

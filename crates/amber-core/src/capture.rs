@@ -42,6 +42,7 @@ pub struct RawCapture {
 
 /// Run the capture pipeline (Plans.md):
 /// output gate → HTTP fetch → sufficiency → escalate → (browser render).
+#[tracing::instrument(level = "debug", name = "capture", skip_all, fields(url = %url))]
 pub(crate) fn run(
     url: &url::Url,
     formats: &[OutputFormat],
@@ -50,6 +51,7 @@ pub(crate) fn run(
     // Step 1 — output gate: some outputs (or `--render always`) require a
     // browser up front, so we don't bother with a cheap fetch.
     if fetch::browser_required_upfront(formats, opts.render) {
+        tracing::debug!("output gate: browser required up front");
         return browser_capture(url, formats, opts);
     }
 
@@ -81,11 +83,18 @@ pub(crate) fn run(
     let floor = opts.min_content.unwrap_or(detect::CONTENT_FLOOR);
     match detect::assess(&page.html, floor) {
         // Clearly enough content: use what we fetched, no browser.
-        detect::Sufficiency::Static => Ok(static_capture(page)),
+        detect::Sufficiency::Static => {
+            tracing::debug!("static HTML sufficient; no browser");
+            Ok(static_capture(page))
+        }
         // `--render never`: best-effort with whatever static HTML we have.
-        _ if opts.render == RenderMode::Never => Ok(static_capture(page)),
+        _ if opts.render == RenderMode::Never => {
+            tracing::debug!("insufficient static HTML but --render never; using static");
+            Ok(static_capture(page))
+        }
         // Insufficient/ambiguous in auto mode → escalate (correctness bias).
         detect::Sufficiency::NeedsBrowser | detect::Sufficiency::Uncertain => {
+            tracing::debug!("escalating to browser render");
             browser_capture(url, formats, opts)
         }
     }

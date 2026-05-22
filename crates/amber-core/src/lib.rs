@@ -35,6 +35,7 @@ use url::Url;
 ///
 /// `formats` must be non-empty — there is no default output (Plans.md). The
 /// requested set also configures the capture pass and whether a browser is used.
+#[tracing::instrument(level = "info", name = "snapshot", skip(opts), fields(format_count = formats.len()))]
 pub fn snapshot(url: &str, formats: &[OutputFormat], opts: CaptureOptions) -> Result<Snapshot> {
     if formats.is_empty() {
         return Err(Error::NoOutputSelected);

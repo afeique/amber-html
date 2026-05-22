@@ -100,7 +100,15 @@ where
                 if attempt >= max_attempts || !is_transient(&err) {
                     return Err(err);
                 }
-                std::thread::sleep(backoff(attempt));
+                let delay = backoff(attempt);
+                tracing::warn!(
+                    attempt,
+                    max_attempts,
+                    backoff_ms = delay.as_millis() as u64,
+                    error = %err,
+                    "transient fetch failure; retrying"
+                );
+                std::thread::sleep(delay);
                 attempt += 1;
             }
         }
@@ -133,6 +141,7 @@ fn backoff_delay(attempt: u32) -> Duration {
 ///
 /// A non-2xx status is reported as [`FetchError::Status`] rather than a
 /// successful [`FetchedPage`] — the caller decides whether to escalate.
+#[tracing::instrument(level = "debug", name = "http.fetch", skip_all, fields(url = %url))]
 fn fetch_once(url: &Url) -> Result<FetchedPage, FetchError> {
     // `http_status_as_error(true)` is ureq's default; we keep it so 4xx/5xx
     // surface as `Error::StatusCode(code)`, which we translate below.
@@ -180,6 +189,14 @@ fn fetch_once(url: &Url) -> Result<FetchedPage, FetchError> {
         .read_to_vec()
         .map_err(map_ureq_error)?;
     let html = decode_html(&bytes, header_charset.as_deref());
+
+    tracing::debug!(
+        status,
+        final_url = %final_url,
+        bytes = bytes.len(),
+        charset = header_charset.as_deref().unwrap_or("(sniffed/utf-8)"),
+        "static fetch ok"
+    );
 
     Ok(FetchedPage {
         final_url,

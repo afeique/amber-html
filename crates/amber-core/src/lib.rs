@@ -8,6 +8,7 @@
 #![allow(dead_code)]
 
 pub mod actions;
+pub mod blocking;
 pub mod browser;
 pub mod budget;
 pub mod cache;
@@ -39,6 +40,7 @@ pub mod wacz;
 pub mod warc;
 
 pub use actions::Action;
+pub use blocking::{BlockPolicy, ResourceType};
 pub use budget::{
     chunk_text, estimate_cost, estimate_tokens, truncate_to_tokens, TokenAccounting,
 };

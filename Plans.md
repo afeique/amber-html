@@ -176,7 +176,7 @@ mirrors. Public FFI surface is **blocking** (tokio hidden inside core).
 | 0.2 | License (dual MIT OR Apache-2.0) + LICENSE files | Both LICENSE files present; manifests set `license` | - | cc:完了 |
 | 0.3 | Managed pinned Chrome for Testing fetcher (download/cache/checksum-verify) | Fetcher downloads a pinned build, verifies checksum, caches; `AMBER_CHROMIUM_PATH` honored | 0.1 | cc:完了 |
 | 0.4 | Hand-rolled CDP pipe client (`--remote-debugging-pipe`, fd 3/4, NUL-delimited JSON) | Client spawns Chromium and round-trips a CDP request/response over the pipe | 0.1 | cc:完了 |
-| 0.5 | navigate + screenshot smoke test (end-to-end) | `cargo run` launches pinned Chromium and screenshots a URL to a file | 0.3, 0.4 | cc:WIP |
+| 0.5 | navigate + screenshot smoke test (end-to-end) | `cargo run` launches pinned Chromium and screenshots a URL to a file | 0.3, 0.4 | cc:完了 |
 | 0.6 | CI (build + test + clippy + fmt) | A green CI run on push/PR covering build, test, clippy, fmt | 0.1 | cc:TODO |
 
 ## Phase 1: v0.1 — Reader MVP (P0)
@@ -221,7 +221,7 @@ mirrors. Public FFI surface is **blocking** (tokio hidden inside core).
 | 3.1 | Multi-page crawl (link follow, scope, depth/budget) | A bounded crawl visits in-scope pages up to depth/budget | Phase 1 | cc:完了 |
 | 3.2 | robots.txt + politeness + honest UA | robots respected; configurable delay; identifiable UA | 3.1 | cc:完了 |
 | 3.3 | Auth & session (cookies, headers, storage-state) | A behind-auth page is captured given supplied session state | 1.4 | cc:TODO |
-| 3.4 | Content-addressed cache (hash → result) + conditional requests (ETag/IMS) | Re-capture uses cache / conditional GET; unchanged pages skipped | 3.1 | cc:WIP |
+| 3.4 | Content-addressed cache (hash → result) + conditional requests (ETag/IMS) | Re-capture uses cache / conditional GET; unchanged pages skipped | 3.1 | cc:完了 |
 | 3.5 | Crawl store / index | Crawl results persisted and queryable | 3.1 | cc:完了 |
 | 3.6 | Incremental crawl (content-hash + conditional GET) | Re-run returns only changed pages | 3.4 | cc:完了 |
 | 3.7 | Change detection / diff feed | Diff between two captures of the same URL is produced | 3.4 | cc:完了 |

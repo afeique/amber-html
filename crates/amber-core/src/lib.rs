@@ -27,7 +27,7 @@ pub mod robots;
 
 pub use budget::{estimate_cost, estimate_tokens, truncate_to_tokens, TokenAccounting};
 pub use capture::{CaptureOptions, RawCapture};
-pub use crawl::{CrawlLimits, CrawlScope, Frontier};
+pub use crawl::{crawl, crawl_with, CrawlLimits, CrawlScope, Frontier};
 pub use error::{Error, Result};
 pub use extract::dedup_text;
 pub use fetch::RenderMode;

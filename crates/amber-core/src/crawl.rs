@@ -11,6 +11,8 @@ use std::collections::{HashSet, VecDeque};
 
 use url::Url;
 
+use crate::{http, meta};
+
 /// Which URLs a crawl is allowed to follow.
 #[derive(Debug, Clone)]
 pub struct CrawlScope {
@@ -151,6 +153,46 @@ impl Frontier {
     }
 }
 
+/// Run a bounded breadth-first crawl from `seed`, using `fetch_links` to fetch
+/// each page and return the links discovered on it. Returns the crawled URLs in
+/// visit order, respecting scope, depth, the page budget, and de-duplication.
+///
+/// I/O-agnostic: `fetch_links` does whatever fetching/extraction the caller
+/// wants (HTTP fetch + link extraction, a browser render, …). A page that
+/// fails to fetch simply contributes no links but still counts as visited.
+pub fn crawl_with<F>(seed: Url, scope: CrawlScope, limits: CrawlLimits, mut fetch_links: F) -> Vec<Url>
+where
+    F: FnMut(&Url) -> Vec<Url>,
+{
+    let mut frontier = Frontier::new(seed, scope, limits);
+    let mut visited = Vec::new();
+    while let Some((url, depth)) = frontier.next_url() {
+        let links = fetch_links(&url);
+        frontier.add_links(depth, links);
+        visited.push(url);
+    }
+    visited
+}
+
+/// Run a bounded crawl over HTTP: fetch each page via [`crate::http`] and follow
+/// the absolute links found in its HTML (via [`crate::meta`]). Non-HTML or
+/// failed responses contribute no links. Returns the crawled URLs in visit
+/// order. See [`crawl_with`] for the scope/depth/budget semantics.
+pub fn crawl(seed: Url, scope: CrawlScope, limits: CrawlLimits) -> Vec<Url> {
+    crawl_with(seed, scope, limits, |url| {
+        match http::fetch(url) {
+            Ok(page) if http::content_type_is_html(page.content_type.as_deref()) => {
+                meta::extract(&page.html, &page.final_url)
+                    .links
+                    .iter()
+                    .filter_map(|l| Url::parse(l).ok())
+                    .collect()
+            }
+            _ => Vec::new(),
+        }
+    })
+}
+
 /// Normalize a URL for de-duplication: drop the fragment (scheme/host are
 /// already lowercased by the URL parser; paths stay case-sensitive).
 fn normalize(url: &Url) -> String {
@@ -252,5 +294,70 @@ mod tests {
         assert!(f.next_url().is_some()); // /a
         assert!(f.next_url().is_none(), "page budget of 2 reached");
         assert_eq!(f.dispatched(), 2);
+    }
+
+    // ---- crawl_with (driver, mock fetcher) -------------------------------
+
+    fn paths(urls: &[Url]) -> Vec<&str> {
+        urls.iter().map(|u| u.path()).collect()
+    }
+
+    #[test]
+    fn crawl_with_visits_in_scope_graph_breadth_first() {
+        let seed = url("https://example.com/");
+        let scope = CrawlScope::same_host(&seed);
+        let fetch = |u: &Url| match u.path() {
+            "/" => vec![url("https://example.com/a"), url("https://example.com/b")],
+            "/a" => vec![url("https://example.com/c"), url("https://other.com/x")],
+            "/b" => vec![url("https://example.com/a")], // duplicate
+            _ => vec![],
+        };
+        let visited = crawl_with(seed, scope, CrawlLimits::default(), fetch);
+        // BFS order; the external link and the duplicate are skipped.
+        assert_eq!(paths(&visited), vec!["/", "/a", "/b", "/c"]);
+    }
+
+    #[test]
+    fn crawl_with_respects_page_budget() {
+        let seed = url("https://example.com/");
+        let scope = CrawlScope::same_host(&seed);
+        let fetch = |u: &Url| match u.path() {
+            "/" => vec![url("https://example.com/a"), url("https://example.com/b")],
+            _ => vec![],
+        };
+        let limits = CrawlLimits {
+            max_pages: 2,
+            max_depth: 5,
+        };
+        let visited = crawl_with(seed, scope, limits, fetch);
+        assert_eq!(visited.len(), 2);
+    }
+
+    #[test]
+    fn crawl_with_respects_depth_budget() {
+        let seed = url("https://example.com/");
+        let scope = CrawlScope::same_host(&seed);
+        let fetch = |u: &Url| match u.path() {
+            "/" => vec![url("https://example.com/a")],
+            "/a" => vec![url("https://example.com/b")], // would be depth 2
+            _ => vec![],
+        };
+        let limits = CrawlLimits {
+            max_pages: 100,
+            max_depth: 1,
+        };
+        let visited = crawl_with(seed, scope, limits, fetch);
+        assert_eq!(paths(&visited), vec!["/", "/a"]);
+    }
+
+    #[test]
+    #[ignore = "performs real network requests; run with --ignored"]
+    fn crawl_example_com_stays_in_scope() {
+        let seed = url("https://example.com/");
+        let scope = CrawlScope::same_host(&seed);
+        let visited = crawl(seed, scope, CrawlLimits::default());
+        // example.com links only to iana.org (out of scope), so just the seed.
+        assert_eq!(visited.len(), 1);
+        assert_eq!(visited[0].path(), "/");
     }
 }

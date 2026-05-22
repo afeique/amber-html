@@ -226,7 +226,7 @@ mirrors. Public FFI surface is **blocking** (tokio hidden inside core).
 | 3.6 | Incremental crawl (content-hash + conditional GET) | Re-run returns only changed pages | 3.4 | cc:完了 |
 | 3.7 | Change detection / diff feed | Diff between two captures of the same URL is produced | 3.4 | cc:完了 |
 | 3.8 | Sitemap.xml ingestion | Sitemap URLs seed a crawl | 3.1 | cc:完了 |
-| 3.9 | Browser sandboxing / process isolation | Renders run sandboxed per platform defaults | 1.4 | cc:TODO |
+| 3.9 | Browser sandboxing / process isolation | Renders run sandboxed per platform defaults | 1.4 | cc:完了 |
 | 3.10 | Secrets handling for auth (never logged) | Auth secrets never appear in logs/traces | 3.3 | cc:TODO |
 
 ## Phase 4: v0.4 — Structured extraction (P1)
@@ -249,7 +249,7 @@ mirrors. Public FFI surface is **blocking** (tokio hidden inside core).
 | 5.4 | WACZ emitter (replayable) | `--wacz` round-trips as a replayable archive | 5.3 | cc:WIP |
 | 5.5 | PDF export (`Page.printToPDF`) | `--pdf` writes a `.pdf` of the rendered page | 1.4 | cc:完了 |
 | 5.6 | Accessibility-tree bundle | A11y tree exposed/saved for grounding | 1.4 | cc:完了 |
-| 5.7 | Reproducible captures (pinned browser) | Same input + pinned browser → byte-stable-enough output for evals | 0.3 | cc:TODO |
+| 5.7 | Reproducible captures (pinned browser) | Same input + pinned browser → byte-stable-enough output for evals | 0.3 | cc:完了 |
 
 ## Phase 6: v0.6 — Bindings (P1/P2)
 

@@ -573,4 +573,25 @@ mod tests {
             "accessibility tree has no nodes: {tree}"
         );
     }
+
+    #[test]
+    #[ignore = "drives a real browser; run with --ignored (Chromium cached after first run)"]
+    fn live_capture_is_reproducible() {
+        let chromium = crate::browser::ensure_chromium().expect("ensure chromium");
+        let url = Url::parse(
+            "data:text/html,<html><body><h1>Reproducible</h1><p>Same every time.</p></body></html>",
+        )
+        .unwrap();
+        let opts = CaptureOptions {
+            render: crate::fetch::RenderMode::Always,
+            ..Default::default()
+        };
+        // Two captures of the same input with the same pinned browser must agree.
+        let a = capture(&chromium, &url, &[OutputFormat::Markdown], &opts).expect("capture a");
+        let b = capture(&chromium, &url, &[OutputFormat::Markdown], &opts).expect("capture b");
+        let md_a = crate::extract::to_markdown(a.rendered_html.as_deref().unwrap_or_default());
+        let md_b = crate::extract::to_markdown(b.rendered_html.as_deref().unwrap_or_default());
+        assert_eq!(md_a, md_b, "repeated captures differ");
+        assert!(md_a.contains("Reproducible"));
+    }
 }

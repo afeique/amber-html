@@ -31,6 +31,12 @@ const DEFAULT_TIMEOUT: Duration = Duration::from_secs(30);
 /// Maximum number of redirects to follow before giving up.
 const MAX_REDIRECTS: u32 = 10;
 
+/// Total fetch attempts (1 initial try + retries) for transient failures.
+const MAX_ATTEMPTS: u32 = 3;
+
+/// Base backoff before the first retry; doubles each subsequent attempt.
+const BACKOFF_BASE: Duration = Duration::from_millis(200);
+
 /// The result of a successful static HTTP fetch.
 #[derive(Debug, Clone)]
 pub struct FetchedPage {
@@ -61,16 +67,73 @@ pub enum FetchError {
     Timeout,
 }
 
-/// Perform a blocking HTTP GET for `url` (the cheap static tier, Plans.md).
+/// Perform a blocking HTTP GET for `url` (the cheap static tier, Plans.md),
+/// retrying transient failures with exponential backoff.
+///
+/// Retries (up to [`MAX_ATTEMPTS`] total attempts) on transient errors — request
+/// timeouts, transport failures, and `429`/`5xx` responses — backing off
+/// [`BACKOFF_BASE`], doubling each attempt. Permanent failures (e.g. `404`) and
+/// successes return immediately. See [`fetch_once`] for the single-attempt
+/// semantics (redirects, User-Agent, charset decoding, timeout).
+pub fn fetch(url: &Url) -> Result<FetchedPage, FetchError> {
+    fetch_with_retry(url, MAX_ATTEMPTS, backoff_delay, fetch_once)
+}
+
+/// Retry driver around a single-attempt fetcher. Generic over the fetcher and
+/// the backoff schedule so the policy is unit-testable without real I/O or
+/// real sleeps.
+fn fetch_with_retry<F, B>(
+    url: &Url,
+    max_attempts: u32,
+    backoff: B,
+    mut do_fetch: F,
+) -> Result<FetchedPage, FetchError>
+where
+    F: FnMut(&Url) -> Result<FetchedPage, FetchError>,
+    B: Fn(u32) -> Duration,
+{
+    let mut attempt = 1;
+    loop {
+        match do_fetch(url) {
+            Ok(page) => return Ok(page),
+            Err(err) => {
+                if attempt >= max_attempts || !is_transient(&err) {
+                    return Err(err);
+                }
+                std::thread::sleep(backoff(attempt));
+                attempt += 1;
+            }
+        }
+    }
+}
+
+/// Whether a [`FetchError`] is worth retrying. Timeouts and transport failures
+/// are usually transient; among status codes only `429` (rate limit) and `5xx`
+/// (server) are. A `4xx` (other than `429`) is a permanent client error.
+fn is_transient(err: &FetchError) -> bool {
+    match err {
+        FetchError::Timeout => true,
+        FetchError::Request(_) => true,
+        FetchError::Status(code) => *code == 429 || (500..=599).contains(code),
+    }
+}
+
+/// Exponential backoff for the `attempt`-th failure (1-based):
+/// [`BACKOFF_BASE`] × 2^(attempt-1) — 200 ms, 400 ms, 800 ms, …
+fn backoff_delay(attempt: u32) -> Duration {
+    BACKOFF_BASE * 2u32.pow(attempt.saturating_sub(1))
+}
+
+/// Perform a single blocking HTTP GET for `url`.
 ///
 /// Follows redirects (up to [`MAX_REDIRECTS`]), sends a realistic desktop-Chrome
-/// `User-Agent`, records the final URL after redirects, reads the body as text
-/// (UTF-8 best-effort), and captures the status code and `Content-Type`. Uses a
+/// `User-Agent`, records the final URL after redirects, decodes the body using
+/// the declared charset, and captures the status code and `Content-Type`. Uses a
 /// ~30s end-to-end timeout ([`DEFAULT_TIMEOUT`]).
 ///
 /// A non-2xx status is reported as [`FetchError::Status`] rather than a
 /// successful [`FetchedPage`] — the caller decides whether to escalate.
-pub fn fetch(url: &Url) -> Result<FetchedPage, FetchError> {
+fn fetch_once(url: &Url) -> Result<FetchedPage, FetchError> {
     // `http_status_as_error(true)` is ureq's default; we keep it so 4xx/5xx
     // surface as `Error::StatusCode(code)`, which we translate below.
     let config = ureq::Agent::config_builder()
@@ -341,6 +404,91 @@ mod tests {
         // UTF-8 BOM (EF BB BF) + "hi"; the BOM is stripped from the output.
         let bytes = [0xEF, 0xBB, 0xBF, b'h', b'i'];
         assert_eq!(decode_html(&bytes, None), "hi");
+    }
+
+    // --- retry policy -------------------------------------------------------
+
+    fn ok_page(url: &Url) -> FetchedPage {
+        FetchedPage {
+            final_url: url.clone(),
+            status: 200,
+            content_type: Some("text/html".into()),
+            html: "<html></html>".into(),
+        }
+    }
+
+    #[test]
+    fn is_transient_classifies_errors() {
+        assert!(is_transient(&FetchError::Timeout));
+        assert!(is_transient(&FetchError::Request("connection reset".into())));
+        assert!(is_transient(&FetchError::Status(429)));
+        assert!(is_transient(&FetchError::Status(500)));
+        assert!(is_transient(&FetchError::Status(503)));
+        assert!(!is_transient(&FetchError::Status(404)));
+        assert!(!is_transient(&FetchError::Status(400)));
+    }
+
+    #[test]
+    fn backoff_doubles_each_attempt() {
+        assert_eq!(backoff_delay(1), Duration::from_millis(200));
+        assert_eq!(backoff_delay(2), Duration::from_millis(400));
+        assert_eq!(backoff_delay(3), Duration::from_millis(800));
+    }
+
+    #[test]
+    fn retry_returns_first_success_without_retrying() {
+        let url = Url::parse("https://ex.com/").unwrap();
+        let mut calls = 0;
+        let page = fetch_with_retry(&url, 3, |_| Duration::ZERO, |u| {
+            calls += 1;
+            Ok(ok_page(u))
+        })
+        .unwrap();
+        assert_eq!(calls, 1);
+        assert_eq!(page.status, 200);
+    }
+
+    #[test]
+    fn retry_recovers_after_transient_failures() {
+        let url = Url::parse("https://ex.com/").unwrap();
+        let mut calls = 0;
+        let page = fetch_with_retry(&url, 3, |_| Duration::ZERO, |u| {
+            calls += 1;
+            if calls < 3 {
+                Err(FetchError::Status(503))
+            } else {
+                Ok(ok_page(u))
+            }
+        })
+        .unwrap();
+        assert_eq!(calls, 3);
+        assert_eq!(page.status, 200);
+    }
+
+    #[test]
+    fn retry_gives_up_after_max_attempts() {
+        let url = Url::parse("https://ex.com/").unwrap();
+        let mut calls = 0;
+        let err = fetch_with_retry(&url, 3, |_| Duration::ZERO, |_| {
+            calls += 1;
+            Err(FetchError::Timeout)
+        })
+        .unwrap_err();
+        assert_eq!(calls, 3);
+        assert!(matches!(err, FetchError::Timeout));
+    }
+
+    #[test]
+    fn retry_does_not_retry_permanent_errors() {
+        let url = Url::parse("https://ex.com/").unwrap();
+        let mut calls = 0;
+        let err = fetch_with_retry(&url, 3, |_| Duration::ZERO, |_| {
+            calls += 1;
+            Err(FetchError::Status(404))
+        })
+        .unwrap_err();
+        assert_eq!(calls, 1);
+        assert!(matches!(err, FetchError::Status(404)));
     }
 
     #[test]

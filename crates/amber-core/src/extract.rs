@@ -1,7 +1,7 @@
 //! HTML → Markdown and HTML → readable-text extraction.
 //!
 //! Two best-effort, infallible entry points back the `--markdown` and
-//! `--readable` outputs (PLAN.md §8, feature catalog B/C). Both take a full
+//! `--readable` outputs (Plans.md). Both take a full
 //! HTML document and return a `String`; neither panics and both degrade
 //! gracefully on garbage input.
 //!

@@ -1,5 +1,5 @@
 //! The set of representations AmberHTML can emit from one capture pass.
-//! See `docs/PLAN.md` §8.
+//! See `Plans.md`.
 
 /// A single output representation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -50,7 +50,7 @@ impl OutputFormat {
     }
 
     /// Whether producing this format inherently requires a real browser, versus
-    /// possibly being satisfiable from a static HTTP fetch (PLAN.md §7, §8).
+    /// possibly being satisfiable from a static HTTP fetch (Plans.md).
     pub fn requires_browser(self) -> bool {
         match self {
             OutputFormat::Mhtml

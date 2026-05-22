@@ -1,6 +1,6 @@
 //! Tiered-fetch sufficiency analysis: decide whether a static HTML document
 //! already contains usable content, or a real browser is required.
-//! See `docs/PLAN.md` §7.
+//! See `Plans.md`.
 //!
 //! NOTE: these are scaffold heuristics over raw HTML text; the real
 //! implementation will parse with `html5ever` for accuracy.

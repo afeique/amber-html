@@ -1,4 +1,4 @@
-//! Browser management and the (only) CDP transport. See `docs/PLAN.md` §13.
+//! Browser management and the (only) CDP transport. See `Plans.md`.
 //!
 //! AmberHTML drives a real, pinned Chromium over Chromium's CDP **debug pipe**
 //! (`--remote-debugging-pipe`): commands and events are NUL-delimited JSON
@@ -15,7 +15,7 @@
 use crate::error::{Error, Result};
 use std::path::PathBuf;
 
-/// Policy for deciding a page is "settled" before capture (PLAN.md §7).
+/// Policy for deciding a page is "settled" before capture (Plans.md).
 #[derive(Debug, Clone)]
 pub struct SettlePolicy {
     /// Wait for the `load` lifecycle event.

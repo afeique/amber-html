@@ -1,5 +1,5 @@
 //! Default output naming: `"<safe-url> <YYYY-MM-DD> <HH-MM-SS>"` in local time,
-//! used when the CLI `-n/--name` is not given. See `docs/PLAN.md` §9.
+//! used when the CLI `-n/--name` is not given. See `Plans.md`.
 
 use url::Url;
 

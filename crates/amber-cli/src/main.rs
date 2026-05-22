@@ -1,4 +1,4 @@
-//! AmberHTML CLI (`amber`). See `docs/PLAN.md` §9.
+//! AmberHTML CLI (`amber`). See `Plans.md`.
 
 use std::path::PathBuf;
 use std::process::ExitCode;

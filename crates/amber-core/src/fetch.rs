@@ -1,4 +1,4 @@
-//! Tiered-fetch decision helpers. See `docs/PLAN.md` §7.
+//! Tiered-fetch decision helpers. See `Plans.md`.
 
 use crate::output::OutputFormat;
 
@@ -14,7 +14,7 @@ pub enum RenderMode {
     Never,
 }
 
-/// Output gate (PLAN.md §7, step 1): is a browser required *before* fetching,
+/// Output gate (Plans.md): is a browser required *before* fetching,
 /// purely from the requested outputs and the render mode? When this is true we
 /// skip static detection and go straight to the browser.
 pub fn browser_required_upfront(formats: &[OutputFormat], mode: RenderMode) -> bool {

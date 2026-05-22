@@ -1,4 +1,4 @@
-//! The cheap "HTTP-first" static fetch tier (PLAN.md §7, step 2).
+//! The cheap "HTTP-first" static fetch tier (Plans.md).
 //!
 //! A plain blocking HTTP GET that follows redirects, records the *final* URL,
 //! and reads the body as text. This is the fast path of the tiered-fetch
@@ -24,7 +24,7 @@ const USER_AGENT: &str =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 \
      (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
-/// Default end-to-end timeout for the cheap fetch (PLAN.md: ~30s).
+/// Default end-to-end timeout for the cheap fetch (~30s).
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(30);
 
 /// Maximum number of redirects to follow before giving up.
@@ -59,7 +59,7 @@ pub enum FetchError {
     Timeout,
 }
 
-/// Perform a blocking HTTP GET for `url` (the cheap static tier, PLAN.md §7).
+/// Perform a blocking HTTP GET for `url` (the cheap static tier, Plans.md).
 ///
 /// Follows redirects (up to [`MAX_REDIRECTS`]), sends a realistic desktop-Chrome
 /// `User-Agent`, records the final URL after redirects, reads the body as text

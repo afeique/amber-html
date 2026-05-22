@@ -1,6 +1,6 @@
 //! The real CDP transport over Chromium's `--remote-debugging-pipe`.
 //!
-//! This is the lowest layer of the browser stack (PLAN.md §6, §13). It spawns a
+//! This is the lowest layer of the browser stack (Plans.md). It spawns a
 //! pinned Chromium with the debug **pipe** (no open debugging port, no
 //! WebSocket — see the security rationale in §13) and exchanges raw,
 //! NUL-delimited CDP JSON over two file descriptors inherited by the child:
@@ -371,7 +371,7 @@ impl PipeCdp {
         // Windows uses inherited HANDLEs (lpReserved2 / STARTUPINFO) rather than
         // numbered fds; Chromium's pipe transport reads HANDLEs passed at
         // positions 3/4. This requires a Windows-specific spawn path that is not
-        // yet implemented (Unix first — see PLAN.md §13).
+        // yet implemented (Unix first — see Plans.md).
         unimplemented!("CDP debug pipe on Windows: fd 3/4 HANDLE inheritance not yet implemented");
     }
 

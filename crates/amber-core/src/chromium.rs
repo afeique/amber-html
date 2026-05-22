@@ -1,5 +1,5 @@
 //! Chrome for Testing (CfT) fetcher — download, cache, and resolve a pinned
-//! Chromium build (PLAN.md §6, §13: "managed, pinned Chrome for Testing").
+//! Chromium build (Plans.md: "managed, pinned Chrome for Testing").
 //!
 //! AmberHTML always drives a *real* browser over CDP and never bundles one, so
 //! this module guarantees a usable Chromium executable is present on disk. It:
@@ -14,9 +14,9 @@
 //! The version is pinned to a single, recent **stable** Chrome for Testing
 //! build (see [`CFT_VERSION`]). Pinning is what makes captures reproducible and
 //! keeps our hand-rolled CDP client matched to a known protocol revision
-//! (PLAN.md §14: "Chromium version drift breaks CDP client → pin browser").
+//! (Plans.md: "Chromium version drift breaks CDP client → pin browser").
 //!
-//! ## On checksum verification (PLAN.md §6 / §13: "checksum-verified")
+//! ## On checksum verification (Plans.md: "checksum-verified")
 //! The plan *prefers* verifying the download against a published checksum.
 //! Unfortunately the Chrome for Testing JSON API does **not** publish any
 //! per-download hashes: both
@@ -45,7 +45,7 @@ use std::path::{Path, PathBuf};
 /// Pinned Chrome for Testing **stable** version.
 ///
 /// Bump this deliberately (it changes the CDP protocol revision we target) and
-/// re-run the protocol-audit gate described in PLAN.md §14.
+/// re-run the protocol-audit gate described in Plans.md.
 pub const CFT_VERSION: &str = "149.0.7827.22";
 
 /// Base URL for the public Chrome for Testing download bucket.
@@ -175,7 +175,7 @@ fn binary_path(version_dir: &Path, platform: CftPlatform) -> PathBuf {
 /// 2. Cached build — if the pinned version is already extracted, return its binary.
 /// 3. Otherwise download + extract the pinned CfT zip into the cache, then return it.
 pub fn ensure_chromium() -> Result<PathBuf, ChromiumError> {
-    // 1. Escape hatch (PLAN.md §6/§13).
+    // 1. Escape hatch (Plans.md).
     if let Some(p) = std::env::var_os("AMBER_CHROMIUM_PATH") {
         let p = PathBuf::from(p);
         if p.exists() {

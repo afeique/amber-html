@@ -1,41 +1,54 @@
 # AmberHTML
 
-> A Rust engine that drives a local Chromium via the Chrome DevTools Protocol to faithfully render any page, then emits Markdown, structured JSON, screenshots, and WARC from a single pass — with provenance and a token budget. Ships as a library + MCP server.
+> A Rust library and CLI that drives a local, pinned Chromium over the Chrome
+> DevTools Protocol to faithfully render any web page — but only when a page
+> actually needs a browser — and emits the requested representations from a
+> single capture pass: Markdown, readable text, single-file HTML, MHTML,
+> WARC/WACZ, screenshot, and PDF.
 
-**Local-first, private web-reading engine for AI agents.** AmberHTML renders pages in a real browser *only when needed*, then emits clean Markdown, structured data, and screenshots. A free, self-hosted alternative to Firecrawl.
+> 🚧 **Status: early development.** The architecture is set; implementation is
+> just beginning. Expect rapid change.
 
-> 🚧 **Status: early development (design phase).** The direction and architecture are set; implementation is just beginning. Expect rapid change.
+## What it is
 
-## Why
-
-Cloud web-reading APIs (Firecrawl, Jina, …) are powerful but, by being cloud SaaS, they are structurally:
-
-- **expensive** — per-page billing, and failed requests still cost you;
-- **non-private** — every URL you read, including internal ones, leaves your machine;
-- **blind to private surfaces** — they can't reach `localhost`, intranet, VPN, or behind-auth pages.
-
-AmberHTML attacks exactly those by running on *your* machine: free, private, and able to read the pages a cloud service never can.
+AmberHTML captures web pages locally, with no service to run. It tries a cheap
+HTTP fetch first and escalates to a real browser only when the page requires
+JavaScript, then produces every requested format from one render. It runs on
+your machine — including against `localhost`, intranet, and behind-auth pages —
+and can be embedded in-process via thin, idiomatic bindings to other languages.
 
 ## Goals
 
-- **Tiered fetching** — try a cheap HTTP fetch first; escalate to a headless browser only when the page actually needs JavaScript.
-- **Render once, emit everything** — Markdown, cleaned HTML, screenshot, accessibility tree, structured JSON, and WARC from a single browser pass.
-- **Token-budget-aware output** — main-content extraction and boilerplate removal, with the resulting token count reported.
-- **Caching & incremental crawling** — content-hash + conditional requests; skip unchanged pages, return only diffs.
-- **Model-agnostic structured extraction** — describe a schema, run it against *your own* LLM (cloud or local).
-- **Provenance** — every extracted fact anchors back to a DOM node, screenshot region, and source URL.
-- **Embeddable everywhere** — a Rust core with thin bindings to many languages, plus a standalone CLI and MCP server.
+- **Tiered fetching** — try a cheap HTTP fetch first; escalate to a headless
+  browser only when the page actually needs JavaScript.
+- **Render once, emit everything** — Markdown, readable text, single-file HTML,
+  MHTML, WARC/WACZ, screenshot, and PDF from a single browser pass.
+- **No default output** — you select formats explicitly; requesting none is an
+  error, and the requested set configures the capture pass.
+- **Faithful rendering** — a first-class settle engine (lifecycle events,
+  network-idle, fonts, lazy-load scroll, custom wait conditions) decides a page
+  is truly done before capture.
+- **Caching & incremental crawling** — content-hash + conditional requests; skip
+  unchanged pages, return only diffs.
+- **Provenance** — extracted facts can anchor back to a DOM node, screenshot
+  region, and source URL.
+- **Embeddable everywhere** — a Rust core with thin bindings to many languages,
+  plus a standalone CLI and an MCP server.
 
 ## Design (in brief)
 
-- Rust core driving Chromium over CDP, behind a swappable transport.
-- A pinned, auto-managed [Chrome for Testing](https://googlechromelabs.github.io/chrome-for-testing/) build for reproducible rendering.
-- Bindings via UniFFI (Python/Swift/Kotlin/Ruby) and a C ABI (the long tail).
+- Rust core (`amber-core`) driving Chromium over CDP, with a blocking public API.
+- A single hand-rolled CDP client over Chromium's debug pipe
+  (`--remote-debugging-pipe`) — no open debugging port.
+- A pinned, auto-managed [Chrome for Testing](https://googlechromelabs.github.io/chrome-for-testing/)
+  build for reproducible rendering.
+- Bindings via UniFFI (Python/Swift/Kotlin/Ruby), a C ABI (the long tail), and
+  napi-rs (Node).
 
 ## Roadmap
 
-The full product strategy, feature catalog, and phased roadmap live in
-[docs/PLAN.md](docs/PLAN.md).
+The full feature catalog and phased execution tasklist live in
+[Plans.md](Plans.md).
 
 ## License
 

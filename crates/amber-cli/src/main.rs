@@ -49,7 +49,8 @@ struct Cli {
     /// Browser rendering policy.
     #[arg(long, value_enum, default_value = "auto")]
     render: RenderModeArg,
-    /// CSS selector / JS predicate to wait for (forces a browser).
+    /// Wait for a condition before capture (forces a browser): a CSS selector,
+    /// or a JS boolean predicate prefixed with `js:` (e.g. `js:window.ready`).
     #[arg(long)]
     wait_for: Option<String>,
     /// Minimum static content length to treat as sufficient.

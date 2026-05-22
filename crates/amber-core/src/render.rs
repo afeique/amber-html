@@ -42,8 +42,8 @@ pub(crate) fn capture(
     cmd(&cdp, "Page.navigate", json!({ "url": url.as_str() }))?;
     settle(&cdp, events.as_ref(), &opts.settle);
 
-    if let Some(selector) = opts.wait_for.as_deref() {
-        wait_for_selector(&cdp, selector);
+    if let Some(condition) = opts.wait_for.as_deref() {
+        wait_for_ready(&cdp, condition);
     }
 
     let mut raw = RawCapture {
@@ -219,11 +219,26 @@ impl<'a> SettleTracker<'a> {
     }
 }
 
-/// Poll until `selector` appears in the DOM (or a timeout). Best-effort.
-fn wait_for_selector(cdp: &PipeCdp, selector: &str) {
-    // JSON-encode the selector so it can't break out of the JS expression.
-    let sel = Value::String(selector.to_string()).to_string();
-    let expr = format!("!!document.querySelector({sel})");
+/// Build the boolean JS expression polled for a `--wait-for` condition.
+///
+/// A `js:` prefix marks an arbitrary boolean predicate, coerced to bool with
+/// `!!(…)`; anything else is treated as a CSS selector and tested via
+/// `document.querySelector`. The value is JSON-encoded in the selector case so
+/// it can't break out of the expression.
+fn wait_for_expression(condition: &str) -> String {
+    match condition.strip_prefix("js:") {
+        Some(predicate) => format!("!!({predicate})"),
+        None => {
+            let sel = Value::String(condition.to_string()).to_string();
+            format!("!!document.querySelector({sel})")
+        }
+    }
+}
+
+/// Poll until the `--wait-for` condition (CSS selector or `js:` predicate)
+/// becomes true (or a timeout). Best-effort.
+fn wait_for_ready(cdp: &PipeCdp, condition: &str) {
+    let expr = wait_for_expression(condition);
     let start = Instant::now();
     while start.elapsed() < WAIT_FOR_TIMEOUT {
         let present = cmd(
@@ -332,6 +347,31 @@ mod tests {
         assert!(!t.observe(&lifecycle("networkIdle")));
         // ...but a quiet interval (loaded, no inflight) does.
         assert!(t.settled_on_quiet());
+    }
+
+    #[test]
+    fn wait_for_expression_treats_plain_value_as_selector() {
+        assert_eq!(
+            wait_for_expression(".main-content"),
+            r#"!!document.querySelector(".main-content")"#
+        );
+    }
+
+    #[test]
+    fn wait_for_expression_escapes_selector_quotes() {
+        // Inner quotes are JSON-escaped so they can't break out of the JS string.
+        assert_eq!(
+            wait_for_expression(r#"a[href="x"]"#),
+            r#"!!document.querySelector("a[href=\"x\"]")"#
+        );
+    }
+
+    #[test]
+    fn wait_for_expression_passes_through_js_predicate() {
+        assert_eq!(
+            wait_for_expression("js:window.__ready === true"),
+            "!!(window.__ready === true)"
+        );
     }
 
     #[test]

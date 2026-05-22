@@ -211,7 +211,7 @@ mirrors. Public FFI surface is **blocking** (tokio hidden inside core).
 | 2.5 | Agent-native action primitives (navigate/click/fill/scroll/wait) | Actions executable via core API and MCP | 1.4, 2.1 | cc:TODO |
 | 2.6 | Emulation knobs (viewport/device/locale/timezone/dark-mode) | Each knob measurably changes the rendered capture | 1.4 | cc:TODO |
 | 2.7 | Auto-scroll for lazy-load | Lazy content loads before capture on sample pages | 1.3 | cc:TODO |
-| 2.8 | Custom ready signal (`--wait-for` selector/predicate) | Capture waits for the selector/predicate before snapshot | 1.3 | cc:TODO |
+| 2.8 | Custom ready signal (`--wait-for` selector/predicate) | Capture waits for the selector/predicate before snapshot | 1.3 | cc:完了 |
 | 2.9 | Language detection / encoding | Detected language and correct decoding on non-UTF-8 pages | 1.1 | cc:完了 |
 
 ## Phase 3: v0.3 — Crawl (P1)

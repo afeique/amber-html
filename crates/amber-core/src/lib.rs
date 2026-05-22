@@ -12,6 +12,7 @@ pub mod budget;
 pub mod capture;
 pub mod cdp;
 pub mod chromium;
+pub mod crawl;
 pub mod detect;
 pub mod error;
 pub mod extract;
@@ -26,6 +27,7 @@ pub mod robots;
 
 pub use budget::{estimate_cost, estimate_tokens, truncate_to_tokens, TokenAccounting};
 pub use capture::{CaptureOptions, RawCapture};
+pub use crawl::{CrawlLimits, CrawlScope, Frontier};
 pub use error::{Error, Result};
 pub use extract::dedup_text;
 pub use fetch::RenderMode;

@@ -27,6 +27,10 @@ pub enum Error {
     #[error("browser error: {0}")]
     Browser(String),
 
+    /// Structured extraction failed (LLM call or response parsing).
+    #[error("extraction error: {0}")]
+    Extraction(String),
+
     /// A code path that is scaffolded but not yet implemented.
     #[error("not yet implemented: {0}")]
     NotImplemented(&'static str),

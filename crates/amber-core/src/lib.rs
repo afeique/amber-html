@@ -29,6 +29,7 @@ pub mod render;
 pub mod robots;
 pub mod sitemap;
 pub mod store;
+pub mod structured;
 pub mod wacz;
 pub mod warc;
 
@@ -48,6 +49,7 @@ pub use output::OutputFormat;
 pub use robots::Robots;
 pub use sitemap::{fetch_sitemap, parse_sitemap};
 pub use store::{CrawlStore, StoredPage};
+pub use structured::{extract_nl, extract_structured, LlmClient};
 pub use warc::{http_response_block, WarcWriter};
 pub use wacz::package as package_wacz;
 

@@ -83,7 +83,23 @@ pub fn fetch(url: &Url) -> Result<FetchedPage, FetchError> {
 /// semantics as [`fetch`].
 pub fn fetch_with_ua(url: &Url, user_agent: &str) -> Result<FetchedPage, FetchError> {
     fetch_with_retry(url, MAX_ATTEMPTS, backoff_delay, |u| {
-        fetch_once(u, user_agent)
+        fetch_once(u, user_agent, &[])
+    })
+}
+
+/// Like [`fetch`] but sends caller-supplied session headers (auth headers +
+/// cookies) on every attempt — for capturing behind-auth pages (Plans.md 3.3).
+/// Only header/cookie *names* are logged, never values (task 3.10).
+pub fn fetch_with_session(
+    url: &Url,
+    session: &crate::session::SessionState,
+) -> Result<FetchedPage, FetchError> {
+    let headers = session.request_headers();
+    if !headers.is_empty() {
+        tracing::debug!(session_headers = ?session.loggable_names(), "static fetch with session");
+    }
+    fetch_with_retry(url, MAX_ATTEMPTS, backoff_delay, |u| {
+        fetch_once(u, USER_AGENT, &headers)
     })
 }
 
@@ -150,7 +166,11 @@ fn backoff_delay(attempt: u32) -> Duration {
 /// A non-2xx status is reported as [`FetchError::Status`] rather than a
 /// successful [`FetchedPage`] — the caller decides whether to escalate.
 #[tracing::instrument(level = "debug", name = "http.fetch", skip_all, fields(url = %url))]
-fn fetch_once(url: &Url, user_agent: &str) -> Result<FetchedPage, FetchError> {
+fn fetch_once(
+    url: &Url,
+    user_agent: &str,
+    headers: &[(String, String)],
+) -> Result<FetchedPage, FetchError> {
     // `http_status_as_error(true)` is ureq's default; we keep it so 4xx/5xx
     // surface as `Error::StatusCode(code)`, which we translate below.
     let config = ureq::Agent::config_builder()
@@ -160,7 +180,11 @@ fn fetch_once(url: &Url, user_agent: &str) -> Result<FetchedPage, FetchError> {
         .build();
     let agent = ureq::Agent::new_with_config(config);
 
-    let response = agent.get(url.as_str()).call().map_err(map_ureq_error)?;
+    let mut request = agent.get(url.as_str());
+    for (name, value) in headers {
+        request = request.header(name, value);
+    }
+    let response = request.call().map_err(map_ureq_error)?;
 
     // Final URL after redirects, via the `ResponseExt` extension trait.
     let final_url = {
@@ -546,6 +570,60 @@ mod tests {
         assert!(FetchError::Request("boom".into())
             .to_string()
             .contains("boom"));
+    }
+
+    /// `fetch_with_session` sends the supplied auth header and cookies to the
+    /// server. Hermetic: a one-shot loopback server captures the request — no
+    /// external network. Header-name casing is normalized for the assertions.
+    #[test]
+    fn fetch_with_session_sends_cookies_and_headers() {
+        use std::io::{BufRead, BufReader, Write};
+        use std::net::TcpListener;
+
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind loopback");
+        let addr = listener.local_addr().unwrap();
+
+        let server = std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut reader = BufReader::new(stream.try_clone().unwrap());
+            let mut request = String::new();
+            loop {
+                let mut line = String::new();
+                if reader.read_line(&mut line).unwrap() == 0 || line == "\r\n" {
+                    break;
+                }
+                request.push_str(&line);
+            }
+            let body = "<html><body>secret area</body></html>";
+            let response = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\n\
+                 Content-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                body.len()
+            );
+            stream.write_all(response.as_bytes()).unwrap();
+            stream.flush().unwrap();
+            request
+        });
+
+        let url = Url::parse(&format!("http://{addr}/")).unwrap();
+        let session = crate::session::SessionState {
+            headers: vec![("Authorization".to_string(), "Bearer t0ken".to_string())],
+            cookies: vec![("sid".to_string(), "abc".to_string())],
+        };
+        let page = fetch_with_session(&url, &session).expect("fetch via loopback");
+
+        assert_eq!(page.status, 200);
+        assert!(page.html.contains("secret area"));
+
+        let request = server.join().unwrap().to_lowercase();
+        assert!(
+            request.contains("authorization: bearer t0ken"),
+            "auth header should be sent:\n{request}"
+        );
+        assert!(
+            request.contains("cookie: sid=abc"),
+            "cookie header should be sent:\n{request}"
+        );
     }
 
     // --- Real-network test (opt-in) -----------------------------------------

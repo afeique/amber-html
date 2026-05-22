@@ -67,6 +67,13 @@ pub(crate) fn capture(
         json!({ "enabled": true }),
     )?;
 
+    // Apply auth session headers (+ folded cookies) before navigating, so the
+    // very first request to a behind-auth page is authenticated (3.3).
+    if let Some((method, params)) = opts.session.extra_http_headers_command() {
+        tracing::debug!(session_headers = ?opts.session.loggable_names(), "applying session");
+        scmd(&cdp, sid, method, params)?;
+    }
+
     // Apply device/locale/timezone/dark-mode emulation before navigating.
     for (method, params) in crate::emulation::commands(&opts.emulation) {
         scmd(&cdp, sid, method, params)?;

@@ -5,7 +5,7 @@ use std::process::ExitCode;
 
 use clap::Parser;
 
-use amber_core::{snapshot, CaptureOptions, Error, OutputFormat, RenderMode};
+use amber_core::{snapshot, CaptureOptions, Error, OutputFormat, RenderMode, SessionState};
 
 /// AmberHTML — faithful local web-page capture (library + CLI).
 #[derive(Parser, Debug)]
@@ -61,6 +61,40 @@ struct Cli {
     /// Minimum static content length to treat as sufficient.
     #[arg(long)]
     min_content: Option<usize>,
+
+    /// Extra request header `Name: Value` for behind-auth pages (repeatable);
+    /// applied to both the static fetch and the browser render.
+    #[arg(long = "header", value_name = "NAME: VALUE")]
+    headers: Vec<String>,
+    /// Session cookie `name=value` (repeatable); applied to fetch and render.
+    #[arg(long = "cookie", value_name = "NAME=VALUE")]
+    cookies: Vec<String>,
+}
+
+/// Parse a `Name: Value` header argument, splitting on the first colon (so the
+/// value may itself contain colons, e.g. a URL). Name is trimmed and required.
+fn parse_header(s: &str) -> Result<(String, String), String> {
+    let (name, value) = s
+        .split_once(':')
+        .ok_or_else(|| format!("invalid --header {s:?} (expected \"Name: Value\")"))?;
+    let name = name.trim();
+    if name.is_empty() {
+        return Err(format!("invalid --header {s:?} (empty name)"));
+    }
+    Ok((name.to_string(), value.trim().to_string()))
+}
+
+/// Parse a `name=value` cookie argument, splitting on the first `=`. Name is
+/// trimmed and required; the value is taken verbatim.
+fn parse_cookie(s: &str) -> Result<(String, String), String> {
+    let (name, value) = s
+        .split_once('=')
+        .ok_or_else(|| format!("invalid --cookie {s:?} (expected \"name=value\")"))?;
+    let name = name.trim();
+    if name.is_empty() {
+        return Err(format!("invalid --cookie {s:?} (empty name)"));
+    }
+    Ok((name.to_string(), value.to_string()))
 }
 
 #[derive(clap::ValueEnum, Clone, Copy, Debug)]
@@ -167,10 +201,31 @@ fn main() -> ExitCode {
         return ExitCode::from(2);
     }
 
+    let mut session = SessionState::default();
+    for h in &cli.headers {
+        match parse_header(h) {
+            Ok(pair) => session.headers.push(pair),
+            Err(e) => {
+                eprintln!("error: {e}");
+                return ExitCode::from(2);
+            }
+        }
+    }
+    for c in &cli.cookies {
+        match parse_cookie(c) {
+            Ok(pair) => session.cookies.push(pair),
+            Err(e) => {
+                eprintln!("error: {e}");
+                return ExitCode::from(2);
+            }
+        }
+    }
+
     let opts = CaptureOptions {
         render: to_render_mode(cli.render),
         wait_for: cli.wait_for.clone(),
         min_content: cli.min_content,
+        session,
         ..Default::default()
     };
 
@@ -202,5 +257,36 @@ fn main() -> ExitCode {
             eprintln!("amber: {e}");
             ExitCode::FAILURE
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_header_splits_on_first_colon() {
+        assert_eq!(
+            parse_header("Authorization: Bearer x").unwrap(),
+            ("Authorization".to_string(), "Bearer x".to_string())
+        );
+        // The value may itself contain colons (e.g. a URL).
+        assert_eq!(
+            parse_header("X-Origin: http://a/b").unwrap().1,
+            "http://a/b"
+        );
+        assert!(parse_header("no-colon-here").is_err());
+        assert!(parse_header(":   value").is_err());
+    }
+
+    #[test]
+    fn parse_cookie_splits_on_first_equals() {
+        assert_eq!(
+            parse_cookie("sid=abc").unwrap(),
+            ("sid".to_string(), "abc".to_string())
+        );
+        // Split on the first `=` only; the value keeps the rest verbatim.
+        assert_eq!(parse_cookie("token=a=b").unwrap().1, "a=b");
+        assert!(parse_cookie("noequals").is_err());
     }
 }

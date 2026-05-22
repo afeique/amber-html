@@ -28,6 +28,9 @@ pub struct CaptureOptions {
     /// Bring-your-own proxy for the browser render (e.g. `http://host:8080` or
     /// `socks5://host:1080`). Passed to Chromium as `--proxy-server`.
     pub proxy: Option<String>,
+    /// Auth session state (cookies + extra request headers) sent on both the
+    /// static fetch and the browser navigation, for behind-auth pages.
+    pub session: crate::session::SessionState,
 }
 
 /// The raw, format-agnostic product of a single capture pass. Output emitters
@@ -67,8 +70,8 @@ pub(crate) fn run(
         return browser_capture(url, formats, opts);
     }
 
-    // Step 2 — cheap HTTP-first fetch.
-    let page = match http::fetch(url) {
+    // Step 2 — cheap HTTP-first fetch (carrying any auth session state).
+    let page = match http::fetch_with_session(url, &opts.session) {
         Ok(page) => page,
         Err(err) => {
             return match opts.render {

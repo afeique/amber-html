@@ -64,6 +64,72 @@ pub fn truncate_to_tokens(text: &str, max_tokens: usize) -> (String, usize) {
     (out, count)
 }
 
+/// Split `text` into chunks of at most `max_tokens` each (per [`estimate_tokens`]),
+/// cutting at **stable boundaries**: paragraphs (blank-line separated) are kept
+/// whole and packed greedily; a paragraph larger than the budget is split at
+/// word boundaries. Empty paragraphs are dropped. Returns no chunks for empty
+/// input or a zero budget.
+///
+/// Useful for feeding long captures to a model (or RAG index) in bounded,
+/// deterministic pieces.
+pub fn chunk_text(text: &str, max_tokens: usize) -> Vec<String> {
+    if max_tokens == 0 {
+        return Vec::new();
+    }
+    let mut chunks = Vec::new();
+    let mut cur = String::new();
+
+    for para in text.split("\n\n").map(str::trim).filter(|p| !p.is_empty()) {
+        if estimate_tokens(para) > max_tokens {
+            if !cur.is_empty() {
+                chunks.push(std::mem::take(&mut cur));
+            }
+            chunks.extend(split_paragraph(para, max_tokens));
+            continue;
+        }
+        if cur.is_empty() {
+            cur = para.to_string();
+            continue;
+        }
+        let candidate = format!("{cur}\n\n{para}");
+        if estimate_tokens(&candidate) <= max_tokens {
+            cur = candidate;
+        } else {
+            chunks.push(std::mem::take(&mut cur));
+            cur = para.to_string();
+        }
+    }
+    if !cur.is_empty() {
+        chunks.push(cur);
+    }
+    chunks
+}
+
+/// Split a single over-budget paragraph into ≤ `max_tokens` pieces at word
+/// boundaries. A lone word longer than the budget becomes its own (over-budget)
+/// chunk rather than being broken mid-word.
+fn split_paragraph(para: &str, max_tokens: usize) -> Vec<String> {
+    let mut out = Vec::new();
+    let mut cur = String::new();
+    for word in para.split_whitespace() {
+        if cur.is_empty() {
+            cur = word.to_string();
+            continue;
+        }
+        let candidate = format!("{cur} {word}");
+        if estimate_tokens(&candidate) <= max_tokens {
+            cur = candidate;
+        } else {
+            out.push(std::mem::take(&mut cur));
+            cur = word.to_string();
+        }
+    }
+    if !cur.is_empty() {
+        out.push(cur);
+    }
+    out
+}
+
 /// Estimated cost of `tokens` at `usd_per_1k_tokens`. Model-agnostic: the caller
 /// supplies the price for whatever model/tokenizer they use, so AmberHTML never
 /// hardcodes (or has to track) per-model pricing.
@@ -146,6 +212,47 @@ mod tests {
         // A single long word can't fit a tiny budget without splitting it.
         let (out, _) = truncate_to_tokens("supercalifragilisticexpialidocious", 1);
         assert!(out.is_empty());
+    }
+
+    #[test]
+    fn chunk_text_keeps_short_text_in_one_chunk() {
+        let chunks = chunk_text("one paragraph only", 100);
+        assert_eq!(chunks, vec!["one paragraph only".to_string()]);
+    }
+
+    #[test]
+    fn chunk_text_packs_paragraphs_within_budget() {
+        // Three ~5-token paragraphs; budget of 12 tokens packs ~2 per chunk.
+        let text = "alpha beta gamma delta epsilon\n\n\
+                    zeta eta theta iota kappa\n\n\
+                    lambda mu nu xi omicron";
+        let chunks = chunk_text(text, 12);
+        assert!(chunks.len() >= 2, "should split into multiple chunks");
+        for c in &chunks {
+            assert!(estimate_tokens(c) <= 12, "chunk over budget: {c:?}");
+        }
+        // Every original paragraph survives somewhere in the chunks.
+        let joined = chunks.join("\n\n");
+        for p in ["alpha", "zeta", "lambda"] {
+            assert!(joined.contains(p));
+        }
+    }
+
+    #[test]
+    fn chunk_text_splits_oversized_paragraph_by_words() {
+        let para = "word ".repeat(40); // one big paragraph, ~40 words
+        let chunks = chunk_text(para.trim(), 10);
+        assert!(chunks.len() > 1);
+        for c in &chunks {
+            assert!(estimate_tokens(c) <= 10);
+        }
+    }
+
+    #[test]
+    fn chunk_text_empty_and_zero_budget() {
+        assert!(chunk_text("", 100).is_empty());
+        assert!(chunk_text("\n\n  \n\n", 100).is_empty());
+        assert!(chunk_text("anything", 0).is_empty());
     }
 
     #[test]

@@ -33,7 +33,9 @@ pub mod structured;
 pub mod wacz;
 pub mod warc;
 
-pub use budget::{estimate_cost, estimate_tokens, truncate_to_tokens, TokenAccounting};
+pub use budget::{
+    chunk_text, estimate_cost, estimate_tokens, truncate_to_tokens, TokenAccounting,
+};
 pub use cache::{content_hash, Cache, CacheEntry};
 pub use capture::{CaptureOptions, RawCapture};
 pub use crawl::{

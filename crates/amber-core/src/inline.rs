@@ -75,7 +75,7 @@ pub fn mhtml_to_single_file_html(mhtml: &str) -> String {
     // referenced part to its (already-decoded) CSS text and recursively inline
     // url(...) references inside it.
     let css_parts = doc.css_parts_by_location();
-    let stage1 = inline_stylesheets(root_html, &css_parts, &data_uris);
+    let stage1 = inline_stylesheets(&root_html, &css_parts, &data_uris);
 
     // Pass 2: rewrite remaining resource references (img/src/srcset/url(...))
     // to data: URIs.

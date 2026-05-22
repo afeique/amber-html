@@ -16,6 +16,7 @@ pub mod error;
 pub mod extract;
 pub mod fetch;
 pub mod http;
+pub mod inline;
 pub mod naming;
 pub mod output;
 pub mod render;
@@ -84,9 +85,14 @@ impl Snapshot {
                 .pdf
                 .clone()
                 .ok_or_else(|| Error::Browser("PDF was not captured".into())),
-            OutputFormat::Html => Err(Error::NotImplemented(
-                "single-file HTML emitter (MHTML transform pending)",
-            )),
+            OutputFormat::Html => {
+                // Single-file HTML is the MHTML bundle flattened into one
+                // self-contained document (subresources → `data:` URIs).
+                let mhtml = self.raw.mhtml.as_deref().ok_or_else(|| {
+                    Error::Browser("single-file HTML requires an MHTML capture".into())
+                })?;
+                Ok(inline::mhtml_to_single_file_html(mhtml).into_bytes())
+            }
             OutputFormat::Warc => Err(Error::NotImplemented("WARC emitter")),
             OutputFormat::Wacz => Err(Error::NotImplemented("WACZ emitter")),
         }
@@ -121,5 +127,57 @@ mod tests {
         let err = snapshot("not a url", &[OutputFormat::Markdown], CaptureOptions::default())
             .unwrap_err();
         assert!(matches!(err, Error::InvalidUrl(_)));
+    }
+
+    /// Build a `Snapshot` directly from a `RawCapture` for emitter unit tests
+    /// (bypasses the live capture pipeline).
+    fn snapshot_from(raw: RawCapture) -> Snapshot {
+        Snapshot {
+            url: Url::parse("https://ex.com/").unwrap(),
+            raw,
+        }
+    }
+
+    /// `render(Html)` flattens the captured MHTML into single-file HTML by
+    /// delegating to `inline::mhtml_to_single_file_html`.
+    #[test]
+    fn html_emitter_inlines_captured_mhtml() {
+        let mhtml = concat!(
+            "Content-Type: multipart/related; boundary=\"B\"; type=\"text/html\"\r\n",
+            "Content-Location: https://ex.com/\r\n",
+            "\r\n",
+            "--B\r\n",
+            "Content-Type: text/html\r\n",
+            "Content-Transfer-Encoding: quoted-printable\r\n",
+            "Content-Location: https://ex.com/\r\n",
+            "\r\n",
+            "<html><body><p>Hello Amber</p></body></html>\r\n",
+            "--B--\r\n",
+        );
+        let snap = snapshot_from(RawCapture {
+            mhtml: Some(mhtml.to_string()),
+            ..Default::default()
+        });
+
+        let html = snap.render(OutputFormat::Html).expect("Html should be emitted");
+        let html = String::from_utf8(html).expect("output is UTF-8");
+
+        // The emitter is wired to the inliner (same bytes) and preserves body text.
+        assert_eq!(html, inline::mhtml_to_single_file_html(mhtml));
+        assert!(
+            html.contains("Hello Amber"),
+            "single-file HTML should keep the body text:\n{html}"
+        );
+    }
+
+    /// Without a captured MHTML there is nothing to flatten — a clear error,
+    /// not a panic.
+    #[test]
+    fn html_emitter_without_mhtml_errors() {
+        let snap = snapshot_from(RawCapture::default());
+        assert!(matches!(
+            snap.render(OutputFormat::Html),
+            Err(Error::Browser(_))
+        ));
     }
 }

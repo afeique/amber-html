@@ -17,6 +17,7 @@ pub mod extract;
 pub mod fetch;
 pub mod http;
 pub mod inline;
+pub mod meta;
 pub mod naming;
 pub mod output;
 pub mod render;
@@ -24,6 +25,7 @@ pub mod render;
 pub use capture::{CaptureOptions, RawCapture};
 pub use error::{Error, Result};
 pub use fetch::RenderMode;
+pub use meta::PageMetadata;
 pub use output::OutputFormat;
 
 use std::path::{Path, PathBuf};
@@ -50,6 +52,24 @@ pub struct Snapshot {
 }
 
 impl Snapshot {
+    /// Extract structured page metadata (title, lang, description, canonical,
+    /// OpenGraph, links) from the captured HTML.
+    ///
+    /// Prefers the browser-rendered DOM, falling back to the static fetch;
+    /// relative URLs are resolved against the capture's URL. Returns empty
+    /// metadata when no HTML was captured (e.g. a screenshot-only pass).
+    pub fn metadata(&self) -> PageMetadata {
+        let html = self
+            .raw
+            .rendered_html
+            .as_deref()
+            .or(self.raw.static_html.as_deref());
+        match html {
+            Some(html) => meta::extract(html, &self.url),
+            None => PageMetadata::default(),
+        }
+    }
+
     /// Render a single format to bytes.
     pub fn render(&self, format: OutputFormat) -> Result<Vec<u8>> {
         // Prefer browser-rendered HTML; fall back to the static fetch.
@@ -179,5 +199,33 @@ mod tests {
             snap.render(OutputFormat::Html),
             Err(Error::Browser(_))
         ));
+    }
+
+    /// `Snapshot::metadata()` exposes page metadata extracted from the captured
+    /// HTML, resolving relative URLs against the capture's URL.
+    #[test]
+    fn snapshot_exposes_metadata_from_html() {
+        let snap = snapshot_from(RawCapture {
+            static_html: Some(
+                r#"<html lang="en"><head><title>Hi</title>
+                   <link rel="canonical" href="/canon"></head>
+                   <body><a href="/p">p</a></body></html>"#
+                    .to_string(),
+            ),
+            ..Default::default()
+        });
+        let m = snap.metadata();
+        assert_eq!(m.title.as_deref(), Some("Hi"));
+        assert_eq!(m.lang.as_deref(), Some("en"));
+        assert_eq!(m.canonical.as_deref(), Some("https://ex.com/canon"));
+        assert_eq!(m.links, vec!["https://ex.com/p".to_string()]);
+    }
+
+    /// With no captured HTML (e.g. a screenshot-only pass) metadata is empty,
+    /// not an error.
+    #[test]
+    fn snapshot_metadata_empty_without_html() {
+        let snap = snapshot_from(RawCapture::default());
+        assert_eq!(snap.metadata(), PageMetadata::default());
     }
 }

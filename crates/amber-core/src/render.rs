@@ -122,37 +122,21 @@ fn eval_string(cdp: &PipeCdp, expression: &str) -> Result<String> {
 fn settle(cdp: &PipeCdp, events: Option<&Receiver<Value>>, policy: &SettlePolicy) {
     if let Some(rx) = events {
         let start = Instant::now();
-        let mut inflight: i64 = 0;
-        let mut loaded = !policy.wait_load;
+        let mut tracker = SettleTracker::new(policy);
         loop {
             if start.elapsed() > SETTLE_OVERALL_TIMEOUT {
                 break;
             }
             match rx.recv_timeout(SETTLE_POLL) {
-                Ok(ev) => match ev.get("method").and_then(Value::as_str).unwrap_or("") {
-                    "Page.lifecycleEvent" => {
-                        let name = ev
-                            .get("params")
-                            .and_then(|p| p.get("name"))
-                            .and_then(Value::as_str)
-                            .unwrap_or("");
-                        if name == "load" {
-                            loaded = true;
-                        }
-                        if loaded
-                            && policy.network_idle
-                            && (name == "networkIdle" || name == "networkAlmostIdle")
-                        {
-                            break;
-                        }
+                // An event arrived: feed it to the tracker.
+                Ok(ev) => {
+                    if tracker.observe(&ev) {
+                        break;
                     }
-                    "Network.requestWillBeSent" => inflight += 1,
-                    "Network.loadingFinished" | "Network.loadingFailed" => inflight -= 1,
-                    _ => {}
-                },
+                }
+                // A quiet interval: settled if loaded with nothing in flight.
                 Err(RecvTimeoutError::Timeout) => {
-                    // Quiet period: if we've loaded with nothing in flight, done.
-                    if loaded && inflight <= 0 {
+                    if tracker.settled_on_quiet() {
                         break;
                     }
                 }
@@ -174,6 +158,64 @@ fn settle(cdp: &PipeCdp, events: Option<&Receiver<Value>>, policy: &SettlePolicy
     }
     if policy.settle_delay_ms > 0 {
         std::thread::sleep(Duration::from_millis(policy.settle_delay_ms));
+    }
+}
+
+/// Event-driven tracker that decides when a page has settled, per a
+/// [`SettlePolicy`].
+///
+/// Pure (no I/O): it folds CDP lifecycle and network events into a verdict, so
+/// the settle decision logic can be unit-tested without a live browser. The
+/// driving loop in [`settle`] supplies events and quiet-interval ticks.
+struct SettleTracker<'a> {
+    policy: &'a SettlePolicy,
+    /// Whether the `load` lifecycle event has fired (or wasn't required).
+    loaded: bool,
+    /// Outstanding network requests (sent minus finished/failed).
+    inflight: i64,
+}
+
+impl<'a> SettleTracker<'a> {
+    fn new(policy: &'a SettlePolicy) -> Self {
+        Self {
+            policy,
+            // If the policy doesn't require `load`, treat the page as loaded.
+            loaded: !policy.wait_load,
+            inflight: 0,
+        }
+    }
+
+    /// Fold one CDP event into the state; returns `true` once settled (load seen
+    /// and, if `network_idle`, a network-idle lifecycle event observed).
+    fn observe(&mut self, ev: &Value) -> bool {
+        match ev.get("method").and_then(Value::as_str).unwrap_or("") {
+            "Page.lifecycleEvent" => {
+                let name = ev
+                    .get("params")
+                    .and_then(|p| p.get("name"))
+                    .and_then(Value::as_str)
+                    .unwrap_or("");
+                if name == "load" {
+                    self.loaded = true;
+                }
+                if self.loaded
+                    && self.policy.network_idle
+                    && (name == "networkIdle" || name == "networkAlmostIdle")
+                {
+                    return true;
+                }
+            }
+            "Network.requestWillBeSent" => self.inflight += 1,
+            "Network.loadingFinished" | "Network.loadingFailed" => self.inflight -= 1,
+            _ => {}
+        }
+        false
+    }
+
+    /// Verdict for a quiet interval (no event within the poll window): settled
+    /// once the page has loaded and no requests are in flight.
+    fn settled_on_quiet(&self) -> bool {
+        self.loaded && self.inflight <= 0
     }
 }
 
@@ -214,4 +256,93 @@ fn decode_b64(s: &str) -> Result<Vec<u8>> {
 /// Map a transport [`CdpError`] into the crate-wide [`Error`].
 fn browser_err(e: CdpError) -> Error {
     Error::Browser(e.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn lifecycle(name: &str) -> Value {
+        json!({ "method": "Page.lifecycleEvent", "params": { "name": name } })
+    }
+    fn net(method: &str) -> Value {
+        json!({ "method": method })
+    }
+
+    #[test]
+    fn settles_on_network_idle_after_load() {
+        let policy = SettlePolicy::default();
+        let mut t = SettleTracker::new(&policy);
+        // Idle before load must not settle (content may still be arriving).
+        assert!(!t.observe(&lifecycle("DOMContentLoaded")));
+        assert!(!t.observe(&lifecycle("networkIdle")));
+        // Once loaded, a network-idle lifecycle event settles it.
+        assert!(!t.observe(&lifecycle("load")));
+        assert!(t.observe(&lifecycle("networkAlmostIdle")));
+    }
+
+    #[test]
+    fn quiet_period_settles_when_loaded_and_no_inflight() {
+        let policy = SettlePolicy::default();
+        let mut t = SettleTracker::new(&policy);
+        t.observe(&lifecycle("load"));
+        t.observe(&net("Network.requestWillBeSent"));
+        assert!(!t.settled_on_quiet(), "a request is in flight");
+        t.observe(&net("Network.loadingFinished"));
+        assert!(t.settled_on_quiet(), "loaded and nothing in flight");
+    }
+
+    #[test]
+    fn failed_requests_also_decrement_inflight() {
+        let policy = SettlePolicy::default();
+        let mut t = SettleTracker::new(&policy);
+        t.observe(&lifecycle("load"));
+        t.observe(&net("Network.requestWillBeSent"));
+        t.observe(&net("Network.loadingFailed"));
+        assert!(t.settled_on_quiet());
+    }
+
+    #[test]
+    fn not_settled_before_load() {
+        let policy = SettlePolicy::default();
+        let t = SettleTracker::new(&policy);
+        // Default policy requires `load`, which hasn't fired yet.
+        assert!(!t.settled_on_quiet());
+    }
+
+    #[test]
+    fn wait_load_disabled_starts_loaded() {
+        let policy = SettlePolicy {
+            wait_load: false,
+            ..Default::default()
+        };
+        let t = SettleTracker::new(&policy);
+        assert!(t.settled_on_quiet());
+    }
+
+    #[test]
+    fn network_idle_disabled_relies_on_quiet_period() {
+        let policy = SettlePolicy {
+            network_idle: false,
+            ..Default::default()
+        };
+        let mut t = SettleTracker::new(&policy);
+        t.observe(&lifecycle("load"));
+        // With network_idle off, an idle lifecycle event does not settle...
+        assert!(!t.observe(&lifecycle("networkIdle")));
+        // ...but a quiet interval (loaded, no inflight) does.
+        assert!(t.settled_on_quiet());
+    }
+
+    #[test]
+    fn browser_args_are_headless_safe() {
+        let args = browser_args();
+        assert!(args.iter().any(|a| a == "--disable-gpu"));
+        assert!(args.iter().any(|a| a == "--hide-scrollbars"));
+        // --no-sandbox is added only where required (Linux/CI).
+        assert_eq!(
+            args.iter().any(|a| a == "--no-sandbox"),
+            cfg!(target_os = "linux")
+        );
+    }
 }

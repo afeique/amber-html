@@ -23,6 +23,10 @@ pub enum Error {
     #[error("HTTP {0} for {1}")]
     HttpStatus(u16, String),
 
+    /// A browser-management or CDP failure (download, spawn, protocol, etc.).
+    #[error("browser error: {0}")]
+    Browser(String),
+
     /// A code path that is scaffolded but not yet implemented.
     #[error("not yet implemented: {0}")]
     NotImplemented(&'static str),

@@ -9,6 +9,8 @@
 
 pub mod browser;
 pub mod capture;
+pub mod cdp;
+pub mod chromium;
 pub mod detect;
 pub mod error;
 pub mod extract;

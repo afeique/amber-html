@@ -15,3 +15,7 @@ thiserror.workspace = true
 htmd.workspace = true
 dom_smoothie.workspace = true
 ureq.workspace = true
+zip.workspace = true
+dirs.workspace = true
+os_pipe.workspace = true
+command-fds.workspace = true

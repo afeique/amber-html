@@ -193,7 +193,7 @@ mirrors. Public FFI surface is **blocking** (tokio hidden inside core).
 | 1.8 | No-default-output policy (≥1 format required) | Empty format set returns a hard error | 0.1 | cc:完了 |
 | 1.9 | URL+datetime default naming (`-n` optional) | Default name = `<safe-url> <YYYY-MM-DD> <HH-MM-SS>`, filesystem-safe | 0.1 | cc:完了 |
 | 1.10 | CLI (`amber <url>` + output flags + `-o`/`-n`/`--render`/`--wait-for`/`--min-content`) | `amber <url> -o ./out --markdown --readable --screenshot` works, HTTP-only when possible | 1.5, 1.6, 1.7, 1.9 | cc:WIP |
-| 1.11 | Boilerplate/nav/ad/cookie-banner removal | Extracted Markdown/readable excludes common chrome on sample pages | 1.5, 1.6 | cc:WIP |
+| 1.11 | Boilerplate/nav/ad/cookie-banner removal | Extracted Markdown/readable excludes common chrome on sample pages | 1.5, 1.6 | cc:完了 |
 | 1.12 | Page metadata (title/lang/canonical/OpenGraph/links) | Metadata extracted and exposed on `Snapshot` | 1.1 | cc:完了 |
 | 1.13 | Timeout / retry / partial-result handling | Per-tier timeouts enforced; partial results returned where safe | 1.1, 1.4 | cc:WIP |
 | 1.14 | Process lifecycle / reconnection / crash recovery | Browser process is supervised; a crash is detected and surfaced cleanly | 0.4 | cc:TODO |

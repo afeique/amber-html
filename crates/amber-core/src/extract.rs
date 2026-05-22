@@ -29,6 +29,7 @@
 use dom_smoothie::{Config, Readability};
 use htmd::options::{HeadingStyle, LinkStyle, Options};
 use htmd::HtmlToMarkdown;
+use scraper::{Html, Selector};
 
 /// Convert a full HTML document to clean, LLM-friendly Markdown.
 ///
@@ -54,12 +55,63 @@ pub fn to_markdown(html: &str) -> String {
         })
         .build();
 
-    match converter.convert(html) {
+    // Strip site chrome (nav/footer/aside, cookie/consent and ad containers)
+    // before conversion so the Markdown is content, not boilerplate.
+    let cleaned = clean_boilerplate(html);
+    match converter.convert(&cleaned) {
         Ok(md) => md.trim().to_string(),
         // htmd only errors on internal write failures, which effectively never
         // happen for an in-memory buffer; degrade to empty rather than panic.
         Err(_) => String::new(),
     }
+}
+
+/// Common non-content "chrome" stripped before Markdown conversion: site
+/// navigation, footers, asides, ARIA landmark regions, and high-confidence
+/// cookie/consent and ad containers. Deliberately conservative — only
+/// structural tags, landmark roles, and distinctive class/id patterns are
+/// dropped, to avoid removing real content. (`to_readable` relies on the
+/// Readability algorithm for the same job.)
+const BOILERPLATE_SELECTORS: &[&str] = &[
+    "nav",
+    "footer",
+    "aside",
+    "[role=\"navigation\"]",
+    "[role=\"banner\"]",
+    "[role=\"contentinfo\"]",
+    "[role=\"complementary\"]",
+    "[class*=\"cookie-banner\" i]",
+    "[class*=\"cookie-consent\" i]",
+    "[id*=\"cookie-banner\" i]",
+    "[id*=\"cookie-consent\" i]",
+    "[aria-label*=\"cookie\" i]",
+    "[id*=\"onetrust\" i]",
+    "[class*=\"advertisement\" i]",
+    "ins.adsbygoogle",
+];
+
+/// Remove [`BOILERPLATE_SELECTORS`] elements from `html`, returning the cleaned
+/// document re-serialized as a string.
+///
+/// Best-effort and infallible: unparseable selectors are skipped and the
+/// document is always returned (html5ever normalizes even malformed input).
+fn clean_boilerplate(html: &str) -> String {
+    let mut doc = Html::parse_document(html);
+
+    // Collect matching node ids first (an immutable borrow), then detach them.
+    let mut ids = Vec::new();
+    for s in BOILERPLATE_SELECTORS {
+        if let Ok(selector) = Selector::parse(s) {
+            ids.extend(doc.select(&selector).map(|el| el.id()));
+        }
+    }
+    for id in ids {
+        if let Some(mut node) = doc.tree.get_mut(id) {
+            node.detach();
+        }
+    }
+
+    doc.root_element().html()
 }
 
 /// Extract the main content of an HTML page as clean, readable **plain text**.
@@ -242,6 +294,35 @@ mod tests {
         );
         // Relative hrefs are emitted verbatim (no base-URL resolution here).
         assert!(md.contains("[official book](/book)"), "relative link missing:\n{md}");
+    }
+
+    const CHROME_DOC: &str = r##"<!DOCTYPE html><html><body>
+        <nav><a href="/">Home</a> <a href="/about">About</a></nav>
+        <div class="cookie-banner">We use cookies on this site. Accept?</div>
+        <div class="advertisement">Buy our product now!</div>
+        <article>
+          <h1>Genuine Headline</h1>
+          <p>This is the authentic article body that should survive cleaning.</p>
+        </article>
+        <aside>Related sidebar links here</aside>
+        <footer>Copyright 2026 Example Incorporated.</footer>
+        </body></html>"##;
+
+    #[test]
+    fn markdown_strips_nav_footer_aside() {
+        let md = to_markdown(CHROME_DOC);
+        assert!(md.contains("Genuine Headline"), "article heading lost:\n{md}");
+        assert!(md.contains("authentic article body"), "article body lost:\n{md}");
+        assert!(!md.contains("About"), "nav not stripped:\n{md}");
+        assert!(!md.contains("Copyright"), "footer not stripped:\n{md}");
+        assert!(!md.contains("Related sidebar"), "aside not stripped:\n{md}");
+    }
+
+    #[test]
+    fn markdown_strips_cookie_and_ad_banners() {
+        let md = to_markdown(CHROME_DOC);
+        assert!(!md.contains("We use cookies"), "cookie banner not stripped:\n{md}");
+        assert!(!md.contains("Buy our product"), "ad not stripped:\n{md}");
     }
 
     #[test]

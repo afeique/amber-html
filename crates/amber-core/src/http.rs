@@ -64,6 +64,10 @@ pub enum FetchError {
     /// The request exceeded the configured timeout.
     #[error("HTTP request timed out")]
     Timeout,
+
+    /// The response body exceeded the per-capture byte budget (task 7.4).
+    #[error("response exceeded the byte budget ({0} bytes)")]
+    TooLarge(u64),
 }
 
 /// Perform a blocking HTTP GET for `url` (the cheap static tier, Plans.md),
@@ -83,7 +87,7 @@ pub fn fetch(url: &Url) -> Result<FetchedPage, FetchError> {
 /// semantics as [`fetch`].
 pub fn fetch_with_ua(url: &Url, user_agent: &str) -> Result<FetchedPage, FetchError> {
     fetch_with_retry(url, MAX_ATTEMPTS, backoff_delay, |u| {
-        fetch_once(u, user_agent, &[], None)
+        fetch_once(u, user_agent, &[], None, None)
     })
 }
 
@@ -96,6 +100,7 @@ pub fn fetch_with_session(
     url: &Url,
     session: &crate::session::SessionState,
     proxy: Option<&str>,
+    max_bytes: Option<u64>,
 ) -> Result<FetchedPage, FetchError> {
     let headers = session.request_headers();
     if !headers.is_empty() {
@@ -114,7 +119,7 @@ pub fn fetch_with_session(
         None => None,
     };
     fetch_with_retry(url, MAX_ATTEMPTS, backoff_delay, |u| {
-        fetch_once(u, USER_AGENT, &headers, parsed_proxy.as_ref())
+        fetch_once(u, USER_AGENT, &headers, parsed_proxy.as_ref(), max_bytes)
     })
 }
 
@@ -162,6 +167,8 @@ fn is_transient(err: &FetchError) -> bool {
         FetchError::Timeout => true,
         FetchError::Request(_) => true,
         FetchError::Status(code) => *code == 429 || (500..=599).contains(code),
+        // Over-budget is deterministic — retrying just re-downloads the same.
+        FetchError::TooLarge(_) => false,
     }
 }
 
@@ -186,6 +193,7 @@ fn fetch_once(
     user_agent: &str,
     headers: &[(String, String)],
     proxy: Option<&ureq::Proxy>,
+    max_bytes: Option<u64>,
 ) -> Result<FetchedPage, FetchError> {
     // `http_status_as_error(true)` is ureq's default; we keep it so 4xx/5xx
     // surface as `Error::StatusCode(code)`, which we translate below.
@@ -231,11 +239,15 @@ fn fetch_once(
         .map(parse_content_type)
         .unwrap_or_default();
 
+    // Cap the read at the smaller of the default ceiling and the caller's byte
+    // budget (7.4); exceeding it surfaces as FetchError::TooLarge (not retried).
+    const DEFAULT_BYTE_CEILING: u64 = 64 * 1024 * 1024;
+    let read_limit = max_bytes.map_or(DEFAULT_BYTE_CEILING, |m| m.min(DEFAULT_BYTE_CEILING));
     let mut response = response;
     let bytes = response
         .body_mut()
         .with_config()
-        .limit(64 * 1024 * 1024)
+        .limit(read_limit)
         .read_to_vec()
         .map_err(map_ureq_error)?;
     let html = decode_html(&bytes, header_charset.as_deref());
@@ -303,6 +315,7 @@ fn map_ureq_error(err: ureq::Error) -> FetchError {
     match err {
         ureq::Error::StatusCode(code) => FetchError::Status(code),
         ureq::Error::Timeout(_) => FetchError::Timeout,
+        ureq::Error::BodyExceedsLimit(limit) => FetchError::TooLarge(limit),
         other => FetchError::Request(other.to_string()),
     }
 }
@@ -628,7 +641,7 @@ mod tests {
             headers: vec![("Authorization".to_string(), "Bearer t0ken".to_string())],
             cookies: vec![("sid".to_string(), "abc".to_string())],
         };
-        let page = fetch_with_session(&url, &session, None).expect("fetch via loopback");
+        let page = fetch_with_session(&url, &session, None, None).expect("fetch via loopback");
 
         assert_eq!(page.status, 200);
         assert!(page.html.contains("secret area"));
@@ -693,8 +706,13 @@ mod tests {
 
         let url = Url::parse("http://example.invalid/").unwrap();
         let proxy = format!("http://{addr}");
-        let page = fetch_with_session(&url, &crate::session::SessionState::default(), Some(&proxy))
-            .expect("fetch through proxy");
+        let page = fetch_with_session(
+            &url,
+            &crate::session::SessionState::default(),
+            Some(&proxy),
+            None,
+        )
+        .expect("fetch through proxy");
 
         assert_eq!(page.status, 200);
         assert!(page.html.contains("via proxy"));
@@ -714,9 +732,54 @@ mod tests {
             &url,
             &crate::session::SessionState::default(),
             Some("not a proxy"),
+            None,
         )
         .unwrap_err();
         assert!(matches!(err, FetchError::Request(_)));
+    }
+
+    /// A response larger than the byte budget surfaces as `TooLarge` (not
+    /// retried). Hermetic: a one-shot loopback server returns an oversized body.
+    #[test]
+    fn fetch_rejects_body_over_byte_budget() {
+        use std::io::{BufRead, BufReader, Write};
+        use std::net::TcpListener;
+
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind loopback");
+        let addr = listener.local_addr().unwrap();
+
+        let server = std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut reader = BufReader::new(stream.try_clone().unwrap());
+            loop {
+                let mut line = String::new();
+                if reader.read_line(&mut line).unwrap() == 0 || line == "\r\n" {
+                    break;
+                }
+            }
+            // 5 KiB body, well over the 1 KiB budget below.
+            let body = "x".repeat(5 * 1024);
+            let response = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\
+                 Content-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                body.len()
+            );
+            let _ = stream.write_all(response.as_bytes());
+        });
+
+        let url = Url::parse(&format!("http://{addr}/")).unwrap();
+        let err = fetch_with_session(
+            &url,
+            &crate::session::SessionState::default(),
+            None,
+            Some(1024),
+        )
+        .unwrap_err();
+        assert!(
+            matches!(err, FetchError::TooLarge(1024)),
+            "over-budget body should be TooLarge(1024), got {err:?}"
+        );
+        let _ = server.join();
     }
 
     // --- Real-network test (opt-in) -----------------------------------------

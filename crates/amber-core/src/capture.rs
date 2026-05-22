@@ -35,6 +35,8 @@ pub struct CaptureOptions {
     /// Auth session state (cookies + extra request headers) sent on both the
     /// static fetch and the browser navigation, for behind-auth pages.
     pub session: crate::session::SessionState,
+    /// Per-capture resource limits (time / byte budget). See [`crate::limits`].
+    pub limits: crate::limits::ResourceLimits,
 }
 
 impl std::fmt::Debug for CaptureOptions {
@@ -52,6 +54,7 @@ impl std::fmt::Debug for CaptureOptions {
                 &self.proxy.as_deref().map(crate::secrets::redact_proxy_url),
             )
             .field("session", &self.session)
+            .field("limits", &self.limits)
             .finish()
     }
 }
@@ -86,22 +89,31 @@ pub(crate) fn run(
     formats: &[OutputFormat],
     opts: &CaptureOptions,
 ) -> Result<RawCapture> {
+    // Per-capture wall-clock budget (7.4); checked before the expensive browser
+    // step so a capture that has blown its budget doesn't start a render.
+    let deadline = opts.limits.deadline();
+
     // Step 1 — output gate: some outputs (or `--render always`) require a
     // browser up front, so we don't bother with a cheap fetch.
     if fetch::browser_required_upfront(formats, opts.render) {
         tracing::debug!("output gate: browser required up front");
-        return browser_capture(url, formats, opts);
+        return browser_capture(url, formats, opts, &deadline);
     }
 
     // Step 2 — cheap HTTP-first fetch (carrying any auth session state).
-    let page = match http::fetch_with_session(url, &opts.session, opts.proxy.as_deref()) {
+    let page = match http::fetch_with_session(
+        url,
+        &opts.session,
+        opts.proxy.as_deref(),
+        opts.limits.max_bytes,
+    ) {
         Ok(page) => page,
         Err(err) => {
             return match opts.render {
                 // User forbade the browser: the cheap tier failing is terminal.
                 RenderMode::Never => Err(map_fetch_error(err, url)),
                 // Otherwise escalate to the browser.
-                _ => browser_capture(url, formats, opts),
+                _ => browser_capture(url, formats, opts, &deadline),
             };
         }
     };
@@ -115,7 +127,7 @@ pub(crate) fn run(
                     .as_deref()
                     .unwrap_or("unknown content-type")
             ))),
-            _ => browser_capture(url, formats, opts),
+            _ => browser_capture(url, formats, opts, &deadline),
         };
     }
 
@@ -135,7 +147,7 @@ pub(crate) fn run(
         // Insufficient/ambiguous in auto mode → escalate (correctness bias).
         detect::Sufficiency::NeedsBrowser | detect::Sufficiency::Uncertain => {
             tracing::debug!("escalating to browser render");
-            browser_capture(url, formats, opts)
+            browser_capture(url, formats, opts, &deadline)
         }
     }
 }
@@ -146,7 +158,13 @@ fn browser_capture(
     url: &url::Url,
     formats: &[OutputFormat],
     opts: &CaptureOptions,
+    deadline: &crate::limits::Deadline,
 ) -> Result<RawCapture> {
+    if deadline.exceeded() {
+        return Err(Error::Fetch(
+            "capture exceeded its time budget before the browser render".to_string(),
+        ));
+    }
     let chromium = crate::browser::ensure_chromium()?;
     crate::render::capture(&chromium, url, formats, opts)
 }
@@ -167,6 +185,9 @@ fn map_fetch_error(err: http::FetchError, url: &url::Url) -> Error {
         http::FetchError::Status(code) => Error::HttpStatus(code, url.to_string()),
         http::FetchError::Timeout => Error::Fetch(format!("request timed out: {url}")),
         http::FetchError::Request(msg) => Error::Fetch(msg),
+        http::FetchError::TooLarge(limit) => {
+            Error::Fetch(format!("response exceeded the {limit}-byte budget: {url}"))
+        }
     }
 }
 

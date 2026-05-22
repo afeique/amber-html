@@ -5,7 +5,9 @@ use std::process::ExitCode;
 
 use clap::Parser;
 
-use amber_core::{snapshot, CaptureOptions, Error, OutputFormat, RenderMode, SessionState};
+use amber_core::{
+    snapshot, CaptureOptions, Error, OutputFormat, RenderMode, ResourceLimits, SessionState,
+};
 
 /// AmberHTML — faithful local web-page capture (library + CLI).
 #[derive(Parser, Debug)]
@@ -74,6 +76,13 @@ struct Cli {
     /// `http://host:8080` or `socks5://user:pass@host:1080`.
     #[arg(long, value_name = "URL")]
     proxy: Option<String>,
+
+    /// Per-capture byte budget: reject a response body larger than this.
+    #[arg(long, value_name = "BYTES")]
+    max_bytes: Option<u64>,
+    /// Per-capture wall-clock budget in seconds (checked before rendering).
+    #[arg(long, value_name = "SECONDS")]
+    max_time: Option<u64>,
 }
 
 /// Parse a `Name: Value` header argument, splitting on the first colon (so the
@@ -232,6 +241,10 @@ fn main() -> ExitCode {
         min_content: cli.min_content,
         session,
         proxy: cli.proxy.clone(),
+        limits: ResourceLimits {
+            max_bytes: cli.max_bytes,
+            max_duration: cli.max_time.map(std::time::Duration::from_secs),
+        },
         ..Default::default()
     };
 

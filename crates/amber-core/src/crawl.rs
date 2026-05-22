@@ -8,9 +8,11 @@
 //! unseen, and within budget.
 
 use std::collections::{HashSet, VecDeque};
+use std::time::Duration;
 
 use url::Url;
 
+use crate::robots::Robots;
 use crate::{http, meta};
 
 /// Which URLs a crawl is allowed to follow.
@@ -69,13 +71,16 @@ impl CrawlScope {
     }
 }
 
-/// Bounds on a crawl: how many pages and how deep.
+/// Bounds and politeness for a crawl.
 #[derive(Debug, Clone, Copy)]
 pub struct CrawlLimits {
     /// Maximum number of pages handed out by [`Frontier::next_url`].
     pub max_pages: usize,
     /// Maximum link depth from the seed (seed is depth 0).
     pub max_depth: usize,
+    /// Minimum delay (ms) between page fetches in [`crawl`]; the effective delay
+    /// is the larger of this and any `robots.txt` `Crawl-delay`.
+    pub min_delay_ms: u64,
 }
 
 impl Default for CrawlLimits {
@@ -83,6 +88,7 @@ impl Default for CrawlLimits {
         Self {
             max_pages: 100,
             max_depth: 3,
+            min_delay_ms: 0,
         }
     }
 }
@@ -174,23 +180,76 @@ where
     visited
 }
 
-/// Run a bounded crawl over HTTP: fetch each page via [`crate::http`] and follow
-/// the absolute links found in its HTML (via [`crate::meta`]). Non-HTML or
-/// failed responses contribute no links. Returns the crawled URLs in visit
-/// order. See [`crawl_with`] for the scope/depth/budget semantics.
+/// User-Agent for polite multi-page crawling. Unlike the cheap fetch tier (which
+/// mimics a desktop browser to avoid UA-based blocking), the crawler identifies
+/// itself honestly so site owners can recognize it and apply `robots.txt`.
+pub const CRAWL_USER_AGENT: &str = concat!(
+    "AmberHTML/",
+    env!("CARGO_PKG_VERSION"),
+    " (+https://github.com/afeique/amber-html)"
+);
+
+/// Run a bounded, polite crawl over HTTP from `seed`:
+/// - fetch and honor `{origin}/robots.txt` (allow-all if it can't be fetched),
+/// - identify with [`CRAWL_USER_AGENT`],
+/// - wait [`politeness_delay`] between fetches (the larger of `min_delay_ms` and
+///   the robots `Crawl-delay`),
+/// - follow only in-scope, robots-allowed links.
+///
+/// Returns the crawled URLs in visit order. If the seed itself is disallowed by
+/// `robots.txt`, nothing is crawled. See [`crawl_with`] for scope/depth/budget.
 pub fn crawl(seed: Url, scope: CrawlScope, limits: CrawlLimits) -> Vec<Url> {
+    let robots = fetch_robots(&seed);
+    if !robots.allows(CRAWL_USER_AGENT, seed.path()) {
+        return Vec::new();
+    }
+    let delay = politeness_delay(&robots, limits.min_delay_ms);
+
+    let mut first = true;
     crawl_with(seed, scope, limits, |url| {
-        match http::fetch(url) {
+        if !first && delay > 0 {
+            std::thread::sleep(Duration::from_millis(delay));
+        }
+        first = false;
+
+        let links = match http::fetch_with_ua(url, CRAWL_USER_AGENT) {
             Ok(page) if http::content_type_is_html(page.content_type.as_deref()) => {
                 meta::extract(&page.html, &page.final_url)
                     .links
                     .iter()
                     .filter_map(|l| Url::parse(l).ok())
-                    .collect()
+                    .collect::<Vec<_>>()
             }
             _ => Vec::new(),
-        }
+        };
+        // Only follow robots-allowed links (scope is enforced by the frontier).
+        links
+            .into_iter()
+            .filter(|l| robots.allows(CRAWL_USER_AGENT, l.path()))
+            .collect()
     })
+}
+
+/// Fetch and parse `{origin}/robots.txt` for `seed`. Any failure (network,
+/// non-2xx, …) yields an empty (allow-all) ruleset.
+fn fetch_robots(seed: &Url) -> Robots {
+    let Ok(robots_url) = seed.join("/robots.txt") else {
+        return Robots::parse("");
+    };
+    match http::fetch_with_ua(&robots_url, CRAWL_USER_AGENT) {
+        Ok(page) => Robots::parse(&page.html),
+        Err(_) => Robots::parse(""),
+    }
+}
+
+/// Effective politeness delay (ms): the larger of the configured `floor_ms` and
+/// the `robots.txt` `Crawl-delay` (seconds → ms) for [`CRAWL_USER_AGENT`].
+fn politeness_delay(robots: &Robots, floor_ms: u64) -> u64 {
+    let robots_ms = robots
+        .crawl_delay(CRAWL_USER_AGENT)
+        .map(|secs| (secs * 1000.0) as u64)
+        .unwrap_or(0);
+    floor_ms.max(robots_ms)
 }
 
 /// Normalize a URL for de-duplication: drop the fragment (scheme/host are
@@ -273,6 +332,7 @@ mod tests {
         let limits = CrawlLimits {
             max_pages: 100,
             max_depth: 1,
+            min_delay_ms: 0,
         };
         let mut f = Frontier::new(seed, scope, limits);
         assert!(f.enqueue(url("https://example.com/a"), 1)); // at the limit
@@ -286,6 +346,7 @@ mod tests {
         let limits = CrawlLimits {
             max_pages: 2,
             max_depth: 5,
+            min_delay_ms: 0,
         };
         let mut f = Frontier::new(seed, scope, limits);
         f.enqueue(url("https://example.com/a"), 1);
@@ -328,6 +389,7 @@ mod tests {
         let limits = CrawlLimits {
             max_pages: 2,
             max_depth: 5,
+            min_delay_ms: 0,
         };
         let visited = crawl_with(seed, scope, limits, fetch);
         assert_eq!(visited.len(), 2);
@@ -345,9 +407,49 @@ mod tests {
         let limits = CrawlLimits {
             max_pages: 100,
             max_depth: 1,
+            min_delay_ms: 0,
         };
         let visited = crawl_with(seed, scope, limits, fetch);
         assert_eq!(paths(&visited), vec!["/", "/a"]);
+    }
+
+    #[test]
+    fn crawl_with_robots_skips_disallowed_links() {
+        // Compose robots filtering with the driver (no network): the fetcher
+        // returns only robots-allowed links, exactly as crawl() does.
+        let robots = Robots::parse("User-agent: *\nDisallow: /private");
+        let seed = url("https://example.com/");
+        let scope = CrawlScope::same_host(&seed);
+        let fetch = |u: &Url| {
+            let links = match u.path() {
+                "/" => vec![
+                    url("https://example.com/ok"),
+                    url("https://example.com/private/secret"),
+                ],
+                _ => vec![],
+            };
+            links
+                .into_iter()
+                .filter(|l| robots.allows(CRAWL_USER_AGENT, l.path()))
+                .collect()
+        };
+        let visited = crawl_with(seed, scope, CrawlLimits::default(), fetch);
+        assert_eq!(paths(&visited), vec!["/", "/ok"], "/private/* disallowed");
+    }
+
+    #[test]
+    fn politeness_delay_takes_max_of_floor_and_robots() {
+        let with_cd = Robots::parse("User-agent: *\nCrawl-delay: 2"); // 2000 ms
+        assert_eq!(politeness_delay(&with_cd, 500), 2000); // robots wins
+        assert_eq!(politeness_delay(&with_cd, 3000), 3000); // floor wins
+        let no_cd = Robots::parse("User-agent: *\nDisallow: /x");
+        assert_eq!(politeness_delay(&no_cd, 750), 750);
+    }
+
+    #[test]
+    fn crawl_user_agent_is_identifiable() {
+        assert!(CRAWL_USER_AGENT.starts_with("AmberHTML/"));
+        assert!(CRAWL_USER_AGENT.contains("github.com/afeique/amber-html"));
     }
 
     #[test]

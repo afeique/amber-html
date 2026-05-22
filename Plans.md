@@ -219,7 +219,7 @@ mirrors. Public FFI surface is **blocking** (tokio hidden inside core).
 | Task | 内容 | DoD | Depends | Status |
 |------|------|-----|---------|--------|
 | 3.1 | Multi-page crawl (link follow, scope, depth/budget) | A bounded crawl visits in-scope pages up to depth/budget | Phase 1 | cc:完了 |
-| 3.2 | robots.txt + politeness + honest UA | robots respected; configurable delay; identifiable UA | 3.1 | cc:WIP |
+| 3.2 | robots.txt + politeness + honest UA | robots respected; configurable delay; identifiable UA | 3.1 | cc:完了 |
 | 3.3 | Auth & session (cookies, headers, storage-state) | A behind-auth page is captured given supplied session state | 1.4 | cc:TODO |
 | 3.4 | Content-addressed cache (hash → result) + conditional requests (ETag/IMS) | Re-capture uses cache / conditional GET; unchanged pages skipped | 3.1 | cc:TODO |
 | 3.5 | Crawl store / index | Crawl results persisted and queryable | 3.1 | cc:TODO |

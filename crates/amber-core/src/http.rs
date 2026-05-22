@@ -76,7 +76,16 @@ pub enum FetchError {
 /// successes return immediately. See [`fetch_once`] for the single-attempt
 /// semantics (redirects, User-Agent, charset decoding, timeout).
 pub fn fetch(url: &Url) -> Result<FetchedPage, FetchError> {
-    fetch_with_retry(url, MAX_ATTEMPTS, backoff_delay, fetch_once)
+    fetch_with_ua(url, USER_AGENT)
+}
+
+/// Like [`fetch`] but with a caller-supplied `User-Agent` — e.g. an identifiable
+/// crawler UA for polite multi-page crawling. Same retry / redirect / charset
+/// semantics as [`fetch`].
+pub fn fetch_with_ua(url: &Url, user_agent: &str) -> Result<FetchedPage, FetchError> {
+    fetch_with_retry(url, MAX_ATTEMPTS, backoff_delay, |u| {
+        fetch_once(u, user_agent)
+    })
 }
 
 /// Retry driver around a single-attempt fetcher. Generic over the fetcher and
@@ -132,21 +141,21 @@ fn backoff_delay(attempt: u32) -> Duration {
     BACKOFF_BASE * 2u32.pow(attempt.saturating_sub(1))
 }
 
-/// Perform a single blocking HTTP GET for `url`.
+/// Perform a single blocking HTTP GET for `url` with the given `user_agent`.
 ///
-/// Follows redirects (up to [`MAX_REDIRECTS`]), sends a realistic desktop-Chrome
-/// `User-Agent`, records the final URL after redirects, decodes the body using
-/// the declared charset, and captures the status code and `Content-Type`. Uses a
-/// ~30s end-to-end timeout ([`DEFAULT_TIMEOUT`]).
+/// Follows redirects (up to [`MAX_REDIRECTS`]), records the final URL after
+/// redirects, decodes the body using the declared charset, and captures the
+/// status code and `Content-Type`. Uses a ~30s end-to-end timeout
+/// ([`DEFAULT_TIMEOUT`]).
 ///
 /// A non-2xx status is reported as [`FetchError::Status`] rather than a
 /// successful [`FetchedPage`] — the caller decides whether to escalate.
 #[tracing::instrument(level = "debug", name = "http.fetch", skip_all, fields(url = %url))]
-fn fetch_once(url: &Url) -> Result<FetchedPage, FetchError> {
+fn fetch_once(url: &Url, user_agent: &str) -> Result<FetchedPage, FetchError> {
     // `http_status_as_error(true)` is ureq's default; we keep it so 4xx/5xx
     // surface as `Error::StatusCode(code)`, which we translate below.
     let config = ureq::Agent::config_builder()
-        .user_agent(USER_AGENT)
+        .user_agent(user_agent)
         .timeout_global(Some(DEFAULT_TIMEOUT))
         .max_redirects(MAX_REDIRECTS)
         .build();

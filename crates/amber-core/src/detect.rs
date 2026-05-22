@@ -253,12 +253,59 @@ mod tests {
         assert_eq!(assess(&html, CONTENT_FLOOR), Sufficiency::NeedsBrowser);
     }
 
-    #[tracing_test::traced_test]
     #[test]
     fn assess_emits_a_verdict_event() {
-        let _ = assess("<html><body><div id=\"root\"></div></body></html>", CONTENT_FLOOR);
-        // The single verdict event is emitted with the chosen Sufficiency.
-        assert!(logs_contain("sufficiency verdict"));
-        assert!(logs_contain("NeedsBrowser"));
+        use std::io::{self, Write};
+        use std::sync::{Arc, Mutex, OnceLock};
+        use tracing_subscriber::fmt::MakeWriter;
+
+        // Install a process-global no-op TRACE subscriber once. This keeps the
+        // global max-level at TRACE so the `debug!` below isn't suppressed when
+        // it's dispatched to the thread-local capturing subscriber — which is
+        // what makes this test reliable under the parallel test runner.
+        static GLOBAL: OnceLock<()> = OnceLock::new();
+        GLOBAL.get_or_init(|| {
+            let _ = tracing::subscriber::set_global_default(
+                tracing_subscriber::fmt()
+                    .with_max_level(tracing::Level::TRACE)
+                    .with_writer(io::sink)
+                    .finish(),
+            );
+        });
+
+        // A `MakeWriter` capturing this thread's formatted log output.
+        #[derive(Clone)]
+        struct Buf(Arc<Mutex<Vec<u8>>>);
+        impl Write for Buf {
+            fn write(&mut self, b: &[u8]) -> io::Result<usize> {
+                self.0.lock().unwrap().extend_from_slice(b);
+                Ok(b.len())
+            }
+            fn flush(&mut self) -> io::Result<()> {
+                Ok(())
+            }
+        }
+        impl<'a> MakeWriter<'a> for Buf {
+            type Writer = Buf;
+            fn make_writer(&'a self) -> Buf {
+                self.clone()
+            }
+        }
+
+        let buf = Buf(Arc::new(Mutex::new(Vec::new())));
+        let subscriber = tracing_subscriber::fmt()
+            .with_writer(buf.clone())
+            .with_max_level(tracing::Level::DEBUG)
+            .without_time()
+            .finish();
+        tracing::subscriber::with_default(subscriber, || {
+            let _ = assess("<html><body><div id=\"root\"></div></body></html>", CONTENT_FLOOR);
+        });
+
+        let logged = String::from_utf8(buf.0.lock().unwrap().clone()).unwrap();
+        assert!(
+            logged.contains("sufficiency verdict") && logged.contains("NeedsBrowser"),
+            "expected a verdict event with the NeedsBrowser verdict, got:\n{logged}"
+        );
     }
 }

@@ -22,6 +22,7 @@ pub mod meta;
 pub mod naming;
 pub mod output;
 pub mod render;
+pub mod robots;
 
 pub use budget::{estimate_cost, estimate_tokens, truncate_to_tokens, TokenAccounting};
 pub use capture::{CaptureOptions, RawCapture};
@@ -30,6 +31,7 @@ pub use extract::dedup_text;
 pub use fetch::RenderMode;
 pub use meta::PageMetadata;
 pub use output::OutputFormat;
+pub use robots::Robots;
 
 use std::path::{Path, PathBuf};
 use url::Url;

@@ -18,6 +18,8 @@ pub struct CaptureOptions {
     pub wait_for: Option<String>,
     /// Override the minimum static content length treated as sufficient.
     pub min_content: Option<usize>,
+    /// Device/locale/timezone/dark-mode emulation applied on the browser path.
+    pub emulation: crate::emulation::EmulationConfig,
 }
 
 /// The raw, format-agnostic product of a single capture pass. Output emitters

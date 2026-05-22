@@ -57,6 +57,11 @@ pub(crate) fn capture(
     scmd(&cdp, sid, "Network.enable", json!({}))?;
     scmd(&cdp, sid, "Page.setLifecycleEventsEnabled", json!({ "enabled": true }))?;
 
+    // Apply device/locale/timezone/dark-mode emulation before navigating.
+    for (method, params) in crate::emulation::commands(&opts.emulation) {
+        scmd(&cdp, sid, method, params)?;
+    }
+
     let events = cdp.events();
 
     scmd(&cdp, sid, "Page.navigate", json!({ "url": url.as_str() }))?;
@@ -440,6 +445,7 @@ mod tests {
                 OutputFormat::Markdown,
                 OutputFormat::Screenshot,
                 OutputFormat::Mhtml,
+                OutputFormat::Pdf,
             ],
             &opts,
         )
@@ -458,12 +464,44 @@ mod tests {
 
         assert!(raw.mhtml.is_some(), "MHTML was not captured");
 
+        // PDF (5.5): a real PDF starts with the "%PDF" magic.
+        let pdf = raw.pdf.as_deref().unwrap_or_default();
+        assert!(pdf.starts_with(b"%PDF"), "PDF magic missing ({} bytes)", pdf.len());
+
         // Single-file HTML (5.2): the captured MHTML flattens to a self-contained
         // document that still carries the page content.
         let single_file = crate::inline::mhtml_to_single_file_html(raw.mhtml.as_deref().unwrap());
         assert!(
             single_file.contains("Hello Amber"),
             "single-file HTML missing content"
+        );
+    }
+
+    #[test]
+    #[ignore = "drives a real browser; run with --ignored (Chromium cached after first run)"]
+    fn live_emulation_applies_viewport() {
+        use crate::emulation::{EmulationConfig, Viewport};
+
+        let chromium = crate::browser::ensure_chromium().expect("ensure chromium");
+        // The page writes its own innerWidth into the body, so the rendered DOM
+        // reflects the emulated viewport.
+        let url = Url::parse(
+            "data:text/html,<html><body><script>document.body.textContent='W='+window.innerWidth</script></body></html>",
+        )
+        .unwrap();
+        let opts = CaptureOptions {
+            render: crate::fetch::RenderMode::Always,
+            emulation: EmulationConfig {
+                viewport: Some(Viewport::desktop(800, 600)),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        let raw = capture(&chromium, &url, &[OutputFormat::Markdown], &opts).expect("capture");
+        let html = raw.rendered_html.as_deref().unwrap_or_default();
+        assert!(
+            html.contains("W=800"),
+            "viewport emulation did not take effect:\n{html}"
         );
     }
 }

@@ -16,6 +16,7 @@ pub mod chromium;
 pub mod crawl;
 pub mod detect;
 pub mod diff;
+pub mod emulation;
 pub mod error;
 pub mod extract;
 pub mod fetch;
@@ -45,6 +46,7 @@ pub use crawl::{
     crawl, crawl_incremental, crawl_incremental_with, crawl_with, CrawlLimits, CrawlScope, Frontier,
 };
 pub use diff::{diff_lines, LineDiff};
+pub use emulation::{EmulationConfig, Viewport};
 pub use error::{Error, Result};
 pub use extract::dedup_text;
 pub use fetch::RenderMode;

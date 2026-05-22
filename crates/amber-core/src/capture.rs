@@ -25,6 +25,9 @@ pub struct CaptureOptions {
     /// Run the browser headed (visible window) instead of headless. Headless is
     /// the default; headed is an escalation (more stealthy, needs a display).
     pub headed: bool,
+    /// Bring-your-own proxy for the browser render (e.g. `http://host:8080` or
+    /// `socks5://host:1080`). Passed to Chromium as `--proxy-server`.
+    pub proxy: Option<String>,
 }
 
 /// The raw, format-agnostic product of a single capture pass. Output emitters

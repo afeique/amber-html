@@ -21,6 +21,10 @@ const SETTLE_OVERALL_TIMEOUT: Duration = Duration::from_secs(30);
 const SETTLE_POLL: Duration = Duration::from_millis(250);
 /// Max time to wait for a `--wait-for` selector to appear.
 const WAIT_FOR_TIMEOUT: Duration = Duration::from_secs(15);
+/// How many times to scroll to the bottom when auto-scroll is enabled.
+const AUTO_SCROLL_STEPS: u32 = 4;
+/// Pause between auto-scroll steps so lazy content can load.
+const AUTO_SCROLL_INTERVAL: Duration = Duration::from_millis(150);
 
 /// Capture `url` by rendering it in a real browser, producing the requested
 /// representations from a single pass.
@@ -180,6 +184,19 @@ fn settle(
                 }
                 Err(RecvTimeoutError::Disconnected) => break,
             }
+        }
+    }
+
+    // Auto-scroll to the bottom in steps to trigger lazy-loaded content.
+    if policy.auto_scroll {
+        for _ in 0..AUTO_SCROLL_STEPS {
+            let _ = scmd(
+                cdp,
+                session,
+                "Runtime.evaluate",
+                json!({ "expression": "window.scrollTo(0, document.body.scrollHeight)" }),
+            );
+            std::thread::sleep(AUTO_SCROLL_INTERVAL);
         }
     }
 
@@ -502,6 +519,32 @@ mod tests {
         assert!(
             html.contains("W=800"),
             "viewport emulation did not take effect:\n{html}"
+        );
+    }
+
+    #[test]
+    #[ignore = "drives a real browser; run with --ignored (Chromium cached after first run)"]
+    fn live_auto_scroll_triggers_scroll_handler() {
+        let chromium = crate::browser::ensure_chromium().expect("ensure chromium");
+        // A tall page whose scroll handler flips a marker once scrolled.
+        let url = Url::parse(
+            "data:text/html,<body style='height:5000px'><div id=m>no</div>\
+             <script>addEventListener('scroll',()=>{document.getElementById('m').textContent='yes'})</script></body>",
+        )
+        .unwrap();
+        let opts = CaptureOptions {
+            render: crate::fetch::RenderMode::Always,
+            settle: SettlePolicy {
+                auto_scroll: true,
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        let raw = capture(&chromium, &url, &[OutputFormat::Markdown], &opts).expect("capture");
+        let html = raw.rendered_html.as_deref().unwrap_or_default();
+        assert!(
+            html.contains(">yes<"),
+            "auto-scroll did not fire a scroll event:\n{html}"
         );
     }
 }

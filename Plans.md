@@ -184,7 +184,7 @@ mirrors. Public FFI surface is **blocking** (tokio hidden inside core).
 | Task | 内容 | DoD | Depends | Status |
 |------|------|-----|---------|--------|
 | 1.1 | HTTP-first static fetch tier (blocking GET + parse) | Static HTML is fetched and parsed with a bounded timeout | 0.1 | cc:完了 |
-| 1.2 | Sufficiency scoring + tiered-fetch escalation (`--render auto`) | Static-vs-browser verdict computed from markers + content check; uncertain → render | 1.1, 0.4 | cc:WIP |
+| 1.2 | Sufficiency scoring + tiered-fetch escalation (`--render auto`) | Static-vs-browser verdict computed from markers + content check; uncertain → render | 1.1, 0.4 | cc:完了 |
 | 1.3 | Settle engine (lifecycle / network-idle / fonts / settle-delay) | Configurable policy; capture waits until settled before snapshot | 0.4 | cc:WIP |
 | 1.4 | Browser-render capture path (drive CDP, produce `RawCapture`) | A JS-heavy page renders and yields rendered HTML | 0.4, 1.3 | cc:WIP |
 | 1.5 | Clean Markdown emitter | `--markdown` writes a `.md` matching golden output for sample pages | 1.1 | cc:完了 |

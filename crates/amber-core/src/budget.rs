@@ -64,6 +64,35 @@ pub fn truncate_to_tokens(text: &str, max_tokens: usize) -> (String, usize) {
     (out, count)
 }
 
+/// Estimated cost of `tokens` at `usd_per_1k_tokens`. Model-agnostic: the caller
+/// supplies the price for whatever model/tokenizer they use, so AmberHTML never
+/// hardcodes (or has to track) per-model pricing.
+pub fn estimate_cost(tokens: usize, usd_per_1k_tokens: f64) -> f64 {
+    (tokens as f64 / 1000.0) * usd_per_1k_tokens
+}
+
+/// Per-capture token tally for a page's text representations, for accounting,
+/// budgeting, and (with a caller-supplied price) cost reporting.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct TokenAccounting {
+    /// Estimated tokens in the clean Markdown rendering.
+    pub markdown: usize,
+    /// Estimated tokens in the readable plain-text rendering.
+    pub readable: usize,
+}
+
+impl TokenAccounting {
+    /// Estimated cost of the Markdown rendering at `usd_per_1k_tokens`.
+    pub fn markdown_cost(&self, usd_per_1k_tokens: f64) -> f64 {
+        estimate_cost(self.markdown, usd_per_1k_tokens)
+    }
+
+    /// Estimated cost of the readable rendering at `usd_per_1k_tokens`.
+    pub fn readable_cost(&self, usd_per_1k_tokens: f64) -> f64 {
+        estimate_cost(self.readable, usd_per_1k_tokens)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -117,5 +146,22 @@ mod tests {
         // A single long word can't fit a tiny budget without splitting it.
         let (out, _) = truncate_to_tokens("supercalifragilisticexpialidocious", 1);
         assert!(out.is_empty());
+    }
+
+    #[test]
+    fn estimate_cost_scales_with_tokens_and_price() {
+        // 1500 tokens at $2.00 / 1k = $3.00.
+        assert!((estimate_cost(1500, 2.0) - 3.0).abs() < 1e-9);
+        assert_eq!(estimate_cost(0, 5.0), 0.0);
+    }
+
+    #[test]
+    fn token_accounting_cost_helpers() {
+        let acct = TokenAccounting {
+            markdown: 2000,
+            readable: 1000,
+        };
+        assert!((acct.markdown_cost(3.0) - 6.0).abs() < 1e-9);
+        assert!((acct.readable_cost(3.0) - 3.0).abs() < 1e-9);
     }
 }

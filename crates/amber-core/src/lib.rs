@@ -23,7 +23,7 @@ pub mod naming;
 pub mod output;
 pub mod render;
 
-pub use budget::{estimate_tokens, truncate_to_tokens};
+pub use budget::{estimate_cost, estimate_tokens, truncate_to_tokens, TokenAccounting};
 pub use capture::{CaptureOptions, RawCapture};
 pub use error::{Error, Result};
 pub use fetch::RenderMode;
@@ -102,6 +102,23 @@ impl Snapshot {
         let bytes = self.render(OutputFormat::Readable)?;
         let text = String::from_utf8_lossy(&bytes).into_owned();
         Ok(budget::truncate_to_tokens(&text, max_tokens))
+    }
+
+    /// Per-capture token accounting for the text renderings (Markdown and
+    /// readable text). Counts are approximate (see [`budget::estimate_tokens`]);
+    /// pair with [`TokenAccounting::markdown_cost`] and a caller-supplied price
+    /// for cost reporting. Empty when no HTML was captured.
+    pub fn token_accounting(&self) -> TokenAccounting {
+        let count = |format| {
+            self.render(format)
+                .ok()
+                .map(|b| budget::estimate_tokens(&String::from_utf8_lossy(&b)))
+                .unwrap_or(0)
+        };
+        TokenAccounting {
+            markdown: count(OutputFormat::Markdown),
+            readable: count(OutputFormat::Readable),
+        }
     }
 
     /// Render a single format to bytes.
@@ -304,5 +321,28 @@ mod tests {
             trimmed.len() < full.len(),
             "budgeted output should be shorter than the full Markdown"
         );
+    }
+
+    /// `token_accounting` reports non-zero counts for the text outputs.
+    #[test]
+    fn snapshot_token_accounting_counts_text_outputs() {
+        let snap = snapshot_from(RawCapture {
+            static_html: Some(
+                "<html><body><article><p>one two three four five six seven eight nine \
+                 ten eleven twelve</p></article></body></html>"
+                    .to_string(),
+            ),
+            ..Default::default()
+        });
+        let acct = snap.token_accounting();
+        assert!(acct.markdown > 0, "markdown tokens: {}", acct.markdown);
+        assert!(acct.readable > 0, "readable tokens: {}", acct.readable);
+    }
+
+    /// No captured HTML → zeroed accounting, not an error.
+    #[test]
+    fn snapshot_token_accounting_zero_without_html() {
+        let snap = snapshot_from(RawCapture::default());
+        assert_eq!(snap.token_accounting(), TokenAccounting::default());
     }
 }

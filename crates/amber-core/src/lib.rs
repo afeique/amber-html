@@ -152,6 +152,41 @@ impl Snapshot {
         }
     }
 
+    /// The captured page as readable text (browser-rendered DOM preferred,
+    /// static fallback) — the input for structured extraction.
+    fn readable_text(&self) -> String {
+        match self
+            .raw
+            .rendered_html
+            .as_deref()
+            .or(self.raw.static_html.as_deref())
+        {
+            Some(html) => extract::to_readable(html),
+            None => String::new(),
+        }
+    }
+
+    /// Extract structured JSON from the captured page against `schema`, using
+    /// the caller's own model via `client` (see [`structured::LlmClient`]). The
+    /// extraction input is the page's readable text. (Plans.md task 4.1/4.3.)
+    pub fn extract<C: structured::LlmClient>(
+        &self,
+        schema: &str,
+        client: &C,
+    ) -> Result<serde_json::Value> {
+        structured::extract_structured(&self.readable_text(), schema, client)
+    }
+
+    /// Extract JSON answering a natural-language `instruction` about the
+    /// captured page, using the caller's model via `client`. (Plans.md 4.2/4.3.)
+    pub fn extract_nl<C: structured::LlmClient>(
+        &self,
+        instruction: &str,
+        client: &C,
+    ) -> Result<serde_json::Value> {
+        structured::extract_nl(&self.readable_text(), instruction, client)
+    }
+
     /// Render a single format to bytes.
     pub fn render(&self, format: OutputFormat) -> Result<Vec<u8>> {
         // Prefer browser-rendered HTML; fall back to the static fetch.
@@ -375,6 +410,29 @@ mod tests {
     fn snapshot_token_accounting_zero_without_html() {
         let snap = snapshot_from(RawCapture::default());
         assert_eq!(snap.token_accounting(), TokenAccounting::default());
+    }
+
+    /// `Snapshot::extract` runs structured extraction over the captured text
+    /// using the caller's model client.
+    #[test]
+    fn snapshot_extract_runs_structured_extraction() {
+        struct Mock;
+        impl structured::LlmClient for Mock {
+            fn complete(&self, _prompt: &str) -> Result<String> {
+                Ok(r#"{"title":"Amber","ok":true}"#.to_string())
+            }
+        }
+        let snap = snapshot_from(RawCapture {
+            static_html: Some(
+                "<html><body><article><p>An article about capture engines.</p>\
+                 </article></body></html>"
+                    .to_string(),
+            ),
+            ..Default::default()
+        });
+        let value = snap.extract(r#"{"type":"object"}"#, &Mock).unwrap();
+        assert_eq!(value["title"], "Amber");
+        assert_eq!(value["ok"], true);
     }
 
     /// `readable_deduped` returns the readable text with duplicate paragraphs

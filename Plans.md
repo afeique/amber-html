@@ -235,7 +235,7 @@ mirrors. Public FFI surface is **blocking** (tokio hidden inside core).
 |------|------|-----|---------|--------|
 | 4.1 | Schema-based structured extraction (external model, BYO) | A schema returns structured JSON via the caller's own model endpoint | Phase 1 | cc:完了 |
 | 4.2 | Natural-language extraction | An NL instruction returns structured output | 4.1 | cc:完了 |
-| 4.3 | Structured JSON output format | `Snapshot` exposes/saves the structured result | 4.1 | cc:TODO |
+| 4.3 | Structured JSON output format | `Snapshot` exposes/saves the structured result | 4.1 | cc:完了 |
 | 4.4 | Provenance map (fact → DOM node + screenshot region + URL) | Each extracted field carries a verifiable anchor | 4.1, 1.7 | cc:TODO |
 | 4.5 | Deduplication | Repeated/boilerplate fragments removed from output | 1.5 | cc:完了 |
 

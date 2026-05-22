@@ -22,6 +22,9 @@ pub struct CaptureOptions {
     pub emulation: crate::emulation::EmulationConfig,
     /// Also capture the accessibility tree (browser path) for grounding.
     pub accessibility: bool,
+    /// Run the browser headed (visible window) instead of headless. Headless is
+    /// the default; headed is an escalation (more stealthy, needs a display).
+    pub headed: bool,
 }
 
 /// The raw, format-agnostic product of a single capture pass. Output emitters

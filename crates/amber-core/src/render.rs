@@ -449,6 +449,22 @@ mod tests {
     }
 
     #[test]
+    fn capture_with_missing_browser_surfaces_clean_error() {
+        // A failed browser spawn is detected and surfaced as Error::Browser,
+        // not a panic or a hang. (The PipeCdp child is supervised and killed on
+        // Drop; a mid-capture disconnect surfaces ConnectionClosed similarly.)
+        let url = Url::parse("https://example.com/").unwrap();
+        let err = capture(
+            Path::new("/nonexistent/amber-no-such-chromium-binary"),
+            &url,
+            &[OutputFormat::Markdown],
+            &CaptureOptions::default(),
+        )
+        .unwrap_err();
+        assert!(matches!(err, Error::Browser(_)), "expected Browser error, got {err:?}");
+    }
+
+    #[test]
     #[ignore = "downloads ~150MB Chrome-for-Testing and drives a real browser; run with --ignored"]
     fn live_browser_capture_renders_and_screenshots() {
         let chromium = crate::browser::ensure_chromium().expect("ensure chromium");

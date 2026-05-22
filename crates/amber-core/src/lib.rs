@@ -203,6 +203,13 @@ impl Snapshot {
         structured::extract_nl(&self.readable_text(), instruction, client)
     }
 
+    /// The captured accessibility tree (`Accessibility.getFullAXTree` nodes),
+    /// when `CaptureOptions::accessibility` was set on a browser capture.
+    /// `None` for static captures or when not requested.
+    pub fn accessibility_tree(&self) -> Option<&serde_json::Value> {
+        self.raw.accessibility_tree.as_ref()
+    }
+
     /// Render a single format to bytes.
     pub fn render(&self, format: OutputFormat) -> Result<Vec<u8>> {
         // Prefer browser-rendered HTML; fall back to the static fetch.

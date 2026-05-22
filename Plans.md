@@ -248,7 +248,7 @@ mirrors. Public FFI surface is **blocking** (tokio hidden inside core).
 | 5.3 | WARC emitter (network recording before navigate) | `--warc` writes a valid WARC | 1.4 | cc:WIP |
 | 5.4 | WACZ emitter (replayable) | `--wacz` round-trips as a replayable archive | 5.3 | cc:WIP |
 | 5.5 | PDF export (`Page.printToPDF`) | `--pdf` writes a `.pdf` of the rendered page | 1.4 | cc:完了 |
-| 5.6 | Accessibility-tree bundle | A11y tree exposed/saved for grounding | 1.4 | cc:TODO |
+| 5.6 | Accessibility-tree bundle | A11y tree exposed/saved for grounding | 1.4 | cc:完了 |
 | 5.7 | Reproducible captures (pinned browser) | Same input + pinned browser → byte-stable-enough output for evals | 0.3 | cc:TODO |
 
 ## Phase 6: v0.6 — Bindings (P1/P2)

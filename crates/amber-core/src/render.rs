@@ -109,6 +109,11 @@ pub(crate) fn capture(
             raw.pdf = Some(decode_b64(b64)?);
         }
     }
+    if opts.accessibility {
+        scmd(&cdp, sid, "Accessibility.enable", json!({}))?;
+        let r = scmd(&cdp, sid, "Accessibility.getFullAXTree", json!({}))?;
+        raw.accessibility_tree = r.get("nodes").cloned();
+    }
 
     Ok(raw)
     // `cdp` is dropped here → the Chromium child is killed.
@@ -545,6 +550,27 @@ mod tests {
         assert!(
             html.contains(">yes<"),
             "auto-scroll did not fire a scroll event:\n{html}"
+        );
+    }
+
+    #[test]
+    #[ignore = "drives a real browser; run with --ignored (Chromium cached after first run)"]
+    fn live_accessibility_tree_capture() {
+        let chromium = crate::browser::ensure_chromium().expect("ensure chromium");
+        let url = Url::parse(
+            "data:text/html,<html><body><h1>Hello Amber</h1><button>Go</button></body></html>",
+        )
+        .unwrap();
+        let opts = CaptureOptions {
+            render: crate::fetch::RenderMode::Always,
+            accessibility: true,
+            ..Default::default()
+        };
+        let raw = capture(&chromium, &url, &[OutputFormat::Markdown], &opts).expect("capture");
+        let tree = raw.accessibility_tree.as_ref().expect("a11y tree captured");
+        assert!(
+            tree.as_array().is_some_and(|nodes| !nodes.is_empty()),
+            "accessibility tree has no nodes: {tree}"
         );
     }
 }

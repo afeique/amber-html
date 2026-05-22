@@ -20,6 +20,8 @@ pub struct CaptureOptions {
     pub min_content: Option<usize>,
     /// Device/locale/timezone/dark-mode emulation applied on the browser path.
     pub emulation: crate::emulation::EmulationConfig,
+    /// Also capture the accessibility tree (browser path) for grounding.
+    pub accessibility: bool,
 }
 
 /// The raw, format-agnostic product of a single capture pass. Output emitters
@@ -38,6 +40,8 @@ pub struct RawCapture {
     pub screenshot_png: Option<Vec<u8>>,
     /// PDF bytes, if captured.
     pub pdf: Option<Vec<u8>>,
+    /// Accessibility tree nodes (`Accessibility.getFullAXTree`), if requested.
+    pub accessibility_tree: Option<serde_json::Value>,
     /// Whether a browser was used.
     pub used_browser: bool,
 }

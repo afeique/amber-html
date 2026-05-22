@@ -28,6 +28,7 @@ pub mod render;
 pub mod robots;
 pub mod sitemap;
 pub mod store;
+pub mod wacz;
 pub mod warc;
 
 pub use budget::{estimate_cost, estimate_tokens, truncate_to_tokens, TokenAccounting};
@@ -46,6 +47,7 @@ pub use robots::Robots;
 pub use sitemap::{fetch_sitemap, parse_sitemap};
 pub use store::{CrawlStore, StoredPage};
 pub use warc::{http_response_block, WarcWriter};
+pub use wacz::package as package_wacz;
 
 use std::path::{Path, PathBuf};
 use url::Url;

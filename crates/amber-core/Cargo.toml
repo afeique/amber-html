@@ -20,6 +20,7 @@ dirs.workspace = true
 os_pipe.workspace = true
 command-fds.workspace = true
 base64.workspace = true
+sha2.workspace = true
 scraper.workspace = true
 encoding_rs.workspace = true
 whatlang.workspace = true

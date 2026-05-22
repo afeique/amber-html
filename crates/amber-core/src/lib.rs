@@ -9,6 +9,7 @@
 
 pub mod browser;
 pub mod budget;
+pub mod cache;
 pub mod capture;
 pub mod cdp;
 pub mod chromium;
@@ -28,6 +29,7 @@ pub mod robots;
 pub mod sitemap;
 
 pub use budget::{estimate_cost, estimate_tokens, truncate_to_tokens, TokenAccounting};
+pub use cache::{content_hash, Cache, CacheEntry};
 pub use capture::{CaptureOptions, RawCapture};
 pub use crawl::{crawl, crawl_with, CrawlLimits, CrawlScope, Frontier};
 pub use diff::{diff_lines, LineDiff};

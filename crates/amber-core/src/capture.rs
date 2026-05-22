@@ -8,7 +8,11 @@ use crate::output::OutputFormat;
 use crate::{detect, http};
 
 /// Options controlling a capture pass.
-#[derive(Debug, Clone, Default)]
+///
+/// `Debug` is hand-written so secrets never leak through a debug log (task
+/// 3.10): the `proxy` URL is shown with credentials redacted, and `session`
+/// delegates to its own redacting `Debug`.
+#[derive(Clone, Default)]
 pub struct CaptureOptions {
     /// Browser rendering policy (auto / always / never).
     pub render: RenderMode,
@@ -31,6 +35,25 @@ pub struct CaptureOptions {
     /// Auth session state (cookies + extra request headers) sent on both the
     /// static fetch and the browser navigation, for behind-auth pages.
     pub session: crate::session::SessionState,
+}
+
+impl std::fmt::Debug for CaptureOptions {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("CaptureOptions")
+            .field("render", &self.render)
+            .field("settle", &self.settle)
+            .field("wait_for", &self.wait_for)
+            .field("min_content", &self.min_content)
+            .field("emulation", &self.emulation)
+            .field("accessibility", &self.accessibility)
+            .field("headed", &self.headed)
+            .field(
+                "proxy",
+                &self.proxy.as_deref().map(crate::secrets::redact_proxy_url),
+            )
+            .field("session", &self.session)
+            .finish()
+    }
 }
 
 /// The raw, format-agnostic product of a single capture pass. Output emitters
@@ -144,5 +167,32 @@ fn map_fetch_error(err: http::FetchError, url: &url::Url) -> Error {
         http::FetchError::Status(code) => Error::HttpStatus(code, url.to_string()),
         http::FetchError::Timeout => Error::Fetch(format!("request timed out: {url}")),
         http::FetchError::Request(msg) => Error::Fetch(msg),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// `Debug` of `CaptureOptions` must not leak proxy credentials or session
+    /// secrets — only redacted/`name`-level information (task 3.10).
+    #[test]
+    fn debug_redacts_proxy_and_session_secrets() {
+        let opts = CaptureOptions {
+            proxy: Some("http://user:hunter2@gw.local:3128".to_string()),
+            session: crate::session::SessionState {
+                headers: vec![("Authorization".to_string(), "Bearer SEKRET".to_string())],
+                cookies: vec![("sid".to_string(), "SEKRET".to_string())],
+            },
+            ..Default::default()
+        };
+        let rendered = format!("{opts:?}");
+        assert!(
+            !rendered.contains("hunter2") && !rendered.contains("SEKRET"),
+            "secrets leaked through Debug:\n{rendered}"
+        );
+        // The non-secret parts still surface for debugging.
+        assert!(rendered.contains("gw.local:3128"));
+        assert!(rendered.contains("Authorization") && rendered.contains("sid"));
     }
 }

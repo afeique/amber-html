@@ -38,6 +38,7 @@ pub mod provenance;
 pub mod recurring;
 pub mod render;
 pub mod robots;
+pub mod secrets;
 pub mod selectors;
 pub mod session;
 pub mod sitemap;

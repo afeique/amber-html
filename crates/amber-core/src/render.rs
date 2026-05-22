@@ -35,6 +35,10 @@ pub(crate) fn capture(
     formats: &[OutputFormat],
     opts: &CaptureOptions,
 ) -> Result<RawCapture> {
+    if let Some(proxy) = opts.proxy.as_deref() {
+        // Log the proxy with credentials redacted (3.10) for observability.
+        tracing::debug!(proxy = %crate::secrets::redact_proxy_url(proxy), "routing browser via proxy");
+    }
     let cdp = PipeCdp::spawn(chromium, &browser_args(opts.headed, opts.proxy.as_deref()))
         .map_err(browser_err)?;
 

@@ -119,6 +119,31 @@ impl CrawlStore {
         let contents = std::fs::read_to_string(path)?;
         Ok(CrawlStore::from_json(&contents))
     }
+
+    /// Export the store as JSON Lines (one compact JSON object per page,
+    /// newline-delimited) — a streaming-friendly dataset format. See `Plans.md`
+    /// (task 7.6). (A columnar Parquet export would need a dedicated dependency
+    /// and is left for later.)
+    pub fn to_jsonl(&self) -> String {
+        self.pages
+            .values()
+            .map(|p| {
+                json!({
+                    "url": p.url,
+                    "content_hash": p.content_hash,
+                    "fetched_at": p.fetched_at,
+                })
+                .to_string()
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+
+    /// Write the store to `path` as JSON Lines.
+    pub fn export_jsonl(&self, path: &Path) -> Result<()> {
+        std::fs::write(path, self.to_jsonl())?;
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -182,6 +207,29 @@ mod tests {
         let mixed = r#"[{"url":"https://ex.com/a","content_hash":"h","fetched_at":"t"},
                         {"url":"https://ex.com/b"}]"#;
         assert_eq!(CrawlStore::from_json(mixed).len(), 1);
+    }
+
+    #[test]
+    fn to_jsonl_one_object_per_line() {
+        let mut store = CrawlStore::new();
+        store.upsert(page("https://ex.com/a", "h1"));
+        store.upsert(page("https://ex.com/b", "h2"));
+        let jsonl = store.to_jsonl();
+        let lines: Vec<&str> = jsonl.lines().collect();
+        assert_eq!(lines.len(), 2);
+        // Each line is a valid JSON object with the page fields.
+        for line in &lines {
+            let v: Value = serde_json::from_str(line).unwrap();
+            assert!(v.get("url").is_some() && v.get("content_hash").is_some());
+        }
+        // Sorted URL order is preserved in the export.
+        let first: Value = serde_json::from_str(lines[0]).unwrap();
+        assert_eq!(first["url"], "https://ex.com/a");
+    }
+
+    #[test]
+    fn empty_store_jsonl_is_empty() {
+        assert_eq!(CrawlStore::new().to_jsonl(), "");
     }
 
     #[test]

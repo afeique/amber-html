@@ -1,5 +1,5 @@
 //! The capture pipeline: turn a URL into a format-agnostic [`RawCapture`].
-//! See `docs/PLAN.md` §7.
+//! See `Plans.md`.
 
 use crate::browser::SettlePolicy;
 use crate::error::{Error, Result};
@@ -14,15 +14,14 @@ pub struct CaptureOptions {
     pub render: RenderMode,
     /// When/how to consider the page "settled" before capture.
     pub settle: SettlePolicy,
-    /// Optional CSS selector / JS predicate to wait for (forces a browser).
+    /// Optional CSS selector to wait for after settle (forces a browser).
     pub wait_for: Option<String>,
     /// Override the minimum static content length treated as sufficient.
     pub min_content: Option<usize>,
 }
 
 /// The raw, format-agnostic product of a single capture pass. Output emitters
-/// (markdown, readable, ...) derive concrete results from this. Fields grow as
-/// the pipeline is implemented.
+/// derive concrete results from this.
 #[derive(Debug, Default)]
 pub struct RawCapture {
     /// The final URL after redirects.
@@ -31,18 +30,18 @@ pub struct RawCapture {
     pub static_html: Option<String>,
     /// Rendered HTML / serialized DOM from the browser, if rendered.
     pub rendered_html: Option<String>,
+    /// MHTML bundle (from `Page.captureSnapshot`), if captured.
+    pub mhtml: Option<String>,
+    /// Full-page PNG screenshot bytes, if captured.
+    pub screenshot_png: Option<Vec<u8>>,
+    /// PDF bytes, if captured.
+    pub pdf: Option<Vec<u8>>,
     /// Whether a browser was used.
     pub used_browser: bool,
-    // TODO(next): mhtml bytes, screenshot bytes, network log (for WARC),
-    //             accessibility tree, response metadata, ...
 }
 
-/// Run the capture pipeline (PLAN.md §7):
-/// output gate → HTTP fetch → sufficiency → escalate → (settle → render).
-///
-/// The static (HTTP-only) tier is implemented. The browser path — Chrome for
-/// Testing fetcher + the hand-rolled CDP client — is the next milestone; any
-/// branch that would require it returns [`Error::NotImplemented`] for now.
+/// Run the capture pipeline (Plans.md):
+/// output gate → HTTP fetch → sufficiency → escalate → (browser render).
 pub(crate) fn run(
     url: &url::Url,
     formats: &[OutputFormat],
@@ -51,9 +50,7 @@ pub(crate) fn run(
     // Step 1 — output gate: some outputs (or `--render always`) require a
     // browser up front, so we don't bother with a cheap fetch.
     if fetch::browser_required_upfront(formats, opts.render) {
-        return Err(Error::NotImplemented(
-            "browser render path (Chrome for Testing fetcher + CDP client)",
-        ));
+        return browser_capture(url, formats, opts);
     }
 
     // Step 2 — cheap HTTP-first fetch.
@@ -63,10 +60,8 @@ pub(crate) fn run(
             return match opts.render {
                 // User forbade the browser: the cheap tier failing is terminal.
                 RenderMode::Never => Err(map_fetch_error(err, url)),
-                // Otherwise we'd escalate to the browser (not built yet).
-                _ => Err(Error::NotImplemented(
-                    "browser escalation after HTTP fetch failure",
-                )),
+                // Otherwise escalate to the browser.
+                _ => browser_capture(url, formats, opts),
             };
         }
     };
@@ -78,9 +73,7 @@ pub(crate) fn run(
                 "non-HTML response ({}) and --render never",
                 page.content_type.as_deref().unwrap_or("unknown content-type")
             ))),
-            _ => Err(Error::NotImplemented(
-                "browser escalation for non-HTML static response",
-            )),
+            _ => browser_capture(url, formats, opts),
         };
     }
 
@@ -92,10 +85,21 @@ pub(crate) fn run(
         // `--render never`: best-effort with whatever static HTML we have.
         _ if opts.render == RenderMode::Never => Ok(static_capture(page)),
         // Insufficient/ambiguous in auto mode → escalate (correctness bias).
-        detect::Sufficiency::NeedsBrowser | detect::Sufficiency::Uncertain => Err(
-            Error::NotImplemented("browser escalation (static HTML insufficient)"),
-        ),
+        detect::Sufficiency::NeedsBrowser | detect::Sufficiency::Uncertain => {
+            browser_capture(url, formats, opts)
+        }
     }
+}
+
+/// Render via a real browser: ensure a pinned Chromium, then drive the CDP pipe
+/// transport to produce a fully-rendered capture (see [`crate::render`]).
+fn browser_capture(
+    url: &url::Url,
+    formats: &[OutputFormat],
+    opts: &CaptureOptions,
+) -> Result<RawCapture> {
+    let chromium = crate::browser::ensure_chromium()?;
+    crate::render::capture(&chromium, url, formats, opts)
 }
 
 /// Build a [`RawCapture`] from a static (non-browser) fetch.
@@ -103,13 +107,12 @@ fn static_capture(page: http::FetchedPage) -> RawCapture {
     RawCapture {
         final_url: page.final_url.to_string(),
         static_html: Some(page.html),
-        rendered_html: None,
         used_browser: false,
+        ..Default::default()
     }
 }
 
-/// Map the module-local [`http::FetchError`] into the crate-wide [`Error`],
-/// preserving the URL for context.
+/// Map the module-local [`http::FetchError`] into the crate-wide [`Error`].
 fn map_fetch_error(err: http::FetchError, url: &url::Url) -> Error {
     match err {
         http::FetchError::Status(code) => Error::HttpStatus(code, url.to_string()),

@@ -20,6 +20,7 @@ dependencies = [
 name = "amber-core"
 version = "0.0.0"
 dependencies = [
+ "base64",
  "chrono",
  "command-fds",
  "dirs",

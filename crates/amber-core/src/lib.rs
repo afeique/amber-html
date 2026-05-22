@@ -2,7 +2,7 @@
 //!
 //! Renders a page in a real local browser *only when needed*, then emits the
 //! requested representations from a single pass. The public API is intentionally
-//! blocking (async lives inside). See `docs/PLAN.md` for the full design.
+//! blocking (async lives inside). See `Plans.md` for the full design.
 
 // Scaffold: several items are defined ahead of their implementations.
 #![allow(dead_code)]
@@ -18,6 +18,7 @@ pub mod fetch;
 pub mod http;
 pub mod naming;
 pub mod output;
+pub mod render;
 
 pub use capture::{CaptureOptions, RawCapture};
 pub use error::{Error, Result};
@@ -29,7 +30,7 @@ use url::Url;
 
 /// Capture `url`, returning a [`Snapshot`] that can emit the requested formats.
 ///
-/// `formats` must be non-empty — there is no default output (PLAN.md §8). The
+/// `formats` must be non-empty — there is no default output (Plans.md). The
 /// requested set also configures the capture pass and whether a browser is used.
 pub fn snapshot(url: &str, formats: &[OutputFormat], opts: CaptureOptions) -> Result<Snapshot> {
     if formats.is_empty() {
@@ -67,12 +68,27 @@ impl Snapshot {
                     html.ok_or(Error::NotImplemented("no captured HTML for readable text"))?;
                 Ok(extract::to_readable(html).into_bytes())
             }
-            OutputFormat::Html => Err(Error::NotImplemented("single-file HTML emitter")),
-            OutputFormat::Mhtml => Err(Error::NotImplemented("MHTML emitter (needs browser)")),
+            OutputFormat::Mhtml => self
+                .raw
+                .mhtml
+                .clone()
+                .map(String::into_bytes)
+                .ok_or_else(|| Error::Browser("MHTML was not captured".into())),
+            OutputFormat::Screenshot => self
+                .raw
+                .screenshot_png
+                .clone()
+                .ok_or_else(|| Error::Browser("screenshot was not captured".into())),
+            OutputFormat::Pdf => self
+                .raw
+                .pdf
+                .clone()
+                .ok_or_else(|| Error::Browser("PDF was not captured".into())),
+            OutputFormat::Html => Err(Error::NotImplemented(
+                "single-file HTML emitter (MHTML transform pending)",
+            )),
             OutputFormat::Warc => Err(Error::NotImplemented("WARC emitter")),
             OutputFormat::Wacz => Err(Error::NotImplemented("WACZ emitter")),
-            OutputFormat::Screenshot => Err(Error::NotImplemented("screenshot (needs browser)")),
-            OutputFormat::Pdf => Err(Error::NotImplemented("PDF (needs browser)")),
         }
     }
 

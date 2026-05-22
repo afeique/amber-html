@@ -186,16 +186,16 @@ mirrors. Public FFI surface is **blocking** (tokio hidden inside core).
 | 1.1 | HTTP-first static fetch tier (blocking GET + parse) | Static HTML is fetched and parsed with a bounded timeout | 0.1 | cc:完了 |
 | 1.2 | Sufficiency scoring + tiered-fetch escalation (`--render auto`) | Static-vs-browser verdict computed from markers + content check; uncertain → render | 1.1, 0.4 | cc:完了 |
 | 1.3 | Settle engine (lifecycle / network-idle / fonts / settle-delay) | Configurable policy; capture waits until settled before snapshot | 0.4 | cc:完了 |
-| 1.4 | Browser-render capture path (drive CDP, produce `RawCapture`) | A JS-heavy page renders and yields rendered HTML | 0.4, 1.3 | cc:WIP |
+| 1.4 | Browser-render capture path (drive CDP, produce `RawCapture`) | A JS-heavy page renders and yields rendered HTML | 0.4, 1.3 | cc:完了 |
 | 1.5 | Clean Markdown emitter | `--markdown` writes a `.md` matching golden output for sample pages | 1.1 | cc:完了 |
 | 1.6 | Readable plain-text emitter (main-content) | `--readable` writes a `.txt` with boilerplate removed | 1.1 | cc:完了 |
-| 1.7 | Full-page screenshot emitter | `--screenshot` writes a `.png` of the rendered page | 1.4 | cc:WIP |
+| 1.7 | Full-page screenshot emitter | `--screenshot` writes a `.png` of the rendered page | 1.4 | cc:完了 |
 | 1.8 | No-default-output policy (≥1 format required) | Empty format set returns a hard error | 0.1 | cc:完了 |
 | 1.9 | URL+datetime default naming (`-n` optional) | Default name = `<safe-url> <YYYY-MM-DD> <HH-MM-SS>`, filesystem-safe | 0.1 | cc:完了 |
 | 1.10 | CLI (`amber <url>` + output flags + `-o`/`-n`/`--render`/`--wait-for`/`--min-content`) | `amber <url> -o ./out --markdown --readable --screenshot` works, HTTP-only when possible | 1.5, 1.6, 1.7, 1.9 | cc:WIP |
 | 1.11 | Boilerplate/nav/ad/cookie-banner removal | Extracted Markdown/readable excludes common chrome on sample pages | 1.5, 1.6 | cc:完了 |
 | 1.12 | Page metadata (title/lang/canonical/OpenGraph/links) | Metadata extracted and exposed on `Snapshot` | 1.1 | cc:完了 |
-| 1.13 | Timeout / retry / partial-result handling | Per-tier timeouts enforced; partial results returned where safe | 1.1, 1.4 | cc:WIP |
+| 1.13 | Timeout / retry / partial-result handling | Per-tier timeouts enforced; partial results returned where safe | 1.1, 1.4 | cc:完了 |
 | 1.14 | Process lifecycle / reconnection / crash recovery | Browser process is supervised; a crash is detected and surfaced cleanly | 0.4 | cc:TODO |
 | 1.15 | Structured logging + tracing | `tracing` spans across fetch/settle/capture; configurable level | 0.1 | cc:完了 |
 | 1.16 | Local-first, zero telemetry; airgapped operation after browser cached | No network calls except the target + one-time browser download; works offline once cached | 0.3 | cc:TODO |
@@ -243,8 +243,8 @@ mirrors. Public FFI surface is **blocking** (tokio hidden inside core).
 
 | Task | 内容 | DoD | Depends | Status |
 |------|------|-----|---------|--------|
-| 5.1 | MHTML emitter (`Page.captureSnapshot`) | `--mhtml` writes a faithful `.mhtml` bundle | 1.4 | cc:WIP |
-| 5.2 | Single-file inlined HTML (MHTML → `data:` URIs + inlined `<style>`) | `--html` writes a self-contained `.html` that opens offline | 5.1 | cc:WIP |
+| 5.1 | MHTML emitter (`Page.captureSnapshot`) | `--mhtml` writes a faithful `.mhtml` bundle | 1.4 | cc:完了 |
+| 5.2 | Single-file inlined HTML (MHTML → `data:` URIs + inlined `<style>`) | `--html` writes a self-contained `.html` that opens offline | 5.1 | cc:完了 |
 | 5.3 | WARC emitter (network recording before navigate) | `--warc` writes a valid WARC | 1.4 | cc:WIP |
 | 5.4 | WACZ emitter (replayable) | `--wacz` round-trips as a replayable archive | 5.3 | cc:WIP |
 | 5.5 | PDF export (`Page.printToPDF`) | `--pdf` writes a `.pdf` of the rendered page | 1.4 | cc:TODO |

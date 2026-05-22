@@ -386,6 +386,19 @@ impl PipeCdp {
     /// Uses `&self` (interior mutability) so the higher layer can share one
     /// transport and issue sends without exclusive borrows.
     pub fn send(&self, method: &str, params: Value) -> Result<Value, CdpError> {
+        self.send_to(None, method, params)
+    }
+
+    /// Send a CDP command scoped to a target session (CDP "flatten" mode): when
+    /// `session_id` is `Some`, the command carries that `sessionId` so it is
+    /// routed to the attached page/target rather than the browser endpoint.
+    /// `Page.*` / `Network.*` / `Runtime.*` require a page session.
+    pub fn send_to(
+        &self,
+        session_id: Option<&str>,
+        method: &str,
+        params: Value,
+    ) -> Result<Value, CdpError> {
         if self.shared.is_closed() {
             return Err(CdpError::ConnectionClosed);
         }
@@ -403,7 +416,7 @@ impl PipeCdp {
             pending.insert(id, tx);
         }
 
-        let frame = encode_command(id, method, &params);
+        let frame = encode_command(id, method, &params, session_id);
         if let Err(e) = self.write_frame(&frame) {
             // Drop our registration so we don't leak it.
             if let Ok(mut pending) = self.shared.pending.lock() {
@@ -447,9 +460,13 @@ impl PipeCdp {
 }
 
 /// Encode a CDP command as a NUL-terminated JSON frame.
-fn encode_command(id: u64, method: &str, params: &Value) -> Vec<u8> {
-    // `params` is always sent (Chromium tolerates `{}`); omit nothing fancy.
-    let msg = json!({ "id": id, "method": method, "params": params });
+fn encode_command(id: u64, method: &str, params: &Value, session_id: Option<&str>) -> Vec<u8> {
+    // `params` is always sent (Chromium tolerates `{}`). In flatten mode a
+    // `sessionId` routes the command to an attached target.
+    let mut msg = json!({ "id": id, "method": method, "params": params });
+    if let Some(sid) = session_id {
+        msg["sessionId"] = json!(sid);
+    }
     let mut bytes = serde_json::to_vec(&msg).expect("serializing a CDP command cannot fail");
     bytes.push(0);
     bytes
@@ -691,7 +708,7 @@ mod tests {
 
     #[test]
     fn encode_command_appends_nul_and_is_valid_json() {
-        let frame = encode_command(42, "Page.navigate", &json!({"url": "https://e.com"}));
+        let frame = encode_command(42, "Page.navigate", &json!({"url": "https://e.com"}), None);
         assert_eq!(*frame.last().unwrap(), 0u8, "frame must end in NUL");
         let parsed: Value = serde_json::from_slice(&frame[..frame.len() - 1]).unwrap();
         assert_eq!(parsed["id"], 42);
@@ -703,13 +720,24 @@ mod tests {
     fn encode_then_frame_roundtrips() {
         // The encoder's output, fed through the decoder, yields exactly one
         // frame that parses back to the same logical message.
-        let frame = encode_command(1, "Target.getTargets", &json!({}));
+        let frame = encode_command(1, "Target.getTargets", &json!({}), None);
         let mut fr = FrameReader::new();
         let out = fr.push(&frame);
         assert_eq!(out.len(), 1);
         let parsed: Value = serde_json::from_slice(&out[0]).unwrap();
         assert_eq!(parsed["id"], 1);
         assert_eq!(parsed["method"], "Target.getTargets");
+    }
+
+    #[test]
+    fn encode_command_includes_session_id_when_set() {
+        let frame = encode_command(7, "Page.enable", &json!({}), Some("SESS1"));
+        let parsed: Value = serde_json::from_slice(&frame[..frame.len() - 1]).unwrap();
+        assert_eq!(parsed["sessionId"], "SESS1");
+        // Browser-level commands carry no sessionId.
+        let frame2 = encode_command(8, "Target.getTargets", &json!({}), None);
+        let parsed2: Value = serde_json::from_slice(&frame2[..frame2.len() - 1]).unwrap();
+        assert!(parsed2.get("sessionId").is_none());
     }
 
     // --- response interpretation -----------------------------------------

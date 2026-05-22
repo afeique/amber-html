@@ -33,17 +33,37 @@ pub(crate) fn capture(
 ) -> Result<RawCapture> {
     let cdp = PipeCdp::spawn(chromium, &browser_args()).map_err(browser_err)?;
 
-    cmd(&cdp, "Page.enable", json!({}))?;
-    cmd(&cdp, "Network.enable", json!({}))?;
-    cmd(&cdp, "Page.setLifecycleEventsEnabled", json!({ "enabled": true }))?;
+    // Over the debug pipe the connection is browser-level; attach to a fresh
+    // page target (CDP "flatten" mode) so Page.*/Network.*/Runtime.* commands
+    // are available, routed via the returned sessionId.
+    let target = cmd(&cdp, "Target.createTarget", json!({ "url": "about:blank" }))?;
+    let target_id = target
+        .get("targetId")
+        .and_then(Value::as_str)
+        .ok_or_else(|| Error::Browser("Target.createTarget returned no targetId".into()))?;
+    let attached = cmd(
+        &cdp,
+        "Target.attachToTarget",
+        json!({ "targetId": target_id, "flatten": true }),
+    )?;
+    let session = attached
+        .get("sessionId")
+        .and_then(Value::as_str)
+        .ok_or_else(|| Error::Browser("Target.attachToTarget returned no sessionId".into()))?
+        .to_string();
+    let sid = Some(session.as_str());
+
+    scmd(&cdp, sid, "Page.enable", json!({}))?;
+    scmd(&cdp, sid, "Network.enable", json!({}))?;
+    scmd(&cdp, sid, "Page.setLifecycleEventsEnabled", json!({ "enabled": true }))?;
 
     let events = cdp.events();
 
-    cmd(&cdp, "Page.navigate", json!({ "url": url.as_str() }))?;
-    settle(&cdp, events.as_ref(), &opts.settle);
+    scmd(&cdp, sid, "Page.navigate", json!({ "url": url.as_str() }))?;
+    settle(&cdp, sid, events.as_ref(), &opts.settle);
 
     if let Some(condition) = opts.wait_for.as_deref() {
-        wait_for_ready(&cdp, condition);
+        wait_for_ready(&cdp, sid, condition);
     }
 
     let mut raw = RawCapture {
@@ -54,18 +74,19 @@ pub(crate) fn capture(
 
     // Rendered DOM backs --markdown / --readable (and --html via the MHTML
     // transform). Always captured; it's a single cheap evaluate.
-    raw.rendered_html = Some(eval_string(&cdp, "document.documentElement.outerHTML")?);
+    raw.rendered_html = Some(eval_string(&cdp, sid, "document.documentElement.outerHTML")?);
 
     let want = |f: OutputFormat| formats.contains(&f);
 
     // MHTML is also the source for the single-file --html transform.
     if want(OutputFormat::Mhtml) || want(OutputFormat::Html) {
-        let r = cmd(&cdp, "Page.captureSnapshot", json!({ "format": "mhtml" }))?;
+        let r = scmd(&cdp, sid, "Page.captureSnapshot", json!({ "format": "mhtml" }))?;
         raw.mhtml = r.get("data").and_then(Value::as_str).map(str::to_owned);
     }
     if want(OutputFormat::Screenshot) {
-        let r = cmd(
+        let r = scmd(
             &cdp,
+            sid,
             "Page.captureScreenshot",
             json!({ "format": "png", "captureBeyondViewport": true }),
         )?;
@@ -74,7 +95,7 @@ pub(crate) fn capture(
         }
     }
     if want(OutputFormat::Pdf) {
-        let r = cmd(&cdp, "Page.printToPDF", json!({ "printBackground": true }))?;
+        let r = scmd(&cdp, sid, "Page.printToPDF", json!({ "printBackground": true }))?;
         if let Some(b64) = r.get("data").and_then(Value::as_str) {
             raw.pdf = Some(decode_b64(b64)?);
         }
@@ -97,15 +118,22 @@ fn browser_args() -> Vec<String> {
     args
 }
 
-/// Send a CDP command, mapping transport errors into the crate error type.
+/// Send a browser-level CDP command (no session), mapping transport errors.
 fn cmd(cdp: &PipeCdp, method: &str, params: Value) -> Result<Value> {
     cdp.send(method, params).map_err(browser_err)
 }
 
-/// `Runtime.evaluate` an expression and return its string value (or "").
-fn eval_string(cdp: &PipeCdp, expression: &str) -> Result<String> {
-    let r = cmd(
+/// Send a session-scoped CDP command (Page.*/Network.*/Runtime.*).
+fn scmd(cdp: &PipeCdp, session: Option<&str>, method: &str, params: Value) -> Result<Value> {
+    cdp.send_to(session, method, params).map_err(browser_err)
+}
+
+/// `Runtime.evaluate` an expression in the page session and return its string
+/// value (or "").
+fn eval_string(cdp: &PipeCdp, session: Option<&str>, expression: &str) -> Result<String> {
+    let r = scmd(
         cdp,
+        session,
         "Runtime.evaluate",
         json!({ "expression": expression, "returnByValue": true }),
     )?;
@@ -119,7 +147,12 @@ fn eval_string(cdp: &PipeCdp, expression: &str) -> Result<String> {
 /// Wait until the page is "settled" before capture (Plans.md): drain lifecycle
 /// and network events until load + network-idle (or a quiet period), then honor
 /// `fonts.ready` and a settle delay. Best-effort; never fails the capture.
-fn settle(cdp: &PipeCdp, events: Option<&Receiver<Value>>, policy: &SettlePolicy) {
+fn settle(
+    cdp: &PipeCdp,
+    session: Option<&str>,
+    events: Option<&Receiver<Value>>,
+    policy: &SettlePolicy,
+) {
     if let Some(rx) = events {
         let start = Instant::now();
         let mut tracker = SettleTracker::new(policy);
@@ -146,8 +179,9 @@ fn settle(cdp: &PipeCdp, events: Option<&Receiver<Value>>, policy: &SettlePolicy
     }
 
     if policy.fonts_ready {
-        let _ = cmd(
+        let _ = scmd(
             cdp,
+            session,
             "Runtime.evaluate",
             json!({
                 "expression": "document.fonts ? document.fonts.ready.then(() => true) : true",
@@ -237,12 +271,13 @@ fn wait_for_expression(condition: &str) -> String {
 
 /// Poll until the `--wait-for` condition (CSS selector or `js:` predicate)
 /// becomes true (or a timeout). Best-effort.
-fn wait_for_ready(cdp: &PipeCdp, condition: &str) {
+fn wait_for_ready(cdp: &PipeCdp, session: Option<&str>, condition: &str) {
     let expr = wait_for_expression(condition);
     let start = Instant::now();
     while start.elapsed() < WAIT_FOR_TIMEOUT {
-        let present = cmd(
+        let present = scmd(
             cdp,
+            session,
             "Runtime.evaluate",
             json!({ "expression": expr, "returnByValue": true }),
         )
@@ -383,6 +418,52 @@ mod tests {
         assert_eq!(
             args.iter().any(|a| a == "--no-sandbox"),
             cfg!(target_os = "linux")
+        );
+    }
+
+    #[test]
+    #[ignore = "downloads ~150MB Chrome-for-Testing and drives a real browser; run with --ignored"]
+    fn live_browser_capture_renders_and_screenshots() {
+        let chromium = crate::browser::ensure_chromium().expect("ensure chromium");
+        let url = Url::parse(
+            "data:text/html,<html><body><h1>Hello Amber</h1><p>Rendered content.</p></body></html>",
+        )
+        .unwrap();
+        let opts = CaptureOptions {
+            render: crate::fetch::RenderMode::Always,
+            ..Default::default()
+        };
+        let raw = capture(
+            &chromium,
+            &url,
+            &[
+                OutputFormat::Markdown,
+                OutputFormat::Screenshot,
+                OutputFormat::Mhtml,
+            ],
+            &opts,
+        )
+        .expect("browser capture");
+
+        assert!(raw.used_browser, "should have used the browser");
+        let html = raw.rendered_html.as_deref().unwrap_or_default();
+        assert!(html.contains("Hello Amber"), "rendered HTML missing heading:\n{html}");
+
+        let png = raw.screenshot_png.as_deref().unwrap_or_default();
+        assert!(
+            png.starts_with(&[0x89, b'P', b'N', b'G']),
+            "screenshot is not a PNG ({} bytes)",
+            png.len()
+        );
+
+        assert!(raw.mhtml.is_some(), "MHTML was not captured");
+
+        // Single-file HTML (5.2): the captured MHTML flattens to a self-contained
+        // document that still carries the page content.
+        let single_file = crate::inline::mhtml_to_single_file_html(raw.mhtml.as_deref().unwrap());
+        assert!(
+            single_file.contains("Hello Amber"),
+            "single-file HTML missing content"
         );
     }
 }

@@ -25,6 +25,7 @@ pub mod fetch;
 pub mod http;
 pub mod inline;
 pub mod limits;
+pub mod mcp;
 pub mod meta;
 pub mod metrics;
 pub mod naming;

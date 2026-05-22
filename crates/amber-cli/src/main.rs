@@ -11,8 +11,13 @@ use amber_core::{snapshot, CaptureOptions, Error, OutputFormat, RenderMode};
 #[derive(Parser, Debug)]
 #[command(name = "amber", version, about)]
 struct Cli {
-    /// URL to capture.
-    url: String,
+    /// URL to capture. Omit when running with `--mcp`.
+    url: Option<String>,
+
+    /// Run as an MCP server over stdio (newline-delimited JSON-RPC), exposing a
+    /// `snapshot` tool. Ignores the URL and output flags.
+    #[arg(long)]
+    mcp: bool,
 
     /// Single-file inlined HTML (.html).
     #[arg(long)]
@@ -119,10 +124,40 @@ fn init_tracing() {
         .try_init();
 }
 
+/// Run the MCP server over stdio, exposing a `snapshot` tool backed by the core.
+fn run_mcp() -> ExitCode {
+    let capture = |url: &str, format: &str| -> Result<String, String> {
+        let fmt = match format {
+            "readable" => OutputFormat::Readable,
+            _ => OutputFormat::Markdown,
+        };
+        let snap =
+            snapshot(url, &[fmt], CaptureOptions::default()).map_err(|e| e.to_string())?;
+        let bytes = snap.render(fmt).map_err(|e| e.to_string())?;
+        Ok(String::from_utf8_lossy(&bytes).into_owned())
+    };
+    match amber_core::mcp::serve(std::io::stdin().lock(), std::io::stdout().lock(), capture) {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(e) => {
+            eprintln!("amber mcp: {e}");
+            ExitCode::FAILURE
+        }
+    }
+}
+
 fn main() -> ExitCode {
     init_tracing();
 
     let cli = Cli::parse();
+
+    if cli.mcp {
+        return run_mcp();
+    }
+
+    let Some(url) = cli.url.clone() else {
+        eprintln!("error: a URL is required (or use --mcp to run as an MCP server)");
+        return ExitCode::from(2);
+    };
 
     let formats = cli.formats();
     if formats.is_empty() {
@@ -140,7 +175,7 @@ fn main() -> ExitCode {
         ..Default::default()
     };
 
-    match snapshot(&cli.url, &formats, opts) {
+    match snapshot(&url, &formats, opts) {
         Ok(snap) => {
             let mut code = ExitCode::SUCCESS;
             for fmt in &formats {
@@ -158,7 +193,7 @@ fn main() -> ExitCode {
             eprintln!(
                 "amber: capture is not implemented yet (scaffold): {what}\n  \
                  url={}  formats={:?}  output-dir={}",
-                cli.url,
+                url,
                 formats.iter().map(|f| f.extension()).collect::<Vec<_>>(),
                 cli.output_dir.display()
             );

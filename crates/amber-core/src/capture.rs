@@ -94,7 +94,7 @@ pub(crate) fn run(
     }
 
     // Step 2 — cheap HTTP-first fetch (carrying any auth session state).
-    let page = match http::fetch_with_session(url, &opts.session) {
+    let page = match http::fetch_with_session(url, &opts.session, opts.proxy.as_deref()) {
         Ok(page) => page,
         Err(err) => {
             return match opts.render {

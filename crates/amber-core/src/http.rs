@@ -83,23 +83,38 @@ pub fn fetch(url: &Url) -> Result<FetchedPage, FetchError> {
 /// semantics as [`fetch`].
 pub fn fetch_with_ua(url: &Url, user_agent: &str) -> Result<FetchedPage, FetchError> {
     fetch_with_retry(url, MAX_ATTEMPTS, backoff_delay, |u| {
-        fetch_once(u, user_agent, &[])
+        fetch_once(u, user_agent, &[], None)
     })
 }
 
 /// Like [`fetch`] but sends caller-supplied session headers (auth headers +
-/// cookies) on every attempt — for capturing behind-auth pages (Plans.md 3.3).
-/// Only header/cookie *names* are logged, never values (task 3.10).
+/// cookies) on every attempt and, when given, routes through `proxy` — for
+/// capturing behind-auth pages (3.3) via a bring-your-own proxy (8.4). Only
+/// header/cookie *names* are logged, never values (task 3.10); the proxy is
+/// logged with credentials redacted.
 pub fn fetch_with_session(
     url: &Url,
     session: &crate::session::SessionState,
+    proxy: Option<&str>,
 ) -> Result<FetchedPage, FetchError> {
     let headers = session.request_headers();
     if !headers.is_empty() {
         tracing::debug!(session_headers = ?session.loggable_names(), "static fetch with session");
     }
+    // Parse the proxy once, up front, so a misconfiguration fails immediately
+    // rather than being retried on every attempt.
+    let parsed_proxy = match proxy {
+        Some(p) => {
+            tracing::debug!(proxy = %crate::secrets::redact_proxy_url(p), "static fetch via proxy");
+            Some(
+                ureq::Proxy::new(p)
+                    .map_err(|e| FetchError::Request(format!("invalid proxy: {e}")))?,
+            )
+        }
+        None => None,
+    };
     fetch_with_retry(url, MAX_ATTEMPTS, backoff_delay, |u| {
-        fetch_once(u, USER_AGENT, &headers)
+        fetch_once(u, USER_AGENT, &headers, parsed_proxy.as_ref())
     })
 }
 
@@ -170,15 +185,18 @@ fn fetch_once(
     url: &Url,
     user_agent: &str,
     headers: &[(String, String)],
+    proxy: Option<&ureq::Proxy>,
 ) -> Result<FetchedPage, FetchError> {
     // `http_status_as_error(true)` is ureq's default; we keep it so 4xx/5xx
     // surface as `Error::StatusCode(code)`, which we translate below.
-    let config = ureq::Agent::config_builder()
+    let mut builder = ureq::Agent::config_builder()
         .user_agent(user_agent)
         .timeout_global(Some(DEFAULT_TIMEOUT))
-        .max_redirects(MAX_REDIRECTS)
-        .build();
-    let agent = ureq::Agent::new_with_config(config);
+        .max_redirects(MAX_REDIRECTS);
+    if let Some(proxy) = proxy {
+        builder = builder.proxy(Some(proxy.clone()));
+    }
+    let agent = ureq::Agent::new_with_config(builder.build());
 
     let mut request = agent.get(url.as_str());
     for (name, value) in headers {
@@ -610,7 +628,7 @@ mod tests {
             headers: vec![("Authorization".to_string(), "Bearer t0ken".to_string())],
             cookies: vec![("sid".to_string(), "abc".to_string())],
         };
-        let page = fetch_with_session(&url, &session).expect("fetch via loopback");
+        let page = fetch_with_session(&url, &session, None).expect("fetch via loopback");
 
         assert_eq!(page.status, 200);
         assert!(page.html.contains("secret area"));
@@ -624,6 +642,81 @@ mod tests {
             request.contains("cookie: sid=abc"),
             "cookie header should be sent:\n{request}"
         );
+    }
+
+    /// `fetch_with_session` routes through a supplied HTTP proxy: ureq tunnels
+    /// via `CONNECT host:port`, so a one-shot fake proxy that sees the CONNECT
+    /// (then serves the page over the tunnel) proves the proxy was used.
+    /// Hermetic — no external network.
+    #[test]
+    fn fetch_with_session_routes_through_proxy() {
+        use std::io::{BufRead, BufReader, Write};
+        use std::net::TcpListener;
+
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind loopback proxy");
+        let addr = listener.local_addr().unwrap();
+
+        let proxy_server = std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut reader = BufReader::new(stream.try_clone().unwrap());
+
+            // 1. The CONNECT request line + headers (proof the proxy was used).
+            let mut connect_line = String::new();
+            reader.read_line(&mut connect_line).unwrap();
+            loop {
+                let mut line = String::new();
+                if reader.read_line(&mut line).unwrap() == 0 || line == "\r\n" {
+                    break;
+                }
+            }
+            // 2. Establish the tunnel.
+            stream
+                .write_all(b"HTTP/1.1 200 Connection Established\r\n\r\n")
+                .unwrap();
+            // 3. Read the tunneled GET request, then serve a tiny page.
+            loop {
+                let mut line = String::new();
+                if reader.read_line(&mut line).unwrap() == 0 || line == "\r\n" {
+                    break;
+                }
+            }
+            let body = "<html><body>via proxy</body></html>";
+            let response = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\
+                 Content-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                body.len()
+            );
+            stream.write_all(response.as_bytes()).unwrap();
+            stream.flush().unwrap();
+            connect_line
+        });
+
+        let url = Url::parse("http://example.invalid/").unwrap();
+        let proxy = format!("http://{addr}");
+        let page = fetch_with_session(&url, &crate::session::SessionState::default(), Some(&proxy))
+            .expect("fetch through proxy");
+
+        assert_eq!(page.status, 200);
+        assert!(page.html.contains("via proxy"));
+
+        let connect_line = proxy_server.join().unwrap();
+        assert!(
+            connect_line.starts_with("CONNECT example.invalid:80"),
+            "request must be tunneled through the proxy via CONNECT: {connect_line:?}"
+        );
+    }
+
+    /// An unparseable proxy fails fast with a clear error (not retried).
+    #[test]
+    fn fetch_with_invalid_proxy_errors() {
+        let url = Url::parse("http://example.invalid/").unwrap();
+        let err = fetch_with_session(
+            &url,
+            &crate::session::SessionState::default(),
+            Some("not a proxy"),
+        )
+        .unwrap_err();
+        assert!(matches!(err, FetchError::Request(_)));
     }
 
     // --- Real-network test (opt-in) -----------------------------------------

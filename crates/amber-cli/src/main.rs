@@ -69,6 +69,11 @@ struct Cli {
     /// Session cookie `name=value` (repeatable); applied to fetch and render.
     #[arg(long = "cookie", value_name = "NAME=VALUE")]
     cookies: Vec<String>,
+
+    /// Route fetches and the browser render through a proxy, e.g.
+    /// `http://host:8080` or `socks5://user:pass@host:1080`.
+    #[arg(long, value_name = "URL")]
+    proxy: Option<String>,
 }
 
 /// Parse a `Name: Value` header argument, splitting on the first colon (so the
@@ -226,6 +231,7 @@ fn main() -> ExitCode {
         wait_for: cli.wait_for.clone(),
         min_content: cli.min_content,
         session,
+        proxy: cli.proxy.clone(),
         ..Default::default()
     };
 

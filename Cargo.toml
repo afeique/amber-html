@@ -18,7 +18,7 @@ thiserror = "2"
 clap = { version = "4", features = ["derive"] }
 htmd = "0.5"
 dom_smoothie = "0.17"
-ureq = { version = "3", features = ["rustls"] }
+ureq = { version = "3", features = ["rustls", "socks-proxy"] }
 zip = { version = "8", default-features = false, features = ["deflate-flate2-zlib-rs"] }
 dirs = "6"
 os_pipe = "1"

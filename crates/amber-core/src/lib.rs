@@ -27,6 +27,7 @@ pub mod output;
 pub mod render;
 pub mod robots;
 pub mod sitemap;
+pub mod store;
 
 pub use budget::{estimate_cost, estimate_tokens, truncate_to_tokens, TokenAccounting};
 pub use cache::{content_hash, Cache, CacheEntry};
@@ -42,6 +43,7 @@ pub use meta::PageMetadata;
 pub use output::OutputFormat;
 pub use robots::Robots;
 pub use sitemap::{fetch_sitemap, parse_sitemap};
+pub use store::{CrawlStore, StoredPage};
 
 use std::path::{Path, PathBuf};
 use url::Url;

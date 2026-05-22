@@ -245,7 +245,7 @@ mirrors. Public FFI surface is **blocking** (tokio hidden inside core).
 |------|------|-----|---------|--------|
 | 5.1 | MHTML emitter (`Page.captureSnapshot`) | `--mhtml` writes a faithful `.mhtml` bundle | 1.4 | cc:WIP |
 | 5.2 | Single-file inlined HTML (MHTML → `data:` URIs + inlined `<style>`) | `--html` writes a self-contained `.html` that opens offline | 5.1 | cc:WIP |
-| 5.3 | WARC emitter (network recording before navigate) | `--warc` writes a valid WARC | 1.4 | cc:TODO |
+| 5.3 | WARC emitter (network recording before navigate) | `--warc` writes a valid WARC | 1.4 | cc:WIP |
 | 5.4 | WACZ emitter (replayable) | `--wacz` round-trips as a replayable archive | 5.3 | cc:TODO |
 | 5.5 | PDF export (`Page.printToPDF`) | `--pdf` writes a `.pdf` of the rendered page | 1.4 | cc:TODO |
 | 5.6 | Accessibility-tree bundle | A11y tree exposed/saved for grounding | 1.4 | cc:TODO |

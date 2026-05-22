@@ -28,6 +28,7 @@ pub mod render;
 pub mod robots;
 pub mod sitemap;
 pub mod store;
+pub mod warc;
 
 pub use budget::{estimate_cost, estimate_tokens, truncate_to_tokens, TokenAccounting};
 pub use cache::{content_hash, Cache, CacheEntry};
@@ -44,6 +45,7 @@ pub use output::OutputFormat;
 pub use robots::Robots;
 pub use sitemap::{fetch_sitemap, parse_sitemap};
 pub use store::{CrawlStore, StoredPage};
+pub use warc::{http_response_block, WarcWriter};
 
 use std::path::{Path, PathBuf};
 use url::Url;

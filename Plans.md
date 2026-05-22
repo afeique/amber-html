@@ -224,7 +224,7 @@ mirrors. Public FFI surface is **blocking** (tokio hidden inside core).
 | 3.4 | Content-addressed cache (hash → result) + conditional requests (ETag/IMS) | Re-capture uses cache / conditional GET; unchanged pages skipped | 3.1 | cc:TODO |
 | 3.5 | Crawl store / index | Crawl results persisted and queryable | 3.1 | cc:TODO |
 | 3.6 | Incremental crawl (content-hash + conditional GET) | Re-run returns only changed pages | 3.4 | cc:TODO |
-| 3.7 | Change detection / diff feed | Diff between two captures of the same URL is produced | 3.4 | cc:TODO |
+| 3.7 | Change detection / diff feed | Diff between two captures of the same URL is produced | 3.4 | cc:完了 |
 | 3.8 | Sitemap.xml ingestion | Sitemap URLs seed a crawl | 3.1 | cc:完了 |
 | 3.9 | Browser sandboxing / process isolation | Renders run sandboxed per platform defaults | 1.4 | cc:TODO |
 | 3.10 | Secrets handling for auth (never logged) | Auth secrets never appear in logs/traces | 3.3 | cc:TODO |

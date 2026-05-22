@@ -7,6 +7,9 @@
 // Scaffold: several items are defined ahead of their implementations.
 #![allow(dead_code)]
 
+// UniFFI scaffolding for the language bindings (see `ffi`).
+uniffi::setup_scaffolding!();
+
 pub mod actions;
 pub mod blocking;
 pub mod browser;
@@ -21,6 +24,7 @@ pub mod diff;
 pub mod emulation;
 pub mod error;
 pub mod extract;
+pub mod ffi;
 pub mod fetch;
 pub mod http;
 pub mod inline;

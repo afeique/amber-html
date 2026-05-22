@@ -30,3 +30,4 @@ encoding_rs = "0.8"
 whatlang = "0.18"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+uniffi = "0.31"

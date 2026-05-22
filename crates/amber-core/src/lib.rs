@@ -62,7 +62,7 @@ pub use limits::{Deadline, ResourceLimits};
 pub use meta::PageMetadata;
 pub use metrics::{Metrics, MetricsSnapshot};
 pub use output::OutputFormat;
-pub use provenance::{anchor_for, Provenance};
+pub use provenance::{anchor_fields, anchor_for, FieldProvenance, Provenance};
 pub use recurring::{run_schedule, Cadence};
 pub use robots::Robots;
 pub use selectors::{select_all_text, select_first_text};
@@ -209,6 +209,30 @@ impl Snapshot {
         client: &C,
     ) -> Result<serde_json::Value> {
         structured::extract_nl(&self.readable_text(), instruction, client)
+    }
+
+    /// Extract structured JSON against `schema` and anchor each extracted field
+    /// back to the captured page (Plans.md task 4.4). Returns the value plus one
+    /// [`FieldProvenance`] per scalar field, so every extracted fact is
+    /// verifiable against a DOM node and the source URL.
+    ///
+    /// Anchors are computed against the browser-rendered DOM when present, else
+    /// the static fetch. A field whose value isn't found verbatim in the page
+    /// is still returned, with `anchor: None`.
+    pub fn extract_with_provenance<C: structured::LlmClient>(
+        &self,
+        schema: &str,
+        client: &C,
+    ) -> Result<(serde_json::Value, Vec<FieldProvenance>)> {
+        let value = self.extract(schema, client)?;
+        let html = self
+            .raw
+            .rendered_html
+            .as_deref()
+            .or(self.raw.static_html.as_deref())
+            .unwrap_or("");
+        let anchors = provenance::anchor_fields(html, &value, self.url.as_str());
+        Ok((value, anchors))
     }
 
     /// The captured accessibility tree (`Accessibility.getFullAXTree` nodes),
@@ -592,6 +616,43 @@ mod tests {
         let value = snap.extract(r#"{"type":"object"}"#, &Mock).unwrap();
         assert_eq!(value["title"], "Amber");
         assert_eq!(value["ok"], true);
+    }
+
+    /// `Snapshot::extract_with_provenance` anchors each extracted field back to a
+    /// DOM node + URL in the captured page; a value absent from the page is
+    /// returned with no anchor (task 4.4).
+    #[test]
+    fn snapshot_extract_with_provenance_anchors_fields() {
+        struct Mock;
+        impl structured::LlmClient for Mock {
+            fn complete(&self, _prompt: &str) -> Result<String> {
+                Ok(r#"{"amount":"42 USD","missing":"not present"}"#.to_string())
+            }
+        }
+        let snap = snapshot_from(RawCapture {
+            static_html: Some(
+                r#"<html><body><div id="main"><p class="lead">The price is
+                   <span class="amount">42 USD</span> today.</p></div></body></html>"#
+                    .to_string(),
+            ),
+            ..Default::default()
+        });
+
+        let (value, anchors) = snap
+            .extract_with_provenance(r#"{"type":"object"}"#, &Mock)
+            .unwrap();
+        assert_eq!(value["amount"], "42 USD");
+
+        let amount = anchors.iter().find(|f| f.path == "/amount").unwrap();
+        let anchor = amount.anchor.as_ref().expect("amount value is anchored");
+        assert_eq!(anchor.css_path, "div#main > p.lead > span.amount");
+        assert_eq!(anchor.url, "https://ex.com/");
+
+        let missing = anchors.iter().find(|f| f.path == "/missing").unwrap();
+        assert!(
+            missing.anchor.is_none(),
+            "a value absent from the page carries no anchor"
+        );
     }
 
     /// `readable_deduped` returns the readable text with duplicate paragraphs

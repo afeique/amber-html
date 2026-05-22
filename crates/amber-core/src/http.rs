@@ -15,6 +15,7 @@
 
 use std::time::Duration;
 
+use encoding_rs::Encoding;
 use url::Url;
 
 /// A realistic desktop-Chrome User-Agent. Many sites vary their server-rendered
@@ -39,7 +40,8 @@ pub struct FetchedPage {
     pub status: u16,
     /// The `Content-Type` response header, if present (verbatim, incl. params).
     pub content_type: Option<String>,
-    /// The response body decoded as text (UTF-8, best-effort).
+    /// The response body decoded as text using the declared charset
+    /// (header → BOM → `<meta charset>` → UTF-8). See [`decode_html`].
     pub html: String,
 }
 
@@ -98,16 +100,23 @@ pub fn fetch(url: &Url) -> Result<FetchedPage, FetchError> {
         .and_then(|v| v.to_str().ok())
         .map(str::to_owned);
 
-    // Read the body as text. ureq replaces invalid UTF-8 with the replacement
-    // character (best-effort decode). Raise the default 10MB cap generously
-    // for large server-rendered pages.
+    // Read the raw bytes (raising the default 10MB cap for large
+    // server-rendered pages), then decode to text using the declared charset
+    // rather than assuming UTF-8 — many real pages are ISO-8859-1, Windows-1252,
+    // Shift_JIS, etc.
+    let (_essence, header_charset) = content_type
+        .as_deref()
+        .map(parse_content_type)
+        .unwrap_or_default();
+
     let mut response = response;
-    let html = response
+    let bytes = response
         .body_mut()
         .with_config()
         .limit(64 * 1024 * 1024)
-        .read_to_string()
+        .read_to_vec()
         .map_err(map_ureq_error)?;
+    let html = decode_html(&bytes, header_charset.as_deref());
 
     Ok(FetchedPage {
         final_url,
@@ -115,6 +124,48 @@ pub fn fetch(url: &Url) -> Result<FetchedPage, FetchError> {
         content_type,
         html,
     })
+}
+
+/// Decode raw response bytes into a `String`, choosing the encoding by, in
+/// priority order: the HTTP `Content-Type` charset, a leading byte-order mark,
+/// a `<meta charset>` declaration sniffed from the document head, then UTF-8.
+///
+/// Best-effort and infallible: an unrecognized charset label is ignored (we try
+/// the next signal), and undecodable bytes become the replacement character.
+pub fn decode_html(bytes: &[u8], header_charset: Option<&str>) -> String {
+    // 1. The HTTP header charset is authoritative when recognized.
+    if let Some(enc) = header_charset.and_then(|c| Encoding::for_label(c.as_bytes())) {
+        return enc.decode(bytes).0.into_owned();
+    }
+    // 2. A byte-order mark, if present, is decisive.
+    if let Some((enc, _bom_len)) = Encoding::for_bom(bytes) {
+        return enc.decode(bytes).0.into_owned();
+    }
+    // 3. A `<meta charset>` declaration in the document head.
+    if let Some(enc) = sniff_meta_charset(bytes).and_then(|c| Encoding::for_label(c.as_bytes())) {
+        return enc.decode(bytes).0.into_owned();
+    }
+    // 4. Default to UTF-8 (lossy).
+    encoding_rs::UTF_8.decode(bytes).0.into_owned()
+}
+
+/// Scan the first portion of `bytes` for a `charset=…` declaration, matching
+/// both `<meta charset="…">` and `<meta http-equiv content="…; charset=…">`.
+/// Returns the raw charset label (lowercased) if found.
+fn sniff_meta_charset(bytes: &[u8]) -> Option<String> {
+    // Per the HTML spec, the encoding declaration must appear early; 2 KiB is a
+    // generous prescan window.
+    let window = &bytes[..bytes.len().min(2048)];
+    let head = String::from_utf8_lossy(window).to_ascii_lowercase();
+    let idx = head.find("charset")?;
+    let after = head[idx + "charset".len()..].trim_start();
+    let after = after.strip_prefix('=')?.trim_start();
+    let label: String = after
+        .trim_start_matches(['"', '\''])
+        .chars()
+        .take_while(|c| !matches!(c, '"' | '\'' | ' ' | ';' | '>' | '/' | '\t' | '\r' | '\n'))
+        .collect();
+    (!label.is_empty()).then_some(label)
 }
 
 /// Translate a [`ureq::Error`] into our local [`FetchError`].
@@ -245,6 +296,51 @@ mod tests {
         assert!(content_type_is_html(Some("application/xhtml+xml")));
         assert!(!content_type_is_html(Some("application/json; charset=utf-8")));
         assert!(!content_type_is_html(None));
+    }
+
+    #[test]
+    fn decode_html_uses_header_charset() {
+        // "café" in ISO-8859-1: é is 0xE9.
+        let bytes = [b'c', b'a', b'f', b'\xE9'];
+        assert_eq!(decode_html(&bytes, Some("iso-8859-1")), "café");
+    }
+
+    #[test]
+    fn decode_html_windows_1252_smart_quotes() {
+        // 0x93/0x94 are “ ” curly quotes in Windows-1252 (undefined in latin1).
+        let bytes = [b'\x93', b'h', b'i', b'\x94'];
+        assert_eq!(decode_html(&bytes, Some("windows-1252")), "“hi”");
+    }
+
+    #[test]
+    fn decode_html_defaults_to_utf8() {
+        // "café" in UTF-8: é is 0xC3 0xA9.
+        let bytes = [b'c', b'a', b'f', b'\xC3', b'\xA9'];
+        assert_eq!(decode_html(&bytes, None), "café");
+    }
+
+    #[test]
+    fn decode_html_sniffs_meta_charset_when_header_absent() {
+        // No header charset; the document declares ISO-8859-1 via <meta>.
+        let mut bytes = b"<html><head><meta charset=\"iso-8859-1\"></head><body>caf".to_vec();
+        bytes.push(0xE9); // é in latin1
+        bytes.extend_from_slice(b"</body></html>");
+        let decoded = decode_html(&bytes, None);
+        assert!(decoded.contains("café"), "expected decoded é, got: {decoded}");
+    }
+
+    #[test]
+    fn decode_html_unknown_charset_falls_back_to_utf8() {
+        let bytes = [b'c', b'a', b'f', b'\xC3', b'\xA9'];
+        // A bogus label is ignored; UTF-8 decoding still yields café.
+        assert_eq!(decode_html(&bytes, Some("x-not-a-charset")), "café");
+    }
+
+    #[test]
+    fn decode_html_honors_utf8_bom() {
+        // UTF-8 BOM (EF BB BF) + "hi"; the BOM is stripped from the output.
+        let bytes = [0xEF, 0xBB, 0xBF, b'h', b'i'];
+        assert_eq!(decode_html(&bytes, None), "hi");
     }
 
     #[test]

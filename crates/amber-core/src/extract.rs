@@ -94,6 +94,20 @@ pub fn to_readable(html: &str) -> String {
     }
 }
 
+/// Detect the natural language of `text`, returning its ISO 639-3 code
+/// (e.g. `"eng"`, `"fra"`). Returns `None` for empty input or text too short to
+/// classify with any confidence.
+///
+/// Uses [`whatlang`], a script- and trigram-based detector that needs no model
+/// download. Run it on already-extracted text (e.g. [`to_readable`] output) so
+/// markup and boilerplate do not skew the result.
+pub fn detect_language(text: &str) -> Option<String> {
+    if text.trim().is_empty() {
+        return None;
+    }
+    whatlang::detect(text).map(|info| info.lang().code().to_string())
+}
+
 /// Crude last-resort plain-text extraction when Readability declines to extract
 /// a main article. Removes `<script>`/`<style>` blocks, strips all remaining
 /// tags, decodes a handful of common HTML entities, and collapses whitespace.
@@ -388,5 +402,27 @@ mod tests {
     #[test]
     fn decode_basic_entities_handles_common_named_refs() {
         assert_eq!(decode_basic_entities("a &amp; b &lt;c&gt; &quot;d&quot;"), "a & b <c> \"d\"");
+    }
+
+    // ---- detect_language -------------------------------------------------
+
+    #[test]
+    fn detect_language_english() {
+        let text = "The quick brown fox jumps over the lazy dog. This sentence \
+                    is clearly written in the English language for testing.";
+        assert_eq!(detect_language(text).as_deref(), Some("eng"));
+    }
+
+    #[test]
+    fn detect_language_french() {
+        let text = "Le renard brun et rapide saute par-dessus le chien paresseux. \
+                    Cette phrase est clairement écrite en langue française.";
+        assert_eq!(detect_language(text).as_deref(), Some("fra"));
+    }
+
+    #[test]
+    fn detect_language_empty_is_none() {
+        assert_eq!(detect_language(""), None);
+        assert_eq!(detect_language("   \n  "), None);
     }
 }

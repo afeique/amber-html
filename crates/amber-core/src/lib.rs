@@ -70,6 +70,19 @@ impl Snapshot {
         }
     }
 
+    /// Detect the page's natural language (ISO 639-3, e.g. `"eng"`) from the
+    /// extracted readable text. Complements the declared `<html lang>` exposed
+    /// by [`Snapshot::metadata`]. Returns `None` when no HTML was captured or no
+    /// language can be confidently determined.
+    pub fn detected_language(&self) -> Option<String> {
+        let html = self
+            .raw
+            .rendered_html
+            .as_deref()
+            .or(self.raw.static_html.as_deref())?;
+        extract::detect_language(&extract::to_readable(html))
+    }
+
     /// Render a single format to bytes.
     pub fn render(&self, format: OutputFormat) -> Result<Vec<u8>> {
         // Prefer browser-rendered HTML; fall back to the static fetch.
@@ -227,5 +240,27 @@ mod tests {
     fn snapshot_metadata_empty_without_html() {
         let snap = snapshot_from(RawCapture::default());
         assert_eq!(snap.metadata(), PageMetadata::default());
+    }
+
+    /// `Snapshot::detected_language()` classifies the captured page's text.
+    #[test]
+    fn snapshot_detects_language_from_html() {
+        let snap = snapshot_from(RawCapture {
+            static_html: Some(
+                "<html><body><article><p>The quick brown fox jumps over the lazy \
+                 dog, and this paragraph is unmistakably written in English prose \
+                 so the detector has plenty to work with.</p></article></body></html>"
+                    .to_string(),
+            ),
+            ..Default::default()
+        });
+        assert_eq!(snap.detected_language().as_deref(), Some("eng"));
+    }
+
+    /// No captured HTML → no language, not an error.
+    #[test]
+    fn snapshot_detected_language_none_without_html() {
+        let snap = snapshot_from(RawCapture::default());
+        assert_eq!(snap.detected_language(), None);
     }
 }

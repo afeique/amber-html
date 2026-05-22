@@ -26,6 +26,7 @@ pub mod render;
 pub use budget::{estimate_cost, estimate_tokens, truncate_to_tokens, TokenAccounting};
 pub use capture::{CaptureOptions, RawCapture};
 pub use error::{Error, Result};
+pub use extract::dedup_text;
 pub use fetch::RenderMode;
 pub use meta::PageMetadata;
 pub use output::OutputFormat;
@@ -102,6 +103,14 @@ impl Snapshot {
         let bytes = self.render(OutputFormat::Readable)?;
         let text = String::from_utf8_lossy(&bytes).into_owned();
         Ok(budget::truncate_to_tokens(&text, max_tokens))
+    }
+
+    /// The page's readable text with duplicate paragraphs removed (see
+    /// [`extract::dedup_text`]). Useful for pages that repeat boilerplate
+    /// fragments in the main content.
+    pub fn readable_deduped(&self) -> Result<String> {
+        let bytes = self.render(OutputFormat::Readable)?;
+        Ok(extract::dedup_text(&String::from_utf8_lossy(&bytes)))
     }
 
     /// Per-capture token accounting for the text renderings (Markdown and
@@ -344,5 +353,26 @@ mod tests {
     fn snapshot_token_accounting_zero_without_html() {
         let snap = snapshot_from(RawCapture::default());
         assert_eq!(snap.token_accounting(), TokenAccounting::default());
+    }
+
+    /// `readable_deduped` returns the readable text with duplicate paragraphs
+    /// removed (delegates to `extract::dedup_text`).
+    #[test]
+    fn snapshot_readable_deduped_drops_duplicate_paragraphs() {
+        let snap = snapshot_from(RawCapture {
+            static_html: Some(
+                "<html><body><article>\
+                 <p>Alpha beta gamma delta epsilon.</p>\
+                 <p>Alpha beta gamma delta epsilon.</p>\
+                 <p>A distinct unique closing sentence.</p>\
+                 </article></body></html>"
+                    .to_string(),
+            ),
+            ..Default::default()
+        });
+        let raw = String::from_utf8(snap.render(OutputFormat::Readable).unwrap()).unwrap();
+        let deduped = snap.readable_deduped().unwrap();
+        assert_eq!(deduped, dedup_text(&raw));
+        assert!(deduped.len() <= raw.len());
     }
 }

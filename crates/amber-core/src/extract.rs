@@ -160,6 +160,27 @@ pub fn detect_language(text: &str) -> Option<String> {
     whatlang::detect(text).map(|info| info.lang().code().to_string())
 }
 
+/// Remove duplicate paragraphs from `text`, keeping the first occurrence of
+/// each and preserving order. Paragraphs are split on blank lines and compared
+/// on their whitespace-normalized content; empty blocks are dropped.
+///
+/// Best-effort and infallible — handy for trimming repeated boilerplate
+/// fragments out of extracted Markdown or readable text.
+pub fn dedup_text(text: &str) -> String {
+    let mut seen = std::collections::HashSet::new();
+    let mut kept = Vec::new();
+    for block in text.split("\n\n") {
+        let normalized = block.split_whitespace().collect::<Vec<_>>().join(" ");
+        if normalized.is_empty() {
+            continue;
+        }
+        if seen.insert(normalized) {
+            kept.push(block.trim());
+        }
+    }
+    kept.join("\n\n")
+}
+
 /// Crude last-resort plain-text extraction when Readability declines to extract
 /// a main article. Removes `<script>`/`<style>` blocks, strips all remaining
 /// tags, decodes a handful of common HTML entities, and collapses whitespace.
@@ -505,5 +526,31 @@ mod tests {
     fn detect_language_empty_is_none() {
         assert_eq!(detect_language(""), None);
         assert_eq!(detect_language("   \n  "), None);
+    }
+
+    // ---- dedup_text ------------------------------------------------------
+
+    #[test]
+    fn dedup_removes_repeated_paragraphs_keeping_first() {
+        let text = "Intro paragraph.\n\nRepeated block.\n\nMiddle.\n\nRepeated block.\n\nEnd.";
+        assert_eq!(
+            dedup_text(text),
+            "Intro paragraph.\n\nRepeated block.\n\nMiddle.\n\nEnd."
+        );
+    }
+
+    #[test]
+    fn dedup_normalizes_whitespace_for_comparison() {
+        // Same words, different internal spacing → treated as a duplicate; the
+        // first occurrence is kept verbatim (trimmed).
+        let text = "Hello   world\n\nHello world";
+        assert_eq!(dedup_text(text), "Hello   world");
+    }
+
+    #[test]
+    fn dedup_drops_empty_blocks_and_handles_edges() {
+        assert_eq!(dedup_text(""), "");
+        assert_eq!(dedup_text("\n\n\n\n"), "");
+        assert_eq!(dedup_text("only one"), "only one");
     }
 }

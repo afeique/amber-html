@@ -35,7 +35,8 @@ pub(crate) fn capture(
     formats: &[OutputFormat],
     opts: &CaptureOptions,
 ) -> Result<RawCapture> {
-    let cdp = PipeCdp::spawn(chromium, &browser_args()).map_err(browser_err)?;
+    let cdp = PipeCdp::spawn(chromium, &browser_args(opts.headed, opts.proxy.as_deref()))
+        .map_err(browser_err)?;
 
     // Over the debug pipe the connection is browser-level; attach to a fresh
     // page target (CDP "flatten" mode) so Page.*/Network.*/Runtime.* commands
@@ -119,12 +120,20 @@ pub(crate) fn capture(
     // `cdp` is dropped here → the Chromium child is killed.
 }
 
-/// Default Chromium flags for headless capture.
-fn browser_args() -> Vec<String> {
-    let mut args = vec![
-        "--hide-scrollbars".to_string(),
-        "--disable-gpu".to_string(),
-    ];
+/// Chromium flags for capture. Headless by default (the right mode for
+/// servers/CI); `headed` opts into a visible window (a stealthier escalation
+/// that needs a display).
+fn browser_args(headed: bool, proxy: Option<&str>) -> Vec<String> {
+    let mut args = Vec::new();
+    if !headed {
+        args.push("--headless=new".to_string());
+    }
+    args.push("--hide-scrollbars".to_string());
+    args.push("--disable-gpu".to_string());
+    // Bring-your-own proxy (8.4): route all browser traffic through it.
+    if let Some(proxy) = proxy {
+        args.push(format!("--proxy-server={proxy}"));
+    }
     // Linux/CI environments typically require --no-sandbox; macOS does not.
     if cfg!(target_os = "linux") {
         args.push("--no-sandbox".to_string());
@@ -437,15 +446,27 @@ mod tests {
     }
 
     #[test]
-    fn browser_args_are_headless_safe() {
-        let args = browser_args();
-        assert!(args.iter().any(|a| a == "--disable-gpu"));
-        assert!(args.iter().any(|a| a == "--hide-scrollbars"));
+    fn browser_args_headless_by_default_headed_opts_out() {
+        let headless = browser_args(false, None);
+        assert!(headless.iter().any(|a| a == "--headless=new"), "default must be headless");
+        assert!(headless.iter().any(|a| a == "--disable-gpu"));
+        assert!(headless.iter().any(|a| a == "--hide-scrollbars"));
+        // Headed mode drops the headless flag (8.3).
+        let headed = browser_args(true, None);
+        assert!(!headed.iter().any(|a| a == "--headless=new"));
         // --no-sandbox is added only where required (Linux/CI).
         assert_eq!(
-            args.iter().any(|a| a == "--no-sandbox"),
+            headless.iter().any(|a| a == "--no-sandbox"),
             cfg!(target_os = "linux")
         );
+    }
+
+    #[test]
+    fn browser_args_includes_proxy_when_set() {
+        let with = browser_args(false, Some("http://proxy.local:8080"));
+        assert!(with.iter().any(|a| a == "--proxy-server=http://proxy.local:8080"));
+        let without = browser_args(false, None);
+        assert!(!without.iter().any(|a| a.starts_with("--proxy-server")));
     }
 
     #[test]

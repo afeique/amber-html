@@ -61,7 +61,7 @@ pub use meta::PageMetadata;
 pub use metrics::{Metrics, MetricsSnapshot};
 pub use output::OutputFormat;
 pub use provenance::{anchor_for, Provenance};
-pub use recurring::Cadence;
+pub use recurring::{run_schedule, Cadence};
 pub use robots::Robots;
 pub use selectors::{select_all_text, select_first_text};
 pub use sitemap::{fetch_sitemap, parse_sitemap};

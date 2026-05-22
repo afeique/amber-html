@@ -47,7 +47,7 @@ struct Cli {
     /// Directory to write into (created if missing).
     #[arg(short = 'o', long = "output-dir", default_value = ".")]
     output_dir: PathBuf,
-    /// Base filename, no extension. Default: "<safe-url> <date> <time>".
+    /// Base filename, no extension. Default: `<safe-url> <date> <time>`.
     #[arg(short = 'n', long = "name")]
     name: Option<String>,
 

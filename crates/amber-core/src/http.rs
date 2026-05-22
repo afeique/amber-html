@@ -70,10 +70,10 @@ pub enum FetchError {
 /// Perform a blocking HTTP GET for `url` (the cheap static tier, Plans.md),
 /// retrying transient failures with exponential backoff.
 ///
-/// Retries (up to [`MAX_ATTEMPTS`] total attempts) on transient errors — request
+/// Retries (up to `MAX_ATTEMPTS` total attempts) on transient errors — request
 /// timeouts, transport failures, and `429`/`5xx` responses — backing off
-/// [`BACKOFF_BASE`], doubling each attempt. Permanent failures (e.g. `404`) and
-/// successes return immediately. See [`fetch_once`] for the single-attempt
+/// `BACKOFF_BASE`, doubling each attempt. Permanent failures (e.g. `404`) and
+/// successes return immediately. See `fetch_once` for the single-attempt
 /// semantics (redirects, User-Agent, charset decoding, timeout).
 pub fn fetch(url: &Url) -> Result<FetchedPage, FetchError> {
     fetch_with_ua(url, USER_AGENT)
@@ -136,7 +136,7 @@ fn is_transient(err: &FetchError) -> bool {
 }
 
 /// Exponential backoff for the `attempt`-th failure (1-based):
-/// [`BACKOFF_BASE`] × 2^(attempt-1) — 200 ms, 400 ms, 800 ms, …
+/// `BACKOFF_BASE` × 2^(attempt-1) — 200 ms, 400 ms, 800 ms, …
 fn backoff_delay(attempt: u32) -> Duration {
     BACKOFF_BASE * 2u32.pow(attempt.saturating_sub(1))
 }

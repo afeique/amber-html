@@ -17,6 +17,53 @@ JavaScript, then produces every requested format from one render. It runs on
 your machine — including against `localhost`, intranet, and behind-auth pages —
 and can be embedded in-process via thin, idiomatic bindings to other languages.
 
+## Quickstart
+
+Build the CLI from this workspace (a pinned Chrome for Testing is downloaded and
+cached automatically the first time a capture needs a browser):
+
+```sh
+cargo build --release            # binary at target/release/amber
+```
+
+Capture a page — pick the formats explicitly (there is no default output):
+
+```sh
+# Static-friendly pages stay on the cheap HTTP path:
+amber https://example.com --markdown --readable -o ./out
+
+# A screenshot (or --mhtml/--pdf/--html) forces a real browser render:
+amber https://example.com --screenshot --markdown -o ./out -n example
+
+# Wait for a condition, or emulate a viewport, before capturing:
+amber https://app.example.com --markdown --render always --wait-for "js:window.ready === true"
+```
+
+Outputs are written as `<output-dir>/<name>.<ext>`; with no `-n`, the name is
+`<safe-url> <YYYY-MM-DD> <HH-MM-SS>`.
+
+Run it as an **MCP server** over stdio (exposes a `snapshot` tool to agents):
+
+```sh
+amber --mcp
+```
+
+Use it as a **Rust library**:
+
+```rust
+use amber_core::{snapshot, CaptureOptions, OutputFormat};
+
+let snap = snapshot(
+    "https://example.com",
+    &[OutputFormat::Markdown],
+    CaptureOptions::default(),
+)?;
+let markdown = String::from_utf8(snap.render(OutputFormat::Markdown)?)?;
+# Ok::<(), amber_core::Error>(())
+```
+
+Set `AMBER_LOG=debug` (or `RUST_LOG`) for structured logs on stderr.
+
 ## Goals
 
 - **Tiered fetching** — try a cheap HTTP fetch first; escalate to a headless

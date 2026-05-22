@@ -29,15 +29,15 @@
 //! Because there is nothing authoritative to verify *against*, we do not invent
 //! a hash here (a self-computed hash verifies nothing about authenticity). The
 //! download is integrity-protected by HTTPS/TLS to `storage.googleapis.com`.
-//! See [`pinned_sha256`] for the single seam where a real, externally-sourced
+//! See `pinned_sha256` for the single seam where a real, externally-sourced
 //! checksum should be wired in.
 //!
 //! TODO(checksum): when an authoritative checksum source exists — e.g. a vendored
 //! `version -> {platform -> sha256}` table generated out-of-band, or a future CfT
-//! API field — populate [`pinned_sha256`] and gate extraction on a SHA-256 match
+//! API field — populate `pinned_sha256` and gate extraction on a SHA-256 match
 //! of the downloaded bytes. To keep the dependency footprint minimal while no
 //! checksum is available, the actual hashing is intentionally NOT wired up; the
-//! seam ([`pinned_sha256`] + the call site in [`download_and_extract`]) marks
+//! seam (`pinned_sha256` + the call site in `download_and_extract`) marks
 //! exactly where a `sha2`-based check would go.
 
 use std::path::{Path, PathBuf};
@@ -280,7 +280,7 @@ fn download_and_extract(
 /// Returns `None` today: Chrome for Testing publishes no per-download hashes
 /// (see module docs), so there is nothing to verify against. This is the single
 /// seam to populate when an external checksum table becomes available; the call
-/// site in [`download_and_extract`] will then hash the staged archive (e.g. via
+/// site in `download_and_extract` will then hash the staged archive (e.g. via
 /// the `sha2` crate) and reject a mismatch before extracting.
 fn pinned_sha256(_version: &str, _platform: CftPlatform) -> Option<&'static str> {
     None

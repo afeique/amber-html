@@ -221,7 +221,7 @@ pub const CRAWL_USER_AGENT: &str = concat!(
 /// Run a bounded, polite crawl over HTTP from `seed`:
 /// - fetch and honor `{origin}/robots.txt` (allow-all if it can't be fetched),
 /// - identify with [`CRAWL_USER_AGENT`],
-/// - wait [`politeness_delay`] between fetches (the larger of `min_delay_ms` and
+/// - wait `politeness_delay` between fetches (the larger of `min_delay_ms` and
 ///   the robots `Crawl-delay`),
 /// - follow only in-scope, robots-allowed links.
 ///

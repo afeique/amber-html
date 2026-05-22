@@ -119,7 +119,10 @@ mod tests {
 
     #[test]
     fn scroll_actions() {
-        assert_eq!(expr(&Action::ScrollBy { x: 0, y: 500 }), "window.scrollBy(0,500)");
+        assert_eq!(
+            expr(&Action::ScrollBy { x: 0, y: 500 }),
+            "window.scrollBy(0,500)"
+        );
         assert_eq!(
             expr(&Action::ScrollToBottom),
             "window.scrollTo(0,document.body.scrollHeight)"

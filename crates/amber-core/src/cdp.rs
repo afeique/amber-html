@@ -449,10 +449,7 @@ impl PipeCdp {
 
     /// Write one NUL-terminated frame to fd 3 under the writer lock.
     fn write_frame(&self, frame: &[u8]) -> Result<(), CdpError> {
-        let mut w = self
-            .writer
-            .lock()
-            .map_err(|_| CdpError::ConnectionClosed)?;
+        let mut w = self.writer.lock().map_err(|_| CdpError::ConnectionClosed)?;
         w.write_all(frame).map_err(CdpError::Io)?;
         w.flush().map_err(CdpError::Io)?;
         Ok(())
@@ -558,8 +555,7 @@ impl crate::browser::CdpTransport for PipeCdp {
         // Delegate to the inherent `&self` method; map the transport error onto
         // the crate-wide error type. The integration layer may replace this
         // mapping with a richer variant.
-        PipeCdp::send(self, method, params)
-            .map_err(|e| crate::error::Error::Fetch(e.to_string()))
+        PipeCdp::send(self, method, params).map_err(|e| crate::error::Error::Fetch(e.to_string()))
     }
 }
 

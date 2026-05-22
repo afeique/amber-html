@@ -167,7 +167,12 @@ impl Frontier {
 /// I/O-agnostic: `fetch_links` does whatever fetching/extraction the caller
 /// wants (HTTP fetch + link extraction, a browser render, …). A page that
 /// fails to fetch simply contributes no links but still counts as visited.
-pub fn crawl_with<F>(seed: Url, scope: CrawlScope, limits: CrawlLimits, mut fetch_links: F) -> Vec<Url>
+pub fn crawl_with<F>(
+    seed: Url,
+    scope: CrawlScope,
+    limits: CrawlLimits,
+    mut fetch_links: F,
+) -> Vec<Url>
 where
     F: FnMut(&Url) -> Vec<Url>,
 {
@@ -382,7 +387,7 @@ mod tests {
             d0,
             [
                 url("https://example.com/a"),
-                url("https://other.com/b"), // out of scope
+                url("https://other.com/b"),        // out of scope
                 url("https://example.com/a#frag"), // dup of /a
                 url("https://example.com/c"),
             ],
@@ -540,13 +545,23 @@ mod tests {
         };
 
         // First run: empty cache → every visited page is "changed".
-        let first =
-            crawl_incremental_with(seed.clone(), scope.clone(), limits, &mut cache, make_fetch("a v1"));
+        let first = crawl_incremental_with(
+            seed.clone(),
+            scope.clone(),
+            limits,
+            &mut cache,
+            make_fetch("a v1"),
+        );
         assert_eq!(first.len(), 2);
 
         // Re-run with identical content → nothing changed.
-        let second =
-            crawl_incremental_with(seed.clone(), scope.clone(), limits, &mut cache, make_fetch("a v1"));
+        let second = crawl_incremental_with(
+            seed.clone(),
+            scope.clone(),
+            limits,
+            &mut cache,
+            make_fetch("a v1"),
+        );
         assert!(second.is_empty());
 
         // Re-run with /a changed → only /a is returned.
@@ -561,10 +576,18 @@ mod tests {
         let seed = url("https://example.com/");
         let scope = CrawlScope::same_host(&seed);
         let mut cache = Cache::new();
-        let first = crawl_incremental(seed.clone(), scope.clone(), CrawlLimits::default(), &mut cache);
+        let first = crawl_incremental(
+            seed.clone(),
+            scope.clone(),
+            CrawlLimits::default(),
+            &mut cache,
+        );
         assert_eq!(first.len(), 1, "first run captures the (new) home page");
         let second = crawl_incremental(seed, scope, CrawlLimits::default(), &mut cache);
-        assert!(second.is_empty(), "static page is unchanged on immediate re-run");
+        assert!(
+            second.is_empty(),
+            "static page is unchanged on immediate re-run"
+        );
     }
 
     #[test]

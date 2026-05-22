@@ -43,7 +43,9 @@ pub fn to_markdown(html: &str) -> String {
     let converter = HtmlToMarkdown::builder()
         // Drop non-content machinery. `head` removes <title>/<meta>/<link>
         // boilerplate; the others strip scripts, styling, and JS-off fallbacks.
-        .skip_tags(vec!["script", "style", "head", "noscript", "template", "iframe"])
+        .skip_tags(vec![
+            "script", "style", "head", "noscript", "template", "iframe",
+        ])
         .options(Options {
             // ATX (`# Heading`) is more robust than Setext for arbitrary depth
             // and friendlier to downstream Markdown parsers / LLMs.
@@ -294,7 +296,10 @@ mod tests {
     #[test]
     fn markdown_renders_headings() {
         let md = to_markdown(ARTICLE);
-        assert!(md.contains("# Getting Started with Rust"), "h1 missing:\n{md}");
+        assert!(
+            md.contains("# Getting Started with Rust"),
+            "h1 missing:\n{md}"
+        );
         assert!(md.contains("## Why Rust"), "h2 missing:\n{md}");
     }
 
@@ -314,7 +319,10 @@ mod tests {
             "absolute inline link missing:\n{md}"
         );
         // Relative hrefs are emitted verbatim (no base-URL resolution here).
-        assert!(md.contains("[official book](/book)"), "relative link missing:\n{md}");
+        assert!(
+            md.contains("[official book](/book)"),
+            "relative link missing:\n{md}"
+        );
     }
 
     const CHROME_DOC: &str = r##"<!DOCTYPE html><html><body>
@@ -332,8 +340,14 @@ mod tests {
     #[test]
     fn markdown_strips_nav_footer_aside() {
         let md = to_markdown(CHROME_DOC);
-        assert!(md.contains("Genuine Headline"), "article heading lost:\n{md}");
-        assert!(md.contains("authentic article body"), "article body lost:\n{md}");
+        assert!(
+            md.contains("Genuine Headline"),
+            "article heading lost:\n{md}"
+        );
+        assert!(
+            md.contains("authentic article body"),
+            "article body lost:\n{md}"
+        );
         assert!(!md.contains("About"), "nav not stripped:\n{md}");
         assert!(!md.contains("Copyright"), "footer not stripped:\n{md}");
         assert!(!md.contains("Related sidebar"), "aside not stripped:\n{md}");
@@ -342,7 +356,10 @@ mod tests {
     #[test]
     fn markdown_strips_cookie_and_ad_banners() {
         let md = to_markdown(CHROME_DOC);
-        assert!(!md.contains("We use cookies"), "cookie banner not stripped:\n{md}");
+        assert!(
+            !md.contains("We use cookies"),
+            "cookie banner not stripped:\n{md}"
+        );
         assert!(!md.contains("Buy our product"), "ad not stripped:\n{md}");
     }
 
@@ -350,8 +367,14 @@ mod tests {
     fn markdown_renders_list_items() {
         let md = to_markdown(ARTICLE);
         assert!(md.contains("Memory safety"), "list item missing:\n{md}");
-        assert!(md.contains("Fearless concurrency"), "list item missing:\n{md}");
-        assert!(md.contains("Zero-cost abstractions"), "list item missing:\n{md}");
+        assert!(
+            md.contains("Fearless concurrency"),
+            "list item missing:\n{md}"
+        );
+        assert!(
+            md.contains("Zero-cost abstractions"),
+            "list item missing:\n{md}"
+        );
         // bullet list markers present
         assert!(
             md.lines().any(|l| {
@@ -441,17 +464,26 @@ mod tests {
     #[test]
     fn readable_drops_nav_footer_and_ads() {
         let text = to_readable(PAGE_WITH_BOILERPLATE);
-        assert!(!text.contains("Sign in to your account"), "nav leaked:\n{text}");
+        assert!(
+            !text.contains("Sign in to your account"),
+            "nav leaked:\n{text}"
+        );
         assert!(!text.contains("Sports"), "nav link leaked:\n{text}");
         assert!(!text.contains("SPECIAL OFFER"), "ad leaked:\n{text}");
-        assert!(!text.contains("All rights reserved"), "footer leaked:\n{text}");
+        assert!(
+            !text.contains("All rights reserved"),
+            "footer leaked:\n{text}"
+        );
         assert!(!text.contains("Privacy policy"), "footer leaked:\n{text}");
     }
 
     #[test]
     fn readable_is_plain_text_not_markup() {
         let text = to_readable(PAGE_WITH_BOILERPLATE);
-        assert!(!text.contains('<'), "stray markup in readable text:\n{text}");
+        assert!(
+            !text.contains('<'),
+            "stray markup in readable text:\n{text}"
+        );
         assert!(!text.contains("analytics.track"), "script leaked:\n{text}");
     }
 
@@ -475,7 +507,10 @@ mod tests {
         // assertion below. Use `&amp;` to exercise entity decoding instead.
         let html = "<div><script>steal()</script><p>Tom &amp; Jerry rule the world</p></div>";
         let text = to_readable(html);
-        assert!(text.contains("Tom & Jerry"), "entities not decoded:\n{text}");
+        assert!(
+            text.contains("Tom & Jerry"),
+            "entities not decoded:\n{text}"
+        );
         assert!(!text.contains("steal()"), "script body leaked:\n{text}");
         assert!(!text.contains('<'), "tags leaked:\n{text}");
     }
@@ -503,7 +538,10 @@ mod tests {
 
     #[test]
     fn decode_basic_entities_handles_common_named_refs() {
-        assert_eq!(decode_basic_entities("a &amp; b &lt;c&gt; &quot;d&quot;"), "a & b <c> \"d\"");
+        assert_eq!(
+            decode_basic_entities("a &amp; b &lt;c&gt; &quot;d&quot;"),
+            "a & b <c> \"d\""
+        );
     }
 
     // ---- detect_language -------------------------------------------------

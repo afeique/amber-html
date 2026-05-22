@@ -82,9 +82,7 @@ impl WarcWriter {
 /// body) suitable as the block of a WARC `response` record.
 pub fn http_response_block(status: u16, content_type: &str, body: &[u8]) -> Vec<u8> {
     let mut out = Vec::new();
-    out.extend_from_slice(
-        format!("HTTP/1.1 {status} {}\r\n", reason_phrase(status)).as_bytes(),
-    );
+    out.extend_from_slice(format!("HTTP/1.1 {status} {}\r\n", reason_phrase(status)).as_bytes());
     out.extend_from_slice(format!("Content-Type: {content_type}\r\n").as_bytes());
     out.extend_from_slice(format!("Content-Length: {}\r\n", body.len()).as_bytes());
     out.extend_from_slice(b"\r\n");

@@ -21,8 +21,7 @@ use url::Url;
 /// A realistic desktop-Chrome User-Agent. Many sites vary their server-rendered
 /// markup (or block) by UA, so the cheap tier presents itself as a normal
 /// browser. Kept in sync periodically with a current stable Chrome release.
-const USER_AGENT: &str =
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 \
+const USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 \
      (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
 /// Default end-to-end timeout for the cheap fetch (~30s).
@@ -274,11 +273,7 @@ fn map_ureq_error(err: ureq::Error) -> FetchError {
 /// - `"application/xhtml+xml"`     -> `("application/xhtml+xml", None)`
 pub fn parse_content_type(value: &str) -> (String, Option<String>) {
     let mut parts = value.split(';');
-    let essence = parts
-        .next()
-        .unwrap_or("")
-        .trim()
-        .to_ascii_lowercase();
+    let essence = parts.next().unwrap_or("").trim().to_ascii_lowercase();
 
     let mut charset = None;
     for param in parts {
@@ -352,8 +347,7 @@ mod tests {
 
     #[test]
     fn parse_content_type_multiple_params_picks_charset() {
-        let (essence, charset) =
-            parse_content_type("text/html; boundary=xyz; charset=us-ascii");
+        let (essence, charset) = parse_content_type("text/html; boundary=xyz; charset=us-ascii");
         assert_eq!(essence, "text/html");
         assert_eq!(charset.as_deref(), Some("us-ascii"));
     }
@@ -383,7 +377,9 @@ mod tests {
     fn content_type_is_html_handles_full_header() {
         assert!(content_type_is_html(Some("text/html; charset=utf-8")));
         assert!(content_type_is_html(Some("application/xhtml+xml")));
-        assert!(!content_type_is_html(Some("application/json; charset=utf-8")));
+        assert!(!content_type_is_html(Some(
+            "application/json; charset=utf-8"
+        )));
         assert!(!content_type_is_html(None));
     }
 
@@ -415,7 +411,10 @@ mod tests {
         bytes.push(0xE9); // é in latin1
         bytes.extend_from_slice(b"</body></html>");
         let decoded = decode_html(&bytes, None);
-        assert!(decoded.contains("café"), "expected decoded é, got: {decoded}");
+        assert!(
+            decoded.contains("café"),
+            "expected decoded é, got: {decoded}"
+        );
     }
 
     #[test]
@@ -446,7 +445,9 @@ mod tests {
     #[test]
     fn is_transient_classifies_errors() {
         assert!(is_transient(&FetchError::Timeout));
-        assert!(is_transient(&FetchError::Request("connection reset".into())));
+        assert!(is_transient(&FetchError::Request(
+            "connection reset".into()
+        )));
         assert!(is_transient(&FetchError::Status(429)));
         assert!(is_transient(&FetchError::Status(500)));
         assert!(is_transient(&FetchError::Status(503)));
@@ -465,10 +466,15 @@ mod tests {
     fn retry_returns_first_success_without_retrying() {
         let url = Url::parse("https://ex.com/").unwrap();
         let mut calls = 0;
-        let page = fetch_with_retry(&url, 3, |_| Duration::ZERO, |u| {
-            calls += 1;
-            Ok(ok_page(u))
-        })
+        let page = fetch_with_retry(
+            &url,
+            3,
+            |_| Duration::ZERO,
+            |u| {
+                calls += 1;
+                Ok(ok_page(u))
+            },
+        )
         .unwrap();
         assert_eq!(calls, 1);
         assert_eq!(page.status, 200);
@@ -478,14 +484,19 @@ mod tests {
     fn retry_recovers_after_transient_failures() {
         let url = Url::parse("https://ex.com/").unwrap();
         let mut calls = 0;
-        let page = fetch_with_retry(&url, 3, |_| Duration::ZERO, |u| {
-            calls += 1;
-            if calls < 3 {
-                Err(FetchError::Status(503))
-            } else {
-                Ok(ok_page(u))
-            }
-        })
+        let page = fetch_with_retry(
+            &url,
+            3,
+            |_| Duration::ZERO,
+            |u| {
+                calls += 1;
+                if calls < 3 {
+                    Err(FetchError::Status(503))
+                } else {
+                    Ok(ok_page(u))
+                }
+            },
+        )
         .unwrap();
         assert_eq!(calls, 3);
         assert_eq!(page.status, 200);
@@ -495,10 +506,15 @@ mod tests {
     fn retry_gives_up_after_max_attempts() {
         let url = Url::parse("https://ex.com/").unwrap();
         let mut calls = 0;
-        let err = fetch_with_retry(&url, 3, |_| Duration::ZERO, |_| {
-            calls += 1;
-            Err(FetchError::Timeout)
-        })
+        let err = fetch_with_retry(
+            &url,
+            3,
+            |_| Duration::ZERO,
+            |_| {
+                calls += 1;
+                Err(FetchError::Timeout)
+            },
+        )
         .unwrap_err();
         assert_eq!(calls, 3);
         assert!(matches!(err, FetchError::Timeout));
@@ -508,10 +524,15 @@ mod tests {
     fn retry_does_not_retry_permanent_errors() {
         let url = Url::parse("https://ex.com/").unwrap();
         let mut calls = 0;
-        let err = fetch_with_retry(&url, 3, |_| Duration::ZERO, |_| {
-            calls += 1;
-            Err(FetchError::Status(404))
-        })
+        let err = fetch_with_retry(
+            &url,
+            3,
+            |_| Duration::ZERO,
+            |_| {
+                calls += 1;
+                Err(FetchError::Status(404))
+            },
+        )
         .unwrap_err();
         assert_eq!(calls, 1);
         assert!(matches!(err, FetchError::Status(404)));

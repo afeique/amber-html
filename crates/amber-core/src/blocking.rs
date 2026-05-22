@@ -114,7 +114,10 @@ mod tests {
             blocked_url_substrings: vec!["ads.example".to_string()],
             ..Default::default()
         };
-        assert_eq!(policy.blocked_url_patterns(), vec!["*ads.example*".to_string()]);
+        assert_eq!(
+            policy.blocked_url_patterns(),
+            vec!["*ads.example*".to_string()]
+        );
     }
 
     #[test]
@@ -132,10 +135,7 @@ mod tests {
     #[test]
     fn ad_tracker_preset_blocks_known_hosts() {
         let policy = BlockPolicy::default().with_ad_trackers();
-        assert!(policy.should_block(
-            "https://stats.g.doubleclick.net/x",
-            ResourceType::Script
-        ));
+        assert!(policy.should_block("https://stats.g.doubleclick.net/x", ResourceType::Script));
         assert!(!policy.should_block("https://example.com/app.js", ResourceType::Script));
     }
 }

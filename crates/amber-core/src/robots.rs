@@ -144,9 +144,7 @@ impl Robots {
             for token in &g.agents {
                 if token == "*" {
                     star.get_or_insert(g);
-                } else if ua.contains(token.as_str())
-                    && best.is_none_or(|(b, _)| token.len() > b)
-                {
+                } else if ua.contains(token.as_str()) && best.is_none_or(|(b, _)| token.len() > b) {
                     best = Some((token.len(), g));
                 }
             }

@@ -116,7 +116,9 @@ mod tests {
         assert_eq!(ua.1["userAgent"], "AmberBot/1");
         assert_eq!(ua.1["acceptLanguage"], "fr-FR");
         // A locale override is also emitted.
-        assert!(cmds.iter().any(|(m, _)| *m == "Emulation.setLocaleOverride"));
+        assert!(cmds
+            .iter()
+            .any(|(m, _)| *m == "Emulation.setLocaleOverride"));
     }
 
     #[test]

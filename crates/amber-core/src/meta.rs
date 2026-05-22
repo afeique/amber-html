@@ -82,7 +82,9 @@ pub fn extract(html: &str, base_url: &Url) -> PageMetadata {
             // First occurrence wins; OG arrays (e.g. multiple og:image) keep
             // the first, which is the canonical/primary value.
             if !prop.is_empty() && !content.is_empty() {
-                open_graph.entry(prop.to_string()).or_insert_with(|| content.to_string());
+                open_graph
+                    .entry(prop.to_string())
+                    .or_insert_with(|| content.to_string());
             }
         }
     }
@@ -176,8 +178,14 @@ mod tests {
     #[test]
     fn open_graph_collected_first_wins() {
         let m = extract(DOC, &base());
-        assert_eq!(m.open_graph.get("og:title").map(String::as_str), Some("Amber OG Title"));
-        assert_eq!(m.open_graph.get("og:type").map(String::as_str), Some("article"));
+        assert_eq!(
+            m.open_graph.get("og:title").map(String::as_str),
+            Some("Amber OG Title")
+        );
+        assert_eq!(
+            m.open_graph.get("og:type").map(String::as_str),
+            Some("article")
+        );
         // First og:image wins when duplicated.
         assert_eq!(
             m.open_graph.get("og:image").map(String::as_str),

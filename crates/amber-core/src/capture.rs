@@ -85,7 +85,9 @@ pub(crate) fn run(
         return match opts.render {
             RenderMode::Never => Err(Error::Fetch(format!(
                 "non-HTML response ({}) and --render never",
-                page.content_type.as_deref().unwrap_or("unknown content-type")
+                page.content_type
+                    .as_deref()
+                    .unwrap_or("unknown content-type")
             ))),
             _ => browser_capture(url, formats, opts),
         };

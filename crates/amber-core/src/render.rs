@@ -60,7 +60,12 @@ pub(crate) fn capture(
 
     scmd(&cdp, sid, "Page.enable", json!({}))?;
     scmd(&cdp, sid, "Network.enable", json!({}))?;
-    scmd(&cdp, sid, "Page.setLifecycleEventsEnabled", json!({ "enabled": true }))?;
+    scmd(
+        &cdp,
+        sid,
+        "Page.setLifecycleEventsEnabled",
+        json!({ "enabled": true }),
+    )?;
 
     // Apply device/locale/timezone/dark-mode emulation before navigating.
     for (method, params) in crate::emulation::commands(&opts.emulation) {
@@ -84,13 +89,22 @@ pub(crate) fn capture(
 
     // Rendered DOM backs --markdown / --readable (and --html via the MHTML
     // transform). Always captured; it's a single cheap evaluate.
-    raw.rendered_html = Some(eval_string(&cdp, sid, "document.documentElement.outerHTML")?);
+    raw.rendered_html = Some(eval_string(
+        &cdp,
+        sid,
+        "document.documentElement.outerHTML",
+    )?);
 
     let want = |f: OutputFormat| formats.contains(&f);
 
     // MHTML is also the source for the single-file --html transform.
     if want(OutputFormat::Mhtml) || want(OutputFormat::Html) {
-        let r = scmd(&cdp, sid, "Page.captureSnapshot", json!({ "format": "mhtml" }))?;
+        let r = scmd(
+            &cdp,
+            sid,
+            "Page.captureSnapshot",
+            json!({ "format": "mhtml" }),
+        )?;
         raw.mhtml = r.get("data").and_then(Value::as_str).map(str::to_owned);
     }
     if want(OutputFormat::Screenshot) {
@@ -105,7 +119,12 @@ pub(crate) fn capture(
         }
     }
     if want(OutputFormat::Pdf) {
-        let r = scmd(&cdp, sid, "Page.printToPDF", json!({ "printBackground": true }))?;
+        let r = scmd(
+            &cdp,
+            sid,
+            "Page.printToPDF",
+            json!({ "printBackground": true }),
+        )?;
         if let Some(b64) = r.get("data").and_then(Value::as_str) {
             raw.pdf = Some(decode_b64(b64)?);
         }
@@ -448,7 +467,10 @@ mod tests {
     #[test]
     fn browser_args_headless_by_default_headed_opts_out() {
         let headless = browser_args(false, None);
-        assert!(headless.iter().any(|a| a == "--headless=new"), "default must be headless");
+        assert!(
+            headless.iter().any(|a| a == "--headless=new"),
+            "default must be headless"
+        );
         assert!(headless.iter().any(|a| a == "--disable-gpu"));
         assert!(headless.iter().any(|a| a == "--hide-scrollbars"));
         // Headed mode drops the headless flag (8.3).
@@ -464,7 +486,9 @@ mod tests {
     #[test]
     fn browser_args_includes_proxy_when_set() {
         let with = browser_args(false, Some("http://proxy.local:8080"));
-        assert!(with.iter().any(|a| a == "--proxy-server=http://proxy.local:8080"));
+        assert!(with
+            .iter()
+            .any(|a| a == "--proxy-server=http://proxy.local:8080"));
         let without = browser_args(false, None);
         assert!(!without.iter().any(|a| a.starts_with("--proxy-server")));
     }
@@ -482,7 +506,10 @@ mod tests {
             &CaptureOptions::default(),
         )
         .unwrap_err();
-        assert!(matches!(err, Error::Browser(_)), "expected Browser error, got {err:?}");
+        assert!(
+            matches!(err, Error::Browser(_)),
+            "expected Browser error, got {err:?}"
+        );
     }
 
     #[test]
@@ -512,7 +539,10 @@ mod tests {
 
         assert!(raw.used_browser, "should have used the browser");
         let html = raw.rendered_html.as_deref().unwrap_or_default();
-        assert!(html.contains("Hello Amber"), "rendered HTML missing heading:\n{html}");
+        assert!(
+            html.contains("Hello Amber"),
+            "rendered HTML missing heading:\n{html}"
+        );
 
         let png = raw.screenshot_png.as_deref().unwrap_or_default();
         assert!(
@@ -525,7 +555,11 @@ mod tests {
 
         // PDF (5.5): a real PDF starts with the "%PDF" magic.
         let pdf = raw.pdf.as_deref().unwrap_or_default();
-        assert!(pdf.starts_with(b"%PDF"), "PDF magic missing ({} bytes)", pdf.len());
+        assert!(
+            pdf.starts_with(b"%PDF"),
+            "PDF magic missing ({} bytes)",
+            pdf.len()
+        );
 
         // Single-file HTML (5.2): the captured MHTML flattens to a self-contained
         // document that still carries the page content.

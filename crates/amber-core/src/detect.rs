@@ -192,7 +192,10 @@ mod tests {
     fn enable_js_phrase_in_body_does_not_force_browser() {
         // A content-rich page that merely mentions enabling JavaScript in prose
         // (not inside <noscript>) is still static — no false escalation.
-        let body = format!("To use the live demo, enable JavaScript. {}", "lorem ".repeat(200));
+        let body = format!(
+            "To use the live demo, enable JavaScript. {}",
+            "lorem ".repeat(200)
+        );
         let html = format!("<html><body><article>{body}</article></body></html>");
         assert_eq!(assess(&html, CONTENT_FLOOR), Sufficiency::Static);
     }
@@ -299,7 +302,10 @@ mod tests {
             .without_time()
             .finish();
         tracing::subscriber::with_default(subscriber, || {
-            let _ = assess("<html><body><div id=\"root\"></div></body></html>", CONTENT_FLOOR);
+            let _ = assess(
+                "<html><body><div id=\"root\"></div></body></html>",
+                CONTENT_FLOOR,
+            );
         });
 
         let logged = String::from_utf8(buf.0.lock().unwrap().clone()).unwrap();

@@ -24,8 +24,8 @@ pub mod diff;
 pub mod emulation;
 pub mod error;
 pub mod extract;
-pub mod ffi;
 pub mod fetch;
+pub mod ffi;
 pub mod http;
 pub mod inline;
 pub mod limits;
@@ -47,9 +47,7 @@ pub mod warc;
 
 pub use actions::Action;
 pub use blocking::{BlockPolicy, ResourceType};
-pub use budget::{
-    chunk_text, estimate_cost, estimate_tokens, truncate_to_tokens, TokenAccounting,
-};
+pub use budget::{chunk_text, estimate_cost, estimate_tokens, truncate_to_tokens, TokenAccounting};
 pub use cache::{content_hash, Cache, CacheEntry};
 pub use capture::{CaptureOptions, RawCapture};
 pub use crawl::{
@@ -71,8 +69,8 @@ pub use selectors::{select_all_text, select_first_text};
 pub use sitemap::{fetch_sitemap, parse_sitemap};
 pub use store::{CrawlStore, StoredPage};
 pub use structured::{extract_nl, extract_structured, LlmClient};
-pub use warc::{http_response_block, WarcWriter};
 pub use wacz::package as package_wacz;
+pub use warc::{http_response_block, WarcWriter};
 
 use std::path::{Path, PathBuf};
 use url::Url;
@@ -289,8 +287,12 @@ mod tests {
 
     #[test]
     fn bad_url_is_rejected() {
-        let err = snapshot("not a url", &[OutputFormat::Markdown], CaptureOptions::default())
-            .unwrap_err();
+        let err = snapshot(
+            "not a url",
+            &[OutputFormat::Markdown],
+            CaptureOptions::default(),
+        )
+        .unwrap_err();
         assert!(matches!(err, Error::InvalidUrl(_)));
     }
 
@@ -324,7 +326,9 @@ mod tests {
             ..Default::default()
         });
 
-        let html = snap.render(OutputFormat::Html).expect("Html should be emitted");
+        let html = snap
+            .render(OutputFormat::Html)
+            .expect("Html should be emitted");
         let html = String::from_utf8(html).expect("output is UTF-8");
 
         // The emitter is wired to the inliner (same bytes) and preserves body text.
@@ -402,7 +406,9 @@ mod tests {
     fn snapshot_markdown_within_trims_to_budget() {
         let para = "<p>word word word word word word word word</p>".repeat(40);
         let snap = snapshot_from(RawCapture {
-            static_html: Some(format!("<html><body><article>{para}</article></body></html>")),
+            static_html: Some(format!(
+                "<html><body><article>{para}</article></body></html>"
+            )),
             ..Default::default()
         });
 

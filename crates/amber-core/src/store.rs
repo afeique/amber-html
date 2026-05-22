@@ -238,13 +238,16 @@ mod tests {
         store.upsert(page("https://ex.com/a", "h1"));
         store.upsert(page("https://ex.com/b", "h2"));
 
-        let path = std::env::temp_dir()
-            .join(format!("amber-store-test-{}.json", std::process::id()));
+        let path =
+            std::env::temp_dir().join(format!("amber-store-test-{}.json", std::process::id()));
         store.save(&path).unwrap();
         let loaded = CrawlStore::load(&path).unwrap();
         let _ = std::fs::remove_file(&path);
 
         assert_eq!(loaded.len(), 2);
-        assert_eq!(loaded.get("https://ex.com/a").unwrap(), &page("https://ex.com/a", "h1"));
+        assert_eq!(
+            loaded.get("https://ex.com/a").unwrap(),
+            &page("https://ex.com/a", "h1")
+        );
     }
 }

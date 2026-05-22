@@ -121,11 +121,17 @@ where
     if name != "snapshot" {
         return Outcome::Error(-32602, format!("unknown tool: {name}"));
     }
-    let args = params.get("arguments").cloned().unwrap_or_else(|| json!({}));
+    let args = params
+        .get("arguments")
+        .cloned()
+        .unwrap_or_else(|| json!({}));
     let Some(url) = args.get("url").and_then(Value::as_str) else {
         return Outcome::Error(-32602, "missing required argument: url".to_string());
     };
-    let format = args.get("format").and_then(Value::as_str).unwrap_or("markdown");
+    let format = args
+        .get("format")
+        .and_then(Value::as_str)
+        .unwrap_or("markdown");
 
     // Tool failures are reported as a result with isError:true (MCP convention),
     // not as a JSON-RPC protocol error.
@@ -176,7 +182,10 @@ mod tests {
     fn tools_call_returns_capture_text() {
         let params = json!({ "name": "snapshot", "arguments": { "url": "https://e.com", "format": "readable" } });
         let r = handle_request(&req(3, "tools/call", params), &stub).unwrap();
-        assert_eq!(r["result"]["content"][0]["text"], "[readable] https://e.com");
+        assert_eq!(
+            r["result"]["content"][0]["text"],
+            "[readable] https://e.com"
+        );
         assert_eq!(r["result"]["isError"], false);
     }
 
@@ -212,7 +221,11 @@ mod tests {
         let input = format!(
             "{}\n{}\nnot json\n",
             req(1, "initialize", json!({})),
-            req(2, "tools/call", json!({ "name": "snapshot", "arguments": { "url": "u" } })),
+            req(
+                2,
+                "tools/call",
+                json!({ "name": "snapshot", "arguments": { "url": "u" } })
+            ),
         );
         let mut out = Vec::new();
         serve(input.as_bytes(), &mut out, stub).unwrap();

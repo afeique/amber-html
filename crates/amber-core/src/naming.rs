@@ -74,7 +74,9 @@ mod tests {
     #[test]
     fn default_name_format() {
         let u = Url::parse("https://example.com").unwrap();
-        let dt = chrono::Local.with_ymd_and_hms(2026, 5, 21, 14, 30, 5).unwrap();
+        let dt = chrono::Local
+            .with_ymd_and_hms(2026, 5, 21, 14, 30, 5)
+            .unwrap();
         assert_eq!(default_name(&u, dt), "example.com 2026-05-21 14-30-05");
     }
 }

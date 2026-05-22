@@ -229,7 +229,11 @@ fn download_and_extract(
     // Stage the archive at a deterministic, version-scoped temp path beside the
     // destination (avoids a `tempfile` dependency). A stale file from a crashed
     // prior run is simply overwritten.
-    let tmp_zip = parent.join(format!(".chrome-{}-{}.zip.partial", version, platform.as_str()));
+    let tmp_zip = parent.join(format!(
+        ".chrome-{}-{}.zip.partial",
+        version,
+        platform.as_str()
+    ));
     {
         let mut out = std::fs::File::create(&tmp_zip).map_err(ChromiumError::Io)?;
         let mut reader = resp.body_mut().as_reader();
@@ -291,7 +295,9 @@ fn pinned_sha256(_version: &str, _platform: CftPlatform) -> Option<&'static str>
 #[cfg(unix)]
 fn ensure_executable(path: &Path) -> Result<(), ChromiumError> {
     use std::os::unix::fs::PermissionsExt;
-    let mut perms = std::fs::metadata(path).map_err(ChromiumError::Io)?.permissions();
+    let mut perms = std::fs::metadata(path)
+        .map_err(ChromiumError::Io)?
+        .permissions();
     let mode = perms.mode();
     if mode & 0o111 == 0 {
         perms.set_mode(mode | 0o755);
@@ -475,6 +481,10 @@ mod tests {
     #[ignore = "downloads ~hundreds of MB from Google; run explicitly"]
     fn end_to_end_download() {
         let path = ensure_chromium().expect("ensure_chromium should yield a binary");
-        assert!(path.exists(), "returned path should exist: {}", path.display());
+        assert!(
+            path.exists(),
+            "returned path should exist: {}",
+            path.display()
+        );
     }
 }

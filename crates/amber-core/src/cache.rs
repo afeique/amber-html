@@ -137,7 +137,10 @@ mod tests {
             headers,
             vec![
                 ("If-None-Match", "\"abc123\"".to_string()),
-                ("If-Modified-Since", "Wed, 21 Oct 2026 07:28:00 GMT".to_string()),
+                (
+                    "If-Modified-Since",
+                    "Wed, 21 Oct 2026 07:28:00 GMT".to_string()
+                ),
             ]
         );
     }
@@ -145,7 +148,9 @@ mod tests {
     #[test]
     fn conditional_headers_empty_without_entry_or_validators() {
         let mut cache = Cache::new();
-        assert!(cache.conditional_headers("https://ex.com/missing").is_empty());
+        assert!(cache
+            .conditional_headers("https://ex.com/missing")
+            .is_empty());
         cache.record("https://ex.com/a", b"body", None, None);
         assert!(cache.conditional_headers("https://ex.com/a").is_empty());
     }

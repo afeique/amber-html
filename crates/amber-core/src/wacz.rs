@@ -51,7 +51,11 @@ pub fn package(warc: &[u8], pages: &[(&str, &str)]) -> Result<Vec<u8>> {
         "wacz_version": "1.1.1",
     });
     zip.start_file("datapackage.json", opts).map_err(map_zip)?;
-    zip.write_all(serde_json::to_string_pretty(&datapackage).unwrap_or_default().as_bytes())?;
+    zip.write_all(
+        serde_json::to_string_pretty(&datapackage)
+            .unwrap_or_default()
+            .as_bytes(),
+    )?;
 
     let cursor = zip.finish().map_err(map_zip)?;
     Ok(cursor.into_inner())

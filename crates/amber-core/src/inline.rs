@@ -160,7 +160,11 @@ impl MhtmlDoc {
 
         let root_idx = top_location
             .as_deref()
-            .and_then(|loc| parts.iter().position(|p| p.location.as_deref() == Some(loc)))
+            .and_then(|loc| {
+                parts
+                    .iter()
+                    .position(|p| p.location.as_deref() == Some(loc))
+            })
             .or_else(|| parts.iter().position(|p| p.is_html()))
             .unwrap_or(0);
 
@@ -327,11 +331,7 @@ fn parse_part(raw: &str) -> Option<Part> {
     let mime = get("content-type")
         .map(|v| {
             // Strip parameters: `text/html; charset=utf-8` → `text/html`.
-            v.split(';')
-                .next()
-                .unwrap_or(v)
-                .trim()
-                .to_ascii_lowercase()
+            v.split(';').next().unwrap_or(v).trim().to_ascii_lowercase()
         })
         .unwrap_or_else(|| "application/octet-stream".to_string());
 
@@ -409,9 +409,7 @@ fn decode_quoted_printable(body: &str) -> Vec<u8> {
                 continue;
             }
             if i + 2 < bytes.len() {
-                if let (Some(hi), Some(lo)) =
-                    (hex_val(bytes[i + 1]), hex_val(bytes[i + 2]))
-                {
+                if let (Some(hi), Some(lo)) = (hex_val(bytes[i + 1]), hex_val(bytes[i + 2])) {
                     out.push((hi << 4) | lo);
                     i += 3;
                     continue;
@@ -686,7 +684,10 @@ fn rewrite_srcset_value(srcset: &str, data_uris: &HashMap<String, String>) -> St
             let mut it = candidate.splitn(2, |c: char| c.is_whitespace());
             let url = it.next().unwrap_or("");
             let descriptor = it.next();
-            let new_url = data_uris.get(url.trim()).cloned().unwrap_or_else(|| url.to_string());
+            let new_url = data_uris
+                .get(url.trim())
+                .cloned()
+                .unwrap_or_else(|| url.to_string());
             match descriptor {
                 Some(d) if !d.trim().is_empty() => format!("{new_url} {}", d.trim()),
                 _ => new_url,

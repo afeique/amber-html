@@ -57,8 +57,10 @@ pub fn diff_lines(old: &str, new: &str) -> LineDiff {
             j += 1;
         }
     }
-    diff.removed.extend(old_lines[i..].iter().map(|s| s.to_string()));
-    diff.added.extend(new_lines[j..].iter().map(|s| s.to_string()));
+    diff.removed
+        .extend(old_lines[i..].iter().map(|s| s.to_string()));
+    diff.added
+        .extend(new_lines[j..].iter().map(|s| s.to_string()));
     diff
 }
 

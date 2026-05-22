@@ -23,7 +23,10 @@ fn cli_writes_markdown_and_screenshot() {
     assert!(status.success(), "amber exited with failure: {status:?}");
 
     let md = std::fs::read_to_string(dir.join("page.md")).expect("markdown file written");
-    assert!(md.contains("Hello Amber"), "markdown missing content:\n{md}");
+    assert!(
+        md.contains("Hello Amber"),
+        "markdown missing content:\n{md}"
+    );
 
     let png = std::fs::read(dir.join("page.png")).expect("screenshot file written");
     assert!(

@@ -131,8 +131,7 @@ fn run_mcp() -> ExitCode {
             "readable" => OutputFormat::Readable,
             _ => OutputFormat::Markdown,
         };
-        let snap =
-            snapshot(url, &[fmt], CaptureOptions::default()).map_err(|e| e.to_string())?;
+        let snap = snapshot(url, &[fmt], CaptureOptions::default()).map_err(|e| e.to_string())?;
         let bytes = snap.render(fmt).map_err(|e| e.to_string())?;
         Ok(String::from_utf8_lossy(&bytes).into_owned())
     };

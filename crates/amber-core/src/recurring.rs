@@ -39,8 +39,7 @@ impl Cadence {
 
     /// Seconds to wait from `now_epoch_secs` until the next run (0 if due now).
     pub fn delay_from(&self, now_epoch_secs: u64) -> u64 {
-        self.next_run(now_epoch_secs)
-            .saturating_sub(now_epoch_secs)
+        self.next_run(now_epoch_secs).saturating_sub(now_epoch_secs)
     }
 }
 

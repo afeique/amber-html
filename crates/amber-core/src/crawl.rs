@@ -12,6 +12,7 @@ use std::time::Duration;
 
 use url::Url;
 
+use crate::cache::Cache;
 use crate::robots::Robots;
 use crate::{http, meta};
 
@@ -180,6 +181,34 @@ where
     visited
 }
 
+/// Like [`crawl_with`], but content-addressed: `fetch` returns each page's body
+/// bytes alongside its links, and the crawl returns only the URLs whose body
+/// **changed** versus `cache` (updating the cache as it goes). On a first run
+/// with an empty cache every visited page is "changed"; on a re-run only pages
+/// whose bytes differ are returned.
+pub fn crawl_incremental_with<F>(
+    seed: Url,
+    scope: CrawlScope,
+    limits: CrawlLimits,
+    cache: &mut Cache,
+    mut fetch: F,
+) -> Vec<Url>
+where
+    F: FnMut(&Url) -> (Vec<u8>, Vec<Url>),
+{
+    let mut changed = Vec::new();
+    crawl_with(seed, scope, limits, |url| {
+        let (body, links) = fetch(url);
+        let key = url.as_str();
+        if !cache.is_unchanged(key, &body) {
+            changed.push(url.clone());
+        }
+        cache.record(key, &body, None, None);
+        links
+    });
+    changed
+}
+
 /// User-Agent for polite multi-page crawling. Unlike the cheap fetch tier (which
 /// mimics a desktop browser to avoid UA-based blocking), the crawler identifies
 /// itself honestly so site owners can recognize it and apply `robots.txt`.
@@ -227,6 +256,44 @@ pub fn crawl(seed: Url, scope: CrawlScope, limits: CrawlLimits) -> Vec<Url> {
             .into_iter()
             .filter(|l| robots.allows(CRAWL_USER_AGENT, l.path()))
             .collect()
+    })
+}
+
+/// Incremental version of [`crawl`]: re-run a crawl and return only the pages
+/// whose content changed since `cache` last saw them (by content hash),
+/// updating `cache`. Honors `robots.txt`, the crawl UA, and politeness exactly
+/// like [`crawl`]. First run with an empty cache returns every visited page.
+pub fn crawl_incremental(
+    seed: Url,
+    scope: CrawlScope,
+    limits: CrawlLimits,
+    cache: &mut Cache,
+) -> Vec<Url> {
+    let robots = fetch_robots(&seed);
+    if !robots.allows(CRAWL_USER_AGENT, seed.path()) {
+        return Vec::new();
+    }
+    let delay = politeness_delay(&robots, limits.min_delay_ms);
+
+    let mut first = true;
+    crawl_incremental_with(seed, scope, limits, cache, |url| {
+        if !first && delay > 0 {
+            std::thread::sleep(Duration::from_millis(delay));
+        }
+        first = false;
+
+        match http::fetch_with_ua(url, CRAWL_USER_AGENT) {
+            Ok(page) if http::content_type_is_html(page.content_type.as_deref()) => {
+                let links = meta::extract(&page.html, &page.final_url)
+                    .links
+                    .iter()
+                    .filter_map(|l| Url::parse(l).ok())
+                    .filter(|l| robots.allows(CRAWL_USER_AGENT, l.path()))
+                    .collect();
+                (page.html.into_bytes(), links)
+            }
+            _ => (Vec::new(), Vec::new()),
+        }
     })
 }
 
@@ -450,6 +517,54 @@ mod tests {
     fn crawl_user_agent_is_identifiable() {
         assert!(CRAWL_USER_AGENT.starts_with("AmberHTML/"));
         assert!(CRAWL_USER_AGENT.contains("github.com/afeique/amber-html"));
+    }
+
+    #[test]
+    fn incremental_crawl_returns_only_changed_pages_on_rerun() {
+        use crate::cache::Cache;
+
+        let seed = url("https://example.com/");
+        let scope = CrawlScope::same_host(&seed);
+        let limits = CrawlLimits::default();
+        let mut cache = Cache::new();
+
+        // A 2-page site; `/a`'s body is parameterized so we can change it.
+        let make_fetch = |a_body: &'static str| {
+            move |u: &Url| -> (Vec<u8>, Vec<Url>) {
+                match u.path() {
+                    "/" => (b"home v1".to_vec(), vec![url("https://example.com/a")]),
+                    "/a" => (a_body.as_bytes().to_vec(), vec![]),
+                    _ => (Vec::new(), vec![]),
+                }
+            }
+        };
+
+        // First run: empty cache → every visited page is "changed".
+        let first =
+            crawl_incremental_with(seed.clone(), scope.clone(), limits, &mut cache, make_fetch("a v1"));
+        assert_eq!(first.len(), 2);
+
+        // Re-run with identical content → nothing changed.
+        let second =
+            crawl_incremental_with(seed.clone(), scope.clone(), limits, &mut cache, make_fetch("a v1"));
+        assert!(second.is_empty());
+
+        // Re-run with /a changed → only /a is returned.
+        let third = crawl_incremental_with(seed, scope, limits, &mut cache, make_fetch("a v2"));
+        assert_eq!(paths(&third), vec!["/a"]);
+    }
+
+    #[test]
+    #[ignore = "performs real network requests; run with --ignored"]
+    fn incremental_crawl_skips_unchanged_on_rerun_live() {
+        use crate::cache::Cache;
+        let seed = url("https://example.com/");
+        let scope = CrawlScope::same_host(&seed);
+        let mut cache = Cache::new();
+        let first = crawl_incremental(seed.clone(), scope.clone(), CrawlLimits::default(), &mut cache);
+        assert_eq!(first.len(), 1, "first run captures the (new) home page");
+        let second = crawl_incremental(seed, scope, CrawlLimits::default(), &mut cache);
+        assert!(second.is_empty(), "static page is unchanged on immediate re-run");
     }
 
     #[test]

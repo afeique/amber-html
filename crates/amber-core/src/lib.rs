@@ -31,7 +31,9 @@ pub mod sitemap;
 pub use budget::{estimate_cost, estimate_tokens, truncate_to_tokens, TokenAccounting};
 pub use cache::{content_hash, Cache, CacheEntry};
 pub use capture::{CaptureOptions, RawCapture};
-pub use crawl::{crawl, crawl_with, CrawlLimits, CrawlScope, Frontier};
+pub use crawl::{
+    crawl, crawl_incremental, crawl_incremental_with, crawl_with, CrawlLimits, CrawlScope, Frontier,
+};
 pub use diff::{diff_lines, LineDiff};
 pub use error::{Error, Result};
 pub use extract::dedup_text;

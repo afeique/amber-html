@@ -270,7 +270,7 @@ mirrors. Public FFI surface is **blocking** (tokio hidden inside core).
 | 7.1 | Browser/tab pooling & reuse | Concurrent captures reuse a bounded pool | Phase 1 | cc:WIP |
 | 7.2 | HTTP / daemon mode | A daemon serves concurrent capture requests | 7.1 | cc:完了 |
 | 7.3 | Metrics (latency, render rate, cache hit) | Metrics exported and observable | 1.15 | cc:完了 |
-| 7.4 | Resource limits | Per-capture memory/CPU/time caps enforced | 7.1 | cc:WIP |
+| 7.4 | Resource limits | Per-capture memory/CPU/time caps enforced | 7.1 | cc:完了 |
 | 7.5 | Local semantic memory (embeddings, offline search) | Captured corpus is searchable offline | 3.5 | cc:完了 |
 | 7.6 | Dataset export (JSONL / parquet) | Crawl store exports to JSONL/parquet | 3.5 | cc:完了 |
 | 7.7 | Scheduling / recurring captures | A schedule re-captures on cadence | 3.1 | cc:完了 |

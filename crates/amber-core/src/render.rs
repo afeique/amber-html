@@ -11,7 +11,7 @@ use url::Url;
 
 use crate::browser::SettlePolicy;
 use crate::capture::{CaptureOptions, RawCapture};
-use crate::cdp::{CdpError, PipeCdp};
+use crate::cdp::{CdpError, PipeCdp, ProcessLimits};
 use crate::error::{Error, Result};
 use crate::output::OutputFormat;
 
@@ -39,8 +39,15 @@ pub(crate) fn capture(
         // Log the proxy with credentials redacted (3.10) for observability.
         tracing::debug!(proxy = %crate::secrets::redact_proxy_url(proxy), "routing browser via proxy");
     }
-    let cdp = PipeCdp::spawn(chromium, &browser_args(opts.headed, opts.proxy.as_deref()))
-        .map_err(browser_err)?;
+    let cdp = PipeCdp::spawn_with_caps(
+        chromium,
+        &browser_args(opts.headed, opts.proxy.as_deref()),
+        ProcessLimits {
+            max_memory_bytes: opts.limits.max_memory_bytes,
+            max_cpu_seconds: opts.limits.max_cpu_seconds,
+        },
+    )
+    .map_err(browser_err)?;
 
     // Over the debug pipe the connection is browser-level; attach to a fresh
     // page target (CDP "flatten" mode) so Page.*/Network.*/Runtime.* commands
@@ -648,6 +655,62 @@ mod tests {
         assert!(
             html.contains("Blocked render OK"),
             "blocking must not break the render:\n{html}"
+        );
+    }
+
+    #[test]
+    #[ignore = "drives a real browser; run with --ignored (Chromium cached after first run)"]
+    fn live_generous_resource_caps_allow_a_normal_render() {
+        let chromium = crate::browser::ensure_chromium().expect("ensure chromium");
+        let url =
+            Url::parse("data:text/html,<html><body><p>Capped render OK</p></body></html>").unwrap();
+        let opts = CaptureOptions {
+            render: crate::fetch::RenderMode::Always,
+            // Generous caps must not break a normal render (RLIMIT_AS/RLIMIT_CPU
+            // applied to the browser child; 7.4).
+            limits: crate::limits::ResourceLimits {
+                max_memory_bytes: Some(16 * 1024 * 1024 * 1024),
+                max_cpu_seconds: Some(120),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        let raw = capture(&chromium, &url, &[OutputFormat::Markdown], &opts).expect("capture");
+        let html = raw.rendered_html.as_deref().unwrap_or_default();
+        assert!(
+            html.contains("Capped render OK"),
+            "generous resource caps must not break the render:\n{html}"
+        );
+    }
+
+    #[test]
+    #[ignore = "drives a real browser; run with --ignored (Chromium cached after first run)"]
+    fn live_tiny_cpu_cap_is_enforced() {
+        let chromium = crate::browser::ensure_chromium().expect("ensure chromium");
+        // A page that burns CPU forever; a 1s RLIMIT_CPU kills the process
+        // (SIGXCPU), so the capture fails rather than hanging indefinitely.
+        let url = Url::parse(
+            "data:text/html,<html><body><script>while(true){Math.sqrt(Math.random())}</script></body></html>",
+        )
+        .unwrap();
+        let opts = CaptureOptions {
+            render: crate::fetch::RenderMode::Always,
+            limits: crate::limits::ResourceLimits {
+                max_cpu_seconds: Some(1),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        // Whatever the failure mode, the CPU cap must keep the capture bounded.
+        let result = capture(&chromium, &url, &[OutputFormat::Markdown], &opts);
+        assert!(
+            result.is_err()
+                || !result
+                    .unwrap()
+                    .rendered_html
+                    .unwrap_or_default()
+                    .contains("never"),
+            "a 1s CPU cap must bound the runaway page"
         );
     }
 

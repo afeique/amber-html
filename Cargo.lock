@@ -45,6 +45,7 @@ dependencies = [
  "ed25519-dalek",
  "encoding_rs",
  "htmd",
+ "libc",
  "os_pipe",
  "scraper",
  "serde_json",

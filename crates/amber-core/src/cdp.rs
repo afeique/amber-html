@@ -224,6 +224,17 @@ impl Shared {
 // PipeCdp — the transport
 // ---------------------------------------------------------------------------
 
+/// OS resource caps applied to the spawned browser process (task 7.4). `None`
+/// fields are unlimited. See [`PipeCdp::spawn_with_limits`].
+#[derive(Debug, Clone, Copy, Default)]
+pub struct ProcessLimits {
+    /// `RLIMIT_AS` (address-space bytes); see the caveat on
+    /// [`crate::limits::ResourceLimits::max_memory_bytes`].
+    pub max_memory_bytes: Option<u64>,
+    /// `RLIMIT_CPU` (CPU seconds).
+    pub max_cpu_seconds: Option<u64>,
+}
+
 /// Hand-rolled CDP client over Chromium's debug pipe — the only transport.
 ///
 /// Owns the spawned Chromium child, the write end of fd 3, the correlation
@@ -264,7 +275,12 @@ impl PipeCdp {
     ///
     /// Unix only; the Windows path is `unimplemented!`.
     pub fn spawn(chromium: &Path, extra_args: &[String]) -> Result<PipeCdp, CdpError> {
-        Self::spawn_with_timeout(chromium, extra_args, DEFAULT_SEND_TIMEOUT)
+        Self::spawn_with_limits(
+            chromium,
+            extra_args,
+            DEFAULT_SEND_TIMEOUT,
+            ProcessLimits::default(),
+        )
     }
 
     /// Like [`spawn`](PipeCdp::spawn) but with an explicit per-command timeout
@@ -273,6 +289,28 @@ impl PipeCdp {
         chromium: &Path,
         extra_args: &[String],
         timeout: Duration,
+    ) -> Result<PipeCdp, CdpError> {
+        Self::spawn_with_limits(chromium, extra_args, timeout, ProcessLimits::default())
+    }
+
+    /// Like [`spawn`](PipeCdp::spawn) but also applies OS resource limits to the
+    /// spawned browser (the default per-command timeout; task 7.4).
+    pub fn spawn_with_caps(
+        chromium: &Path,
+        extra_args: &[String],
+        limits: ProcessLimits,
+    ) -> Result<PipeCdp, CdpError> {
+        Self::spawn_with_limits(chromium, extra_args, DEFAULT_SEND_TIMEOUT, limits)
+    }
+
+    /// Like [`spawn_with_timeout`](PipeCdp::spawn_with_timeout) but also applies
+    /// OS resource limits (`RLIMIT_AS` / `RLIMIT_CPU`) to the spawned browser
+    /// before exec (Unix; task 7.4).
+    pub fn spawn_with_limits(
+        chromium: &Path,
+        extra_args: &[String],
+        timeout: Duration,
+        limits: ProcessLimits,
     ) -> Result<PipeCdp, CdpError> {
         // Two OS pipes:
         //   cmd:  we WRITE -> browser READS  (becomes child fd 3)
@@ -301,6 +339,7 @@ impl PipeCdp {
             .stdin(Stdio::null());
 
         Self::configure_pipe_fds(&mut cmd, cmd_read, resp_write)?;
+        Self::apply_rlimits(&mut cmd, limits);
 
         let child = cmd.spawn().map_err(CdpError::Spawn)?;
         // The child now owns the inherited copies of cmd_read/resp_write; our
@@ -374,6 +413,44 @@ impl PipeCdp {
         // yet implemented (Unix first — see Plans.md).
         unimplemented!("CDP debug pipe on Windows: fd 3/4 HANDLE inheritance not yet implemented");
     }
+
+    /// Apply per-capture OS resource caps to the child before exec via
+    /// `setrlimit` (task 7.4): `RLIMIT_AS` for `max_memory_bytes`, `RLIMIT_CPU`
+    /// for `max_cpu_seconds`. Best-effort — a failed `setrlimit` is ignored
+    /// rather than aborting the spawn. No-op when no OS caps are set.
+    #[cfg(unix)]
+    fn apply_rlimits(cmd: &mut Command, limits: ProcessLimits) {
+        use std::os::unix::process::CommandExt;
+
+        if limits.max_memory_bytes.is_none() && limits.max_cpu_seconds.is_none() {
+            return;
+        }
+        let (mem, cpu) = (limits.max_memory_bytes, limits.max_cpu_seconds);
+        // SAFETY: the closure runs in the forked child before exec and calls
+        // only async-signal-safe syscalls (`setrlimit`).
+        unsafe {
+            cmd.pre_exec(move || {
+                let set = |resource, value: u64| {
+                    let lim = libc::rlimit {
+                        rlim_cur: value as libc::rlim_t,
+                        rlim_max: value as libc::rlim_t,
+                    };
+                    // Ignore failure: caps are best-effort.
+                    libc::setrlimit(resource, &lim);
+                };
+                if let Some(bytes) = mem {
+                    set(libc::RLIMIT_AS, bytes);
+                }
+                if let Some(secs) = cpu {
+                    set(libc::RLIMIT_CPU, secs);
+                }
+                Ok(())
+            });
+        }
+    }
+
+    #[cfg(not(unix))]
+    fn apply_rlimits(_cmd: &mut Command, _limits: ProcessLimits) {}
 
     /// Send a CDP command and block until its response arrives.
     ///

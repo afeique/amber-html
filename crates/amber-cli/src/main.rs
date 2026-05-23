@@ -95,6 +95,13 @@ struct Cli {
     /// Per-capture wall-clock budget in seconds (checked before rendering).
     #[arg(long, value_name = "SECONDS")]
     max_time: Option<u64>,
+    /// Address-space cap (bytes) for the browser (Unix RLIMIT_AS). Note: a low
+    /// value can prevent Chromium from starting; macOS does not enforce it.
+    #[arg(long, value_name = "BYTES")]
+    max_memory: Option<u64>,
+    /// CPU-time cap (seconds) for the browser (Unix RLIMIT_CPU).
+    #[arg(long, value_name = "SECONDS")]
+    max_cpu: Option<u64>,
 
     /// Agent action to run before capture (repeatable; forces a browser):
     /// `click:<sel>`, `fill:<sel>=<val>`, `scroll-bottom`, `scrollby:<x>,<y>`,
@@ -331,6 +338,8 @@ fn main() -> ExitCode {
         limits: ResourceLimits {
             max_bytes: cli.max_bytes,
             max_duration: cli.max_time.map(std::time::Duration::from_secs),
+            max_memory_bytes: cli.max_memory,
+            max_cpu_seconds: cli.max_cpu,
         },
         actions,
         block,

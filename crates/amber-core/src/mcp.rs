@@ -20,11 +20,12 @@ enum Outcome {
 }
 
 /// Handle one JSON-RPC request, returning the response — or `None` for a
-/// notification (a message with no `id`). `capture(url, format)` performs the
-/// actual page capture for `tools/call`.
+/// notification (a message with no `id`). `capture(url, format, actions)`
+/// performs the actual page capture for `tools/call` (`actions` are agent
+/// action-spec strings, empty when none were requested).
 pub fn handle_request<F>(req: &Value, capture: &F) -> Option<Value>
 where
-    F: Fn(&str, &str) -> Result<String, String>,
+    F: Fn(&str, &str, &[String]) -> Result<String, String>,
 {
     let method = req.get("method").and_then(Value::as_str).unwrap_or("");
     // Notifications (no/null id) get no response.
@@ -54,7 +55,7 @@ pub fn serve<R, W, F>(reader: R, mut writer: W, capture: F) -> std::io::Result<(
 where
     R: BufRead,
     W: Write,
-    F: Fn(&str, &str) -> Result<String, String>,
+    F: Fn(&str, &str, &[String]) -> Result<String, String>,
 {
     for line in reader.lines() {
         let line = line?;
@@ -102,6 +103,11 @@ fn tools_list_result() -> Value {
                         "type": "string",
                         "enum": ["markdown", "readable"],
                         "description": "Output format (default: markdown)."
+                    },
+                    "actions": {
+                        "type": "array",
+                        "items": { "type": "string" },
+                        "description": "Agent actions to run before capture, e.g. \"click:.more\", \"fill:#q=hello\", \"scroll-bottom\", \"scrollby:0,800\"."
                     }
                 },
                 "required": ["url"]
@@ -112,7 +118,7 @@ fn tools_list_result() -> Value {
 
 fn tools_call<F>(params: Option<&Value>, capture: &F) -> Outcome
 where
-    F: Fn(&str, &str) -> Result<String, String>,
+    F: Fn(&str, &str, &[String]) -> Result<String, String>,
 {
     let Some(params) = params else {
         return Outcome::Error(-32602, "missing params".to_string());
@@ -132,10 +138,21 @@ where
         .get("format")
         .and_then(Value::as_str)
         .unwrap_or("markdown");
+    // Optional agent action specs (string DSL); forwarded verbatim so this
+    // protocol layer stays decoupled from the core's Action type.
+    let actions: Vec<String> = args
+        .get("actions")
+        .and_then(Value::as_array)
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|v| v.as_str().map(str::to_string))
+                .collect()
+        })
+        .unwrap_or_default();
 
     // Tool failures are reported as a result with isError:true (MCP convention),
     // not as a JSON-RPC protocol error.
-    match capture(url, format) {
+    match capture(url, format, &actions) {
         Ok(text) => Outcome::Result(json!({
             "content": [{ "type": "text", "text": text }],
             "isError": false
@@ -152,7 +169,7 @@ mod tests {
     use super::*;
 
     /// A capture stub: errors for the URL "bad", echoes otherwise.
-    fn stub(url: &str, format: &str) -> Result<String, String> {
+    fn stub(url: &str, format: &str, _actions: &[String]) -> Result<String, String> {
         if url == "bad" {
             Err("capture failed".to_string())
         } else {
@@ -195,6 +212,31 @@ mod tests {
         let r = handle_request(&req(4, "tools/call", params), &stub).unwrap();
         assert_eq!(r["result"]["isError"], true);
         assert_eq!(r["result"]["content"][0]["text"], "capture failed");
+    }
+
+    #[test]
+    fn tools_list_advertises_actions_input() {
+        let r = handle_request(&req(2, "tools/list", json!({})), &stub).unwrap();
+        let props = &r["result"]["tools"][0]["inputSchema"]["properties"];
+        assert_eq!(props["actions"]["type"], "array");
+    }
+
+    #[test]
+    fn tools_call_forwards_action_specs_to_capture() {
+        // A capture closure that echoes the action specs it received.
+        let capture = |_url: &str, _fmt: &str, actions: &[String]| -> Result<String, String> {
+            Ok(format!("actions=[{}]", actions.join(",")))
+        };
+        let params = json!({
+            "name": "snapshot",
+            "arguments": { "url": "u", "actions": ["click:.more", "scroll-bottom"] }
+        });
+        let r = handle_request(&req(7, "tools/call", params), &capture).unwrap();
+        assert_eq!(
+            r["result"]["content"][0]["text"],
+            "actions=[click:.more,scroll-bottom]"
+        );
+        assert_eq!(r["result"]["isError"], false);
     }
 
     #[test]

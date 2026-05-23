@@ -208,7 +208,7 @@ mirrors. Public FFI surface is **blocking** (tokio hidden inside core).
 | 2.2 | Token-budget-aware output + measured token count | Output trimmed to a budget; token count reported | 1.5, 1.6 | cc:完了 |
 | 2.3 | Token accounting & cost reporting | Per-capture token counts surfaced to the caller | 2.2 | cc:完了 |
 | 2.4 | Resource blocking (ads/trackers/optional images) | Blocked resource classes are not fetched; faster renders | 1.4 | cc:WIP |
-| 2.5 | Agent-native action primitives (navigate/click/fill/scroll/wait) | Actions executable via core API and MCP | 1.4, 2.1 | cc:WIP |
+| 2.5 | Agent-native action primitives (navigate/click/fill/scroll/wait) | Actions executable via core API and MCP | 1.4, 2.1 | cc:完了 |
 | 2.6 | Emulation knobs (viewport/device/locale/timezone/dark-mode) | Each knob measurably changes the rendered capture | 1.4 | cc:完了 |
 | 2.7 | Auto-scroll for lazy-load | Lazy content loads before capture on sample pages | 1.3 | cc:完了 |
 | 2.8 | Custom ready signal (`--wait-for` selector/predicate) | Capture waits for the selector/predicate before snapshot | 1.3 | cc:完了 |

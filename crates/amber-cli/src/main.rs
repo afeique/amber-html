@@ -180,12 +180,20 @@ fn init_tracing() {
 
 /// Run the MCP server over stdio, exposing a `snapshot` tool backed by the core.
 fn run_mcp() -> ExitCode {
-    let capture = |url: &str, format: &str| -> Result<String, String> {
+    let capture = |url: &str, format: &str, action_specs: &[String]| -> Result<String, String> {
         let fmt = match format {
             "readable" => OutputFormat::Readable,
             _ => OutputFormat::Markdown,
         };
-        let snap = snapshot(url, &[fmt], CaptureOptions::default()).map_err(|e| e.to_string())?;
+        let mut actions = Vec::new();
+        for spec in action_specs {
+            actions.push(Action::parse(spec)?);
+        }
+        let opts = CaptureOptions {
+            actions,
+            ..Default::default()
+        };
+        let snap = snapshot(url, &[fmt], opts).map_err(|e| e.to_string())?;
         let bytes = snap.render(fmt).map_err(|e| e.to_string())?;
         Ok(String::from_utf8_lossy(&bytes).into_owned())
     };

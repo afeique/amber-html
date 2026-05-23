@@ -5,31 +5,25 @@ Status of the distribution channels (Plans.md Phase 6 / 8.6). Several are
 needs a toolchain not present in every dev environment, so it hasn't been
 validated end-to-end here.
 
-## Python (UniFFI) — 6.1, WIP
+## Python (UniFFI) — 6.1, done
 
 The Rust core builds as a `cdylib` and exports a small UniFFI surface
 (`capture_markdown`, `capture_readable`; see `crates/amber-core/src/ffi.rs`).
 
-**Validated:** generating + importing + calling the bindings works:
-
-```sh
-cargo build -p amber-core
-cargo run -p uniffi-bindgen -- generate \
-    --library target/debug/libamber_core.dylib \
-    --language python --out-dir bindings/python
-# bindings/python/amber_core.py imports and exposes capture_markdown(url)
-```
-
-**Pending:** building/publishing the wheel needs [maturin](https://www.maturin.rs):
+**Validated end-to-end** in this environment — `maturin build` produces a wheel
+(invoking the `uniffi-bindgen` crate to generate the bindings), and the
+pip-installed wheel imports as `amber_core` and runs:
 
 ```sh
 pip install maturin
-maturin develop          # local install into the active venv
-maturin build --release  # wheel under target/wheels/
+maturin build --release                       # → target/wheels/amber_html-*.whl
+pip install target/wheels/amber_html-*.whl
+python -c "import amber_core; amber_core.capture_markdown('https://example.com')"
 ```
 
-`uniffi-bindgen` also targets `--language swift|kotlin|ruby` for the rest of
-the UniFFI family.
+For local dev, `maturin develop` installs into the active venv. `uniffi-bindgen`
+also targets `--language swift|kotlin|ruby` for the rest of the UniFFI family.
+**Remaining for distribution:** `maturin publish` + per-platform wheels (8.6).
 
 ## C ABI — 6.2, done
 

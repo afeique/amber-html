@@ -4,12 +4,16 @@
 # `cargo run -p uniffi-bindgen -- generate --library <dylib> --language python`
 # produces an importable `amber_core` module exposing capture_markdown/readable).
 #
-# Building the wheel needs maturin (not present in every dev env):
+# Build + install the wheel with maturin:
 #   pip install maturin
-#   maturin build --release        # or: maturin develop
+#   maturin build --release        # wheel under target/wheels/
+#   pip install target/wheels/amber_html-*.whl
 #
-# STATUS (6.1, WIP): binding generation + import + call are validated; the wheel
-# build / PyPI publish path below is scaffolding pending a maturin environment.
+# STATUS (6.1, done): validated end-to-end — `maturin build` produces a wheel
+# (it invokes the uniffi-bindgen crate to generate the bindings), and the
+# pip-installed wheel imports as `amber_core` and runs capture_markdown/readable.
+# PyPI publish (`maturin publish` / per-platform wheels) is the only remaining
+# distribution step.
 [build-system]
 requires = ["maturin>=1.5,<2"]
 build-backend = "maturin"

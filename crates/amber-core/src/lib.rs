@@ -34,6 +34,7 @@ pub mod detect;
 pub mod diff;
 pub mod emulation;
 pub mod error;
+pub mod evidence;
 pub mod extract;
 pub mod fetch;
 pub mod ffi;
@@ -69,6 +70,7 @@ pub use crawl::{
 pub use diff::{diff_lines, LineDiff};
 pub use emulation::{EmulationConfig, Viewport};
 pub use error::{Error, Result};
+pub use evidence::{EvidenceEntry, EvidenceManifest};
 pub use extract::dedup_text;
 pub use fetch::RenderMode;
 pub use limits::{Deadline, ResourceLimits};
@@ -350,6 +352,27 @@ impl Snapshot {
         Ok((w.into_bytes(), records))
     }
 
+    /// Build a tamper-evident [`EvidenceManifest`] over `formats`: each output's
+    /// SHA-256 + byte length, plus the capture URL and instant (Plans.md 9.1).
+    /// Deterministic for a given capture (8.5). Cryptographic signing of the
+    /// manifest's [`digest`](EvidenceManifest::digest) remains future work.
+    pub fn evidence_manifest(&self, formats: &[OutputFormat]) -> Result<EvidenceManifest> {
+        let mut outputs = Vec::with_capacity(formats.len());
+        for &format in formats {
+            let bytes = self.render(format)?;
+            outputs.push(EvidenceEntry {
+                format: format.extension().to_string(),
+                sha256: cache::content_hash(&bytes),
+                bytes: bytes.len(),
+            });
+        }
+        Ok(EvidenceManifest {
+            url: self.url.to_string(),
+            captured_at: self.capture_date(),
+            outputs,
+        })
+    }
+
     /// Write `format` into `dir` using `name` (or the default URL+datetime name).
     /// Creates `dir` if missing and returns the written path.
     pub fn save(&self, format: OutputFormat, dir: &Path, name: Option<&str>) -> Result<PathBuf> {
@@ -453,6 +476,42 @@ mod tests {
                 "format {fmt:?} must render byte-identically across calls"
             );
         }
+    }
+
+    /// `evidence_manifest` records each output's SHA-256 (matching a direct
+    /// hash of the rendered bytes) plus the URL and capture instant (9.1).
+    #[test]
+    fn evidence_manifest_hashes_each_output() {
+        let snap = snapshot_from(RawCapture {
+            rendered_html: Some("<html><body><p>Evidence</p></body></html>".to_string()),
+            captured_at: Some("2026-01-02T03:04:05Z".to_string()),
+            ..Default::default()
+        });
+        let manifest = snap
+            .evidence_manifest(&[OutputFormat::Markdown, OutputFormat::Warc])
+            .expect("manifest");
+
+        assert_eq!(manifest.url, "https://ex.com/");
+        assert_eq!(manifest.captured_at, "2026-01-02T03:04:05Z");
+        assert_eq!(manifest.outputs.len(), 2);
+
+        // Each entry's hash matches a direct hash of that format's render.
+        for entry in &manifest.outputs {
+            let fmt = match entry.format.as_str() {
+                "md" => OutputFormat::Markdown,
+                "warc" => OutputFormat::Warc,
+                other => panic!("unexpected format {other}"),
+            };
+            let bytes = snap.render(fmt).unwrap();
+            assert_eq!(entry.sha256, cache::content_hash(&bytes));
+            assert_eq!(entry.bytes, bytes.len());
+        }
+
+        // Deterministic for a given capture (8.5).
+        let again = snap
+            .evidence_manifest(&[OutputFormat::Markdown, OutputFormat::Warc])
+            .unwrap();
+        assert_eq!(manifest.digest(), again.digest());
     }
 
     /// Without a captured MHTML there is nothing to flatten — a clear error,

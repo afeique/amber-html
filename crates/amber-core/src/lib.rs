@@ -115,6 +115,7 @@ pub use output::OutputFormat;
 pub use pool::Pool;
 pub use provenance::{anchor_fields, anchor_for, FieldProvenance, Provenance};
 pub use recurring::{run_schedule, Cadence};
+pub use render::BrowserPool;
 pub use robots::Robots;
 pub use selectors::{select_all_text, select_first_text};
 pub use semantic::{cosine_similarity, Embedder, HashingEmbedder, SemanticIndex};

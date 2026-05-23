@@ -26,8 +26,8 @@ const AUTO_SCROLL_STEPS: u32 = 4;
 /// Pause between auto-scroll steps so lazy content can load.
 const AUTO_SCROLL_INTERVAL: Duration = Duration::from_millis(150);
 
-/// Capture `url` by rendering it in a real browser, producing the requested
-/// representations from a single pass.
+/// Capture `url` by spawning a browser, rendering it, and killing the browser.
+/// The single-shot path; for reuse across captures see [`BrowserPool`].
 #[tracing::instrument(level = "debug", name = "render", skip_all, fields(url = %url))]
 pub(crate) fn capture(
     chromium: &Path,
@@ -35,11 +35,19 @@ pub(crate) fn capture(
     formats: &[OutputFormat],
     opts: &CaptureOptions,
 ) -> Result<RawCapture> {
+    let cdp = spawn_browser(chromium, opts)?;
+    render_on_target(&cdp, url, formats, opts)
+    // `cdp` is dropped here → the Chromium child is killed.
+}
+
+/// Spawn a pinned Chromium over the CDP pipe, applying proxy + OS resource caps
+/// from `opts`. The returned client owns the browser process until dropped.
+pub(crate) fn spawn_browser(chromium: &Path, opts: &CaptureOptions) -> Result<PipeCdp> {
     if let Some(proxy) = opts.proxy.as_deref() {
         // Log the proxy with credentials redacted (3.10) for observability.
         tracing::debug!(proxy = %crate::secrets::redact_proxy_url(proxy), "routing browser via proxy");
     }
-    let cdp = PipeCdp::spawn_with_caps(
+    PipeCdp::spawn_with_caps(
         chromium,
         &browser_args(opts.headed, opts.proxy.as_deref()),
         ProcessLimits {
@@ -47,18 +55,28 @@ pub(crate) fn capture(
             max_cpu_seconds: opts.limits.max_cpu_seconds,
         },
     )
-    .map_err(browser_err)?;
+    .map_err(browser_err)
+}
 
-    // Over the debug pipe the connection is browser-level; attach to a fresh
-    // page target (CDP "flatten" mode) so Page.*/Network.*/Runtime.* commands
-    // are available, routed via the returned sessionId.
-    let target = cmd(&cdp, "Target.createTarget", json!({ "url": "about:blank" }))?;
+/// Render `url` on a fresh page target of an existing browser `cdp`, then close
+/// that target. Reusable across captures on the same browser (7.1) — it never
+/// touches the browser process lifecycle.
+pub(crate) fn render_on_target(
+    cdp: &PipeCdp,
+    url: &Url,
+    formats: &[OutputFormat],
+    opts: &CaptureOptions,
+) -> Result<RawCapture> {
+    // Attach to a fresh page target (CDP "flatten" mode) so Page.*/Network.*/
+    // Runtime.* commands are available, routed via the returned sessionId.
+    let target = cmd(cdp, "Target.createTarget", json!({ "url": "about:blank" }))?;
     let target_id = target
         .get("targetId")
         .and_then(Value::as_str)
-        .ok_or_else(|| Error::Browser("Target.createTarget returned no targetId".into()))?;
+        .ok_or_else(|| Error::Browser("Target.createTarget returned no targetId".into()))?
+        .to_string();
     let attached = cmd(
-        &cdp,
+        cdp,
         "Target.attachToTarget",
         json!({ "targetId": target_id, "flatten": true }),
     )?;
@@ -69,10 +87,25 @@ pub(crate) fn capture(
         .to_string();
     let sid = Some(session.as_str());
 
-    scmd(&cdp, sid, "Page.enable", json!({}))?;
-    scmd(&cdp, sid, "Network.enable", json!({}))?;
+    let raw = render_session(cdp, sid, &target_id, url, formats, opts);
+    // Close the target so a reused browser doesn't accumulate pages (7.1).
+    let _ = cmd(cdp, "Target.closeTarget", json!({ "targetId": target_id }));
+    raw
+}
+
+/// The per-page capture body, given an attached session.
+fn render_session(
+    cdp: &PipeCdp,
+    sid: Option<&str>,
+    _target_id: &str,
+    url: &Url,
+    formats: &[OutputFormat],
+    opts: &CaptureOptions,
+) -> Result<RawCapture> {
+    scmd(cdp, sid, "Page.enable", json!({}))?;
+    scmd(cdp, sid, "Network.enable", json!({}))?;
     scmd(
-        &cdp,
+        cdp,
         sid,
         "Page.setLifecycleEventsEnabled",
         json!({ "enabled": true }),
@@ -81,35 +114,35 @@ pub(crate) fn capture(
     // Drop blocked resource classes (ad/tracker hosts + image/media/font
     // extensions) so they're never fetched — leaner, faster renders (2.4).
     if let Some((method, params)) = opts.block.set_blocked_urls_command() {
-        scmd(&cdp, sid, method, params)?;
+        scmd(cdp, sid, method, params)?;
     }
 
     // Apply auth session headers (+ folded cookies) before navigating, so the
     // very first request to a behind-auth page is authenticated (3.3).
     if let Some((method, params)) = opts.session.extra_http_headers_command() {
         tracing::debug!(session_headers = ?opts.session.loggable_names(), "applying session");
-        scmd(&cdp, sid, method, params)?;
+        scmd(cdp, sid, method, params)?;
     }
 
     // Apply device/locale/timezone/dark-mode emulation before navigating.
     for (method, params) in crate::emulation::commands(&opts.emulation) {
-        scmd(&cdp, sid, method, params)?;
+        scmd(cdp, sid, method, params)?;
     }
 
     let events = cdp.events();
 
-    scmd(&cdp, sid, "Page.navigate", json!({ "url": url.as_str() }))?;
-    settle(&cdp, sid, events.as_ref(), &opts.settle);
+    scmd(cdp, sid, "Page.navigate", json!({ "url": url.as_str() }))?;
+    settle(cdp, sid, events.as_ref(), &opts.settle);
 
     if let Some(condition) = opts.wait_for.as_deref() {
-        wait_for_ready(&cdp, sid, condition);
+        wait_for_ready(cdp, sid, condition);
     }
 
     // Agent actions (2.5): run click/fill/scroll/navigate on the settled page
     // before capturing, so the capture reflects the post-action state.
     for action in &opts.actions {
         let (method, params) = crate::actions::to_cdp(action);
-        scmd(&cdp, sid, method, params)?;
+        scmd(cdp, sid, method, params)?;
     }
 
     let mut raw = RawCapture {
@@ -121,18 +154,14 @@ pub(crate) fn capture(
 
     // Rendered DOM backs --markdown / --readable (and --html via the MHTML
     // transform). Always captured; it's a single cheap evaluate.
-    raw.rendered_html = Some(eval_string(
-        &cdp,
-        sid,
-        "document.documentElement.outerHTML",
-    )?);
+    raw.rendered_html = Some(eval_string(cdp, sid, "document.documentElement.outerHTML")?);
 
     let want = |f: OutputFormat| formats.contains(&f);
 
     // MHTML is also the source for the single-file --html transform.
     if want(OutputFormat::Mhtml) || want(OutputFormat::Html) {
         let r = scmd(
-            &cdp,
+            cdp,
             sid,
             "Page.captureSnapshot",
             json!({ "format": "mhtml" }),
@@ -141,7 +170,7 @@ pub(crate) fn capture(
     }
     if want(OutputFormat::Screenshot) {
         let r = scmd(
-            &cdp,
+            cdp,
             sid,
             "Page.captureScreenshot",
             json!({ "format": "png", "captureBeyondViewport": true }),
@@ -152,7 +181,7 @@ pub(crate) fn capture(
     }
     if want(OutputFormat::Pdf) {
         let r = scmd(
-            &cdp,
+            cdp,
             sid,
             "Page.printToPDF",
             json!({ "printBackground": true }),
@@ -162,13 +191,62 @@ pub(crate) fn capture(
         }
     }
     if opts.accessibility {
-        scmd(&cdp, sid, "Accessibility.enable", json!({}))?;
-        let r = scmd(&cdp, sid, "Accessibility.getFullAXTree", json!({}))?;
+        scmd(cdp, sid, "Accessibility.enable", json!({}))?;
+        let r = scmd(cdp, sid, "Accessibility.getFullAXTree", json!({}))?;
         raw.accessibility_tree = r.get("nodes").cloned();
     }
 
     Ok(raw)
-    // `cdp` is dropped here → the Chromium child is killed.
+}
+
+/// A bounded pool of live browsers reused across captures (Plans.md 7.1).
+///
+/// Each [`BrowserPool::capture`] reuses an idle browser (or spawns one, up to
+/// `capacity`), renders on a fresh target, and returns the browser for reuse —
+/// so concurrent captures share a bounded set of Chromium processes instead of
+/// spawning one per capture. A browser that errors mid-capture is discarded.
+pub struct BrowserPool {
+    pool: crate::pool::Pool<PipeCdp>,
+    chromium: std::path::PathBuf,
+}
+
+impl BrowserPool {
+    /// A pool spawning at most `capacity` concurrent browsers from `chromium`.
+    pub fn new(chromium: std::path::PathBuf, capacity: usize) -> Self {
+        Self {
+            pool: crate::pool::Pool::new(capacity),
+            chromium,
+        }
+    }
+
+    /// Idle (reusable) browsers currently held.
+    pub fn idle_count(&self) -> usize {
+        self.pool.idle_count()
+    }
+
+    /// Capture `url`, reusing an idle browser or spawning one (up to capacity).
+    /// Returns a "pool exhausted" error when all browsers are in use.
+    pub fn capture(
+        &self,
+        url: &Url,
+        formats: &[OutputFormat],
+        opts: &CaptureOptions,
+    ) -> Result<RawCapture> {
+        let cdp = self
+            .pool
+            .acquire_with(|| spawn_browser(&self.chromium, opts))?
+            .ok_or_else(|| Error::Browser("browser pool exhausted".into()))?;
+        match render_on_target(&cdp, url, formats, opts) {
+            Ok(raw) => {
+                self.pool.release(cdp); // healthy → return for reuse
+                Ok(raw)
+            }
+            Err(e) => {
+                self.pool.discard(); // browser may be dead → drop it, free the slot
+                Err(e)
+            }
+        }
+    }
 }
 
 /// Chromium flags for capture. Headless by default (the right mode for
@@ -655,6 +733,42 @@ mod tests {
         assert!(
             html.contains("Blocked render OK"),
             "blocking must not break the render:\n{html}"
+        );
+    }
+
+    #[test]
+    #[ignore = "drives a real browser; run with --ignored (Chromium cached after first run)"]
+    fn live_browser_pool_reuses_one_browser_across_captures() {
+        let chromium = crate::browser::ensure_chromium().expect("ensure chromium");
+        let pool = BrowserPool::new(chromium, 1);
+        let opts = CaptureOptions {
+            render: crate::fetch::RenderMode::Always,
+            ..Default::default()
+        };
+
+        // Two sequential captures through a capacity-1 pool must reuse the one
+        // browser (it can't spawn a second), and both must render correctly.
+        let a = pool
+            .capture(
+                &Url::parse("data:text/html,<body>AlphaPage</body>").unwrap(),
+                &[OutputFormat::Markdown],
+                &opts,
+            )
+            .expect("first capture");
+        let b = pool
+            .capture(
+                &Url::parse("data:text/html,<body>BetaPage</body>").unwrap(),
+                &[OutputFormat::Markdown],
+                &opts,
+            )
+            .expect("second capture reuses the browser");
+
+        assert!(a.rendered_html.unwrap_or_default().contains("AlphaPage"));
+        assert!(b.rendered_html.unwrap_or_default().contains("BetaPage"));
+        assert_eq!(
+            pool.idle_count(),
+            1,
+            "exactly one browser was created and reused"
         );
     }
 

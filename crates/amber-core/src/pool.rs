@@ -61,6 +61,38 @@ impl<T> Pool<T> {
         Some(make())
     }
 
+    /// Like [`acquire`](Self::acquire) but with a *fallible* factory: reuse an
+    /// idle resource, else create one via `make` (when below capacity),
+    /// propagating its error and freeing the reserved slot on failure. `Ok(None)`
+    /// means the pool is exhausted.
+    pub fn acquire_with<E>(&self, make: impl FnOnce() -> Result<T, E>) -> Result<Option<T>, E> {
+        {
+            let mut inner = self.inner.lock().unwrap();
+            if let Some(item) = inner.idle.pop() {
+                inner.leased += 1;
+                return Ok(Some(item));
+            }
+            if inner.leased >= self.capacity {
+                return Ok(None);
+            }
+            inner.leased += 1; // reserve the slot before the (possibly slow) make
+        }
+        match make() {
+            Ok(item) => Ok(Some(item)),
+            Err(e) => {
+                self.discard(); // creation failed → release the reserved slot
+                Err(e)
+            }
+        }
+    }
+
+    /// Free a leased slot *without* returning a resource — e.g. when a leased
+    /// resource has died and must not be reused.
+    pub fn discard(&self) {
+        let mut inner = self.inner.lock().unwrap();
+        inner.leased = inner.leased.saturating_sub(1);
+    }
+
     /// Return a resource to the pool for reuse, freeing one lease slot.
     pub fn release(&self, item: T) {
         let mut inner = self.inner.lock().unwrap();
@@ -124,6 +156,33 @@ mod tests {
         assert!(pool.acquire(|| 3).is_none(), "third lease exceeds capacity");
         assert_eq!(pool.leased_count(), 2);
         assert_eq!(pool.idle_count(), 0);
+    }
+
+    #[test]
+    fn acquire_with_propagates_factory_error_and_frees_the_slot() {
+        let pool: Pool<u32> = Pool::new(2);
+        let err: Result<Option<u32>, &str> = pool.acquire_with(|| Err("boom"));
+        assert_eq!(err, Err("boom"));
+        // The reserved slot was freed, so we can still acquire up to capacity.
+        assert_eq!(pool.leased_count(), 0);
+        assert!(pool.acquire_with(|| Ok::<_, &str>(1)).unwrap().is_some());
+        assert!(pool.acquire_with(|| Ok::<_, &str>(2)).unwrap().is_some());
+        assert!(pool.acquire_with(|| Ok::<_, &str>(3)).unwrap().is_none()); // exhausted
+    }
+
+    #[test]
+    fn discard_frees_a_slot_without_returning_the_item() {
+        let pool: Pool<u32> = Pool::new(1);
+        let _item = pool.acquire(|| 1).unwrap();
+        assert_eq!(pool.leased_count(), 1);
+        // The leased resource "died" — discard frees the slot without pooling it.
+        pool.discard();
+        assert_eq!(pool.leased_count(), 0);
+        assert_eq!(pool.idle_count(), 0, "discarded item is not pooled");
+        assert!(
+            pool.acquire(|| 2).is_some(),
+            "slot freed for a fresh resource"
+        );
     }
 
     #[test]

@@ -1,12 +1,15 @@
 //! WACZ packaging: bundle a WARC into a Web Archive Collection Zipped (WACZ).
 //! See `Plans.md` (task 5.4).
 //!
-//! [`package`] produces a `.wacz` (a ZIP) containing the WARC under
-//! `archive/data.warc`, a frictionless `datapackage.json` describing it (with a
-//! SHA-256 of the WARC), a `pages/pages.jsonl` page list, and an
-//! `indexes/index.cdx` CDXJ index that points a replay tool (pywb /
-//! ReplayWeb.page) at each response record by byte offset. Build the WARC with
-//! [`crate::warc`].
+//! [`package`] produces a spec-conformant `.wacz` (a ZIP): the WARC under
+//! `archive/data.warc`, an `indexes/index.cdx` CDXJ index pointing a replay tool
+//! (pywb / ReplayWeb.page) at each response record by byte offset, a
+//! `pages/pages.jsonl` page list, a frictionless `datapackage.json` listing
+//! *every* file (path + SHA-256 + bytes), and a `datapackage-digest.json` with
+//! the hash of `datapackage.json`. Build the WARC with [`crate::warc`].
+//!
+//! Verified: a standard WARC reader (warcio) reads the packaged WARC and the
+//! CDXJ byte offset addresses the response record — the archive round-trips.
 
 use std::io::{Cursor, Write};
 
@@ -27,48 +30,67 @@ const WARC_NAME: &str = "data.warc";
 pub fn package(warc: &[u8], pages: &[(&str, &str)], records: &[RecordLoc]) -> Result<Vec<u8>> {
     let mut zip = ZipWriter::new(Cursor::new(Vec::new()));
     let opts = SimpleFileOptions::default().compression_method(CompressionMethod::Stored);
-
     let map_zip = |e: zip::result::ZipError| Error::Browser(format!("WACZ zip error: {e}"));
 
-    // 1. The WARC payload.
-    zip.start_file(WARC_PATH, opts).map_err(map_zip)?;
-    zip.write_all(warc)?;
+    // Materialize every archive file's bytes first, so datapackage.json can list
+    // them all (the WACZ spec requires each file to be a declared resource).
+    let cdxj = cdxj_index(records).into_bytes();
+    let pages_jsonl = build_pages_jsonl(pages).into_bytes();
+    let files: [(&str, &[u8]); 3] = [
+        (WARC_PATH, warc),
+        ("indexes/index.cdx", &cdxj),
+        ("pages/pages.jsonl", &pages_jsonl),
+    ];
 
-    // 2. indexes/index.cdx — CDXJ pointing at each response record by offset.
-    zip.start_file("indexes/index.cdx", opts).map_err(map_zip)?;
-    zip.write_all(cdxj_index(records).as_bytes())?;
-
-    // 3. pages/pages.jsonl — a header line followed by one line per page.
-    let mut pages_jsonl =
-        json!({ "format": "json-pages-1.0", "id": "pages", "title": "Pages" }).to_string();
-    for (url, ts) in pages {
-        pages_jsonl.push('\n');
-        pages_jsonl.push_str(&json!({ "url": url, "ts": ts }).to_string());
+    for (path, bytes) in files {
+        zip.start_file(path, opts).map_err(map_zip)?;
+        zip.write_all(bytes)?;
     }
-    zip.start_file("pages/pages.jsonl", opts).map_err(map_zip)?;
-    zip.write_all(pages_jsonl.as_bytes())?;
 
-    // 4. datapackage.json — frictionless descriptor of the resources.
-    let datapackage = json!({
+    // datapackage.json — frictionless descriptor listing ALL resources.
+    let resources: Vec<_> = files
+        .iter()
+        .map(|(path, bytes)| {
+            json!({
+                "name": path.rsplit('/').next().unwrap_or(path),
+                "path": path,
+                "hash": format!("sha256:{}", content_hash(bytes)),
+                "bytes": bytes.len(),
+            })
+        })
+        .collect();
+    let datapackage = serde_json::to_vec_pretty(&json!({
         "profile": "data-package",
-        "resources": [{
-            "name": WARC_NAME,
-            "path": WARC_PATH,
-            "hash": format!("sha256:{}", content_hash(warc)),
-            "bytes": warc.len(),
-        }],
+        "resources": resources,
         "software": "AmberHTML",
         "wacz_version": "1.1.1",
-    });
+    }))
+    .unwrap_or_default();
     zip.start_file("datapackage.json", opts).map_err(map_zip)?;
-    zip.write_all(
-        serde_json::to_string_pretty(&datapackage)
-            .unwrap_or_default()
-            .as_bytes(),
-    )?;
+    zip.write_all(&datapackage)?;
+
+    // datapackage-digest.json — the integrity hash of datapackage.json.
+    let digest = json!({
+        "path": "datapackage.json",
+        "hash": format!("sha256:{}", content_hash(&datapackage)),
+    });
+    zip.start_file("datapackage-digest.json", opts)
+        .map_err(map_zip)?;
+    zip.write_all(digest.to_string().as_bytes())?;
 
     let cursor = zip.finish().map_err(map_zip)?;
     Ok(cursor.into_inner())
+}
+
+/// The `pages/pages.jsonl` body: a header line then one line per page.
+fn build_pages_jsonl(pages: &[(&str, &str)]) -> String {
+    let mut out =
+        json!({ "format": "json-pages-1.0", "id": "pages", "title": "Pages" }).to_string();
+    for (url, ts) in pages {
+        out.push('\n');
+        out.push_str(&json!({ "url": url, "ts": ts }).to_string());
+    }
+    out
 }
 
 /// Build a CDXJ index (one sortable line per response record) referencing the
@@ -200,6 +222,43 @@ mod tests {
         assert_eq!(lines.len(), 3); // header + 2 pages
         assert!(lines[0].contains("json-pages-1.0"));
         assert!(lines[1].contains("https://example.com/a"));
+    }
+
+    #[test]
+    fn datapackage_lists_every_archive_file_and_has_a_digest() {
+        let bytes = package(
+            b"WARC/1.1\r\n\r\n",
+            &[("https://e.com/", "2026-01-01T00:00:00Z")],
+            &[],
+        )
+        .unwrap();
+
+        // Every archive file must be a declared resource (the WACZ spec rule the
+        // external validator enforces).
+        let dp: serde_json::Value =
+            serde_json::from_slice(&entry(&bytes, "datapackage.json")).unwrap();
+        let listed: Vec<&str> = dp["resources"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|r| r["path"].as_str().unwrap())
+            .collect();
+        for path in [
+            "archive/data.warc",
+            "indexes/index.cdx",
+            "pages/pages.jsonl",
+        ] {
+            assert!(
+                listed.contains(&path),
+                "{path} must be listed in datapackage"
+            );
+        }
+
+        // datapackage-digest.json carries the integrity hash of datapackage.json.
+        let digest: serde_json::Value =
+            serde_json::from_slice(&entry(&bytes, "datapackage-digest.json")).unwrap();
+        assert_eq!(digest["path"], "datapackage.json");
+        assert!(digest["hash"].as_str().unwrap().starts_with("sha256:"));
     }
 
     #[test]

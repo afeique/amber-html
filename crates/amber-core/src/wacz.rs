@@ -72,7 +72,7 @@ pub fn package(warc: &[u8], pages: &[(&str, &str)], records: &[RecordLoc]) -> Re
 }
 
 /// Build a CDXJ index (one sortable line per response record) referencing the
-/// WARC stored at [`WARC_NAME`]. Each line is `<surt> <ts14> <json>`, the CDXJ
+/// WARC stored at `data.warc`. Each line is `<surt> <ts14> <json>`, the CDXJ
 /// shape pywb / ReplayWeb.page expect: a SURT-canonicalized key, a 14-digit
 /// timestamp, and a JSON record with the byte `offset`/`length` into the WARC.
 pub fn cdxj_index(records: &[RecordLoc]) -> String {

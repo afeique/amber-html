@@ -3,6 +3,16 @@
 //! Renders a page in a real local browser *only when needed*, then emits the
 //! requested representations from a single pass. The public API is intentionally
 //! blocking (async lives inside). See `Plans.md` for the full design.
+//!
+//! # Local-first & private (1.16)
+//!
+//! AmberHTML makes network calls in exactly two places and nowhere else: the
+//! target URL(s) you capture ([`http`]/[`render`]), and a one-time pinned
+//! Chrome-for-Testing download over HTTPS to the official
+//! `storage.googleapis.com` endpoint ([`chromium`]), which is cached and
+//! skippable via `AMBER_CHROMIUM_PATH`. There is no telemetry, analytics, or
+//! phone-home; once the browser is cached the engine runs fully offline, with
+//! traffic only to the pages you capture.
 
 // Scaffold: several items are defined ahead of their implementations.
 #![allow(dead_code)]

@@ -360,6 +360,16 @@ mod tests {
 
     // ---- URL construction ----
 
+    /// Local-first / zero-telemetry guard (1.16): the only hardcoded external
+    /// endpoint is the official Chrome-for-Testing host over HTTPS. If this ever
+    /// points elsewhere, the no-telemetry-egress guarantee is broken.
+    #[test]
+    fn download_endpoint_is_only_the_official_https_host() {
+        assert!(CFT_DOWNLOAD_BASE.starts_with("https://storage.googleapis.com/"));
+        assert!(download_url("1.2.3.4", CftPlatform::Linux64)
+            .starts_with("https://storage.googleapis.com/"));
+    }
+
     #[test]
     fn url_construction() {
         assert_eq!(

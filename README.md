@@ -17,6 +17,20 @@ JavaScript, then produces every requested format from one render. It runs on
 your machine — including against `localhost`, intranet, and behind-auth pages —
 and can be embedded in-process via thin, idiomatic bindings to other languages.
 
+## Local-first & private
+
+AmberHTML is local-first with **zero telemetry** (Plans.md 1.16). It makes
+network calls in exactly two places, and nothing else:
+
+1. **The pages you capture** — the target URL(s) you ask for.
+2. **A one-time browser download** — a pinned Chrome for Testing build, fetched
+   over HTTPS from the official `storage.googleapis.com` endpoint, then cached.
+   Point `AMBER_CHROMIUM_PATH` at an existing Chromium to skip even this.
+
+There is no analytics, no phone-home, no usage reporting. Once the browser is
+cached (or `AMBER_CHROMIUM_PATH` is set), AmberHTML runs fully offline — the
+only traffic is to the pages you capture.
+
 ## Quickstart
 
 Build the CLI from this workspace (a pinned Chrome for Testing is downloaded and

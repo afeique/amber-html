@@ -1,0 +1,30 @@
+# Python packaging for AmberHTML via maturin + UniFFI (Plans.md 6.1).
+#
+# The UniFFI bindings are generated from the amber-core cdylib (verified working:
+# `cargo run -p uniffi-bindgen -- generate --library <dylib> --language python`
+# produces an importable `amber_core` module exposing capture_markdown/readable).
+#
+# Building the wheel needs maturin (not present in every dev env):
+#   pip install maturin
+#   maturin build --release        # or: maturin develop
+#
+# STATUS (6.1, WIP): binding generation + import + call are validated; the wheel
+# build / PyPI publish path below is scaffolding pending a maturin environment.
+[build-system]
+requires = ["maturin>=1.5,<2"]
+build-backend = "maturin"
+
+[project]
+name = "amber-html"
+description = "Local-first web-capture engine (Python bindings via UniFFI)."
+requires-python = ">=3.8"
+license = { text = "MIT OR Apache-2.0" }
+readme = "README.md"
+dynamic = ["version"]
+
+[tool.maturin]
+bindings = "uniffi"
+manifest-path = "crates/amber-core/Cargo.toml"
+# The generated module is `amber_core`, exposing capture_markdown(url) /
+# capture_readable(url) (see crates/amber-core/src/ffi.rs).
+module-name = "amber_core"

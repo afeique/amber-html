@@ -1,0 +1,14 @@
+[package]
+name = "uniffi-bindgen"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "UniFFI binding generator for AmberHTML (Python/Swift/Kotlin/Ruby)."
+publish = false
+
+# Isolated from amber-core so the heavy bindgen/CLI deps never enter the
+# library's normal build — run `cargo run -p uniffi-bindgen -- generate ...`.
+[dependencies]
+uniffi = { workspace = true, features = ["cli"] }

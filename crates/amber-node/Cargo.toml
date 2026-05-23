@@ -1,0 +1,21 @@
+[package]
+name = "amber-node"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Node.js (napi-rs) bindings for AmberHTML."
+publish = false
+
+[lib]
+# A Node N-API addon is a cdylib renamed to `.node`.
+crate-type = ["cdylib"]
+
+[dependencies]
+amber-core = { workspace = true }
+napi = { version = "2", default-features = false, features = ["napi8"] }
+napi-derive = "2"
+
+[build-dependencies]
+napi-build = "2"

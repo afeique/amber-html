@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/amber-core", "crates/amber-cli", "crates/uniffi-bindgen"]
+members = ["crates/amber-core", "crates/amber-cli", "crates/uniffi-bindgen", "crates/amber-node"]
 
 [workspace.package]
 version = "0.0.0"

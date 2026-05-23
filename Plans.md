@@ -257,7 +257,7 @@ mirrors. Public FFI surface is **blocking** (tokio hidden inside core).
 |------|------|-----|---------|--------|
 | 6.1 | UniFFI bindings — Python first (maturin → PyPI) | `pip install amber-html` gives `amber.snapshot(url)` | Phase 1 | cc:WIP |
 | 6.2 | C ABI (cbindgen) + long-tail wrappers | A C header + shared lib expose the core; one long-tail wrapper builds | 6.1 | cc:完了 |
-| 6.3 | Node bindings (napi-rs) | `require('amber')` snapshots a URL | 6.1 | cc:TODO |
+| 6.3 | Node bindings (napi-rs) | `require('amber')` snapshots a URL | 6.1 | cc:完了 |
 | 6.4 | Self-healing selectors | Extraction recovers when a selector drifts | 4.1 | cc:完了 |
 | 6.5 | Chunking / summarization for downstream consumers | Output chunked with stable boundaries | 1.5 | cc:完了 |
 | 6.6 | Pagination / infinite-scroll | Paginated content captured across pages | 2.7 | cc:TODO |

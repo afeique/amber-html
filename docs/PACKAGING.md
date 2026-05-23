@@ -36,11 +36,21 @@ the UniFFI family.
 A hand-maintained header (`include/amber.h`) over the cdylib; `cbindgen.toml`
 regenerates it. See `examples/c/example.c` for a wrapper that builds + links.
 
-## Node (napi-rs) — 6.3, TODO
+## Node (napi-rs) — 6.3, done
 
-A napi-rs binding crate + `@napi-rs/cli` build (`napi build`) producing a
-`.node` addon, exposing `require('amber').captureMarkdown(url)`. Not yet
-scaffolded.
+`crates/amber-node` is a napi-rs binding crate exposing `captureMarkdown(url)`
+/ `captureReadable(url)` over the core.
+
+**Validated:** the addon builds and loads + runs under Node:
+
+```sh
+cargo build -p amber-node
+cp target/debug/libamber_node.dylib crates/amber-node/amber.node   # .so on Linux
+node crates/amber-node/__test__/smoke.test.js   # require + call (a bad URL throws)
+```
+
+For distribution, `@napi-rs/cli` builds per-platform prebuilds:
+`cd crates/amber-node && npm install && npm run build` (then `npm publish`).
 
 ## Docker — 6.7, WIP
 

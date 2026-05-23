@@ -24,3 +24,6 @@
 # but ignore it defensively in case a local config points it here:
 /.amber-cache/
 /chromium/
+
+# Node addon build artifacts (amber-node)
+crates/amber-node/*.node

@@ -24,6 +24,9 @@ pub struct PageMetadata {
     pub description: Option<String>,
     /// `<link rel="canonical" href="…">`, resolved to an absolute URL.
     pub canonical: Option<String>,
+    /// The next page's URL (`rel="next"` on a `<link>` or `<a>`), resolved to
+    /// an absolute URL — drives pagination (task 6.6).
+    pub next_page: Option<String>,
     /// OpenGraph properties (`og:*`) keyed by their full property name
     /// (e.g. `og:title`), in sorted order.
     pub open_graph: BTreeMap<String, String>,
@@ -67,6 +70,15 @@ pub fn extract(html: &str, base_url: &Url) -> PageMetadata {
 
     let canonical = doc
         .select(&sel(r#"link[rel="canonical"]"#))
+        .next()
+        .and_then(|el| el.value().attr("href"))
+        .and_then(|href| base_url.join(href.trim()).ok())
+        .map(|u| u.to_string());
+
+    // The next page in a paginated sequence: <link rel="next"> or an
+    // <a rel="next"> (rel is a space-separated token list, hence `~=`).
+    let next_page = doc
+        .select(&sel(r#"[rel~="next"][href]"#))
         .next()
         .and_then(|el| el.value().attr("href"))
         .and_then(|href| base_url.join(href.trim()).ok())
@@ -118,6 +130,7 @@ pub fn extract(html: &str, base_url: &Url) -> PageMetadata {
         lang,
         description,
         canonical,
+        next_page,
         open_graph,
         links,
     }
@@ -173,6 +186,30 @@ mod tests {
             m.canonical.as_deref(),
             Some("https://example.com/blog/post/")
         );
+    }
+
+    #[test]
+    fn next_page_from_link_rel_next_resolves_absolute() {
+        let html = r#"<html><head><link rel="next" href="?page=2"></head><body>p1</body></html>"#;
+        let m = extract(html, &base());
+        assert_eq!(
+            m.next_page.as_deref(),
+            Some("https://example.com/blog/post?page=2")
+        );
+    }
+
+    #[test]
+    fn next_page_from_anchor_rel_next_and_absent_when_none() {
+        // <a rel="prev next"> — rel is a token list, so `next` still matches.
+        let with = r#"<html><body><a rel="prev next" href="/page/3">older</a></body></html>"#;
+        assert_eq!(
+            extract(with, &base()).next_page.as_deref(),
+            Some("https://example.com/page/3")
+        );
+        // No rel=next anywhere → None.
+        assert!(extract("<html><body>only</body></html>", &base())
+            .next_page
+            .is_none());
     }
 
     #[test]

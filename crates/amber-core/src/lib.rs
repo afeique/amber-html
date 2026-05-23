@@ -142,6 +142,33 @@ pub fn snapshot(url: &str, formats: &[OutputFormat], opts: CaptureOptions) -> Re
     Ok(Snapshot { url: parsed, raw })
 }
 
+/// Capture `start`, then follow `rel="next"` (see [`PageMetadata::next_page`])
+/// up to `max_pages` total, returning one [`Snapshot`] per page (Plans.md 6.6).
+/// Stops at the first page with no next link, at `max_pages`, or when a URL
+/// repeats (loop guard). `formats` must include one that captures HTML (e.g.
+/// Markdown/Readable) so the next link can be found.
+pub fn capture_paginated(
+    start: &str,
+    formats: &[OutputFormat],
+    opts: &CaptureOptions,
+    max_pages: usize,
+) -> Result<Vec<Snapshot>> {
+    let mut pages = Vec::new();
+    let mut visited = std::collections::HashSet::new();
+    let mut next = Some(start.to_string());
+
+    while let Some(url) = next.take() {
+        if pages.len() >= max_pages || !visited.insert(url.clone()) {
+            break;
+        }
+        let snap = snapshot(&url, formats, opts.clone())?;
+        // The next page, unless we've already captured it (loop guard).
+        next = snap.metadata().next_page.filter(|n| !visited.contains(n));
+        pages.push(snap);
+    }
+    Ok(pages)
+}
+
 /// Current UTC instant as a WARC-style ISO 8601 timestamp (`2026-01-01T00:00:00Z`).
 pub(crate) fn capture_timestamp() -> String {
     chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string()
@@ -683,6 +710,28 @@ mod tests {
         let e = make("hello world", Some(b"PNG-B".to_vec()));
         let visual = e.changes_from(&d);
         assert!(visual.visual_changed && !visual.content_changed);
+    }
+
+    /// `capture_paginated` follows `rel="next"` across pages (6.6). Live: page 1
+    /// (a data: URL) links to page 2 via `<link rel="next">`; both are captured.
+    #[test]
+    #[ignore = "drives a real browser; run with --ignored (Chromium cached after first run)"]
+    fn live_capture_paginated_follows_rel_next() {
+        let page1 = "data:text/html,<html><head>\
+            <link rel=\"next\" href=\"data:text/html,PageTwoContent\">\
+            </head><body>PageOne</body></html>";
+        let opts = CaptureOptions {
+            render: RenderMode::Always,
+            ..Default::default()
+        };
+        let pages =
+            capture_paginated(page1, &[OutputFormat::Readable], &opts, 5).expect("paginate");
+        assert_eq!(pages.len(), 2, "page 1 + the rel=next page");
+        let page2 = String::from_utf8(pages[1].render(OutputFormat::Readable).unwrap()).unwrap();
+        assert!(
+            page2.contains("PageTwoContent"),
+            "the second page should be captured: {page2}"
+        );
     }
 
     /// Without a captured MHTML there is nothing to flatten — a clear error,

@@ -74,6 +74,7 @@ pub mod limits;
 pub mod mcp;
 pub mod meta;
 pub mod metrics;
+pub mod monitor;
 pub mod naming;
 pub mod output;
 pub mod pool;
@@ -109,6 +110,7 @@ pub use fetch::RenderMode;
 pub use limits::{Deadline, ResourceLimits};
 pub use meta::PageMetadata;
 pub use metrics::{Metrics, MetricsSnapshot};
+pub use monitor::{compare as compare_captures, ChangeReport};
 pub use output::OutputFormat;
 pub use pool::Pool;
 pub use provenance::{anchor_fields, anchor_for, FieldProvenance, Provenance};
@@ -427,6 +429,24 @@ impl Snapshot {
         })
     }
 
+    /// Detect content/visual changes between an earlier capture (`previous`) and
+    /// this one — for monitoring the same URL across scheduled captures (9.3).
+    /// Compares readable text (line diff) and screenshots (byte equality). See
+    /// [`monitor::compare`].
+    pub fn changes_from(&self, previous: &Snapshot) -> ChangeReport {
+        let readable = |s: &Snapshot| {
+            s.render(OutputFormat::Readable)
+                .map(|b| String::from_utf8_lossy(&b).into_owned())
+                .unwrap_or_default()
+        };
+        monitor::compare(
+            &readable(previous),
+            &readable(self),
+            previous.raw.screenshot_png.as_deref(),
+            self.raw.screenshot_png.as_deref(),
+        )
+    }
+
     /// Build an [evidence manifest](Snapshot::evidence_manifest) over `formats`
     /// and ed25519-sign it with `secret_seed` (a 32-byte secret key), returning
     /// a self-contained, verifiable [`SignedEvidence`] bundle (Plans.md 9.1).
@@ -634,6 +654,35 @@ mod tests {
             .as_str()
             .unwrap()
             .contains("span.amount"));
+    }
+
+    /// `changes_from` flags content and visual changes between two captures of
+    /// the same URL (9.3).
+    #[test]
+    fn snapshot_changes_from_flags_content_and_visual() {
+        let make = |body: &str, png: Option<Vec<u8>>| {
+            snapshot_from(RawCapture {
+                rendered_html: Some(format!("<html><body><p>{body}</p></body></html>")),
+                screenshot_png: png,
+                ..Default::default()
+            })
+        };
+
+        // Same content, no screenshots → no change.
+        let a = make("hello world", None);
+        let b = make("hello world", None);
+        assert!(!b.changes_from(&a).any_change());
+
+        // Different content → content_changed.
+        let c = make("goodbye world", None);
+        let report = c.changes_from(&a);
+        assert!(report.content_changed);
+
+        // Same content, different screenshots → visual_changed.
+        let d = make("hello world", Some(b"PNG-A".to_vec()));
+        let e = make("hello world", Some(b"PNG-B".to_vec()));
+        let visual = e.changes_from(&d);
+        assert!(visual.visual_changed && !visual.content_changed);
     }
 
     /// Without a captured MHTML there is nothing to flatten — a clear error,

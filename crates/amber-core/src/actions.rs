@@ -24,6 +24,56 @@ pub enum Action {
     ScrollToBottom,
 }
 
+impl Action {
+    /// Parse a CLI-style action spec into an [`Action`]:
+    ///
+    /// - `navigate:<url>`
+    /// - `click:<selector>`
+    /// - `fill:<selector>=<value>` (split on the first `=`)
+    /// - `scroll-bottom`
+    /// - `scrollby:<x>,<y>`
+    ///
+    /// The verb is split on the first `:`, so selectors may themselves contain
+    /// `:` (e.g. `click:input:focus`).
+    pub fn parse(spec: &str) -> Result<Action, String> {
+        let spec = spec.trim();
+        if spec == "scroll-bottom" {
+            return Ok(Action::ScrollToBottom);
+        }
+        let (verb, rest) = spec
+            .split_once(':')
+            .ok_or_else(|| format!("invalid action {spec:?} (expected \"verb:arg\")"))?;
+        match verb {
+            "navigate" => Ok(Action::Navigate(rest.to_string())),
+            "click" => Ok(Action::Click(rest.to_string())),
+            "fill" => {
+                let (selector, value) = rest.split_once('=').ok_or_else(|| {
+                    format!("invalid fill action {spec:?} (expected \"fill:<selector>=<value>\")")
+                })?;
+                Ok(Action::Fill {
+                    selector: selector.to_string(),
+                    value: value.to_string(),
+                })
+            }
+            "scrollby" => {
+                let (x, y) = rest.split_once(',').ok_or_else(|| {
+                    format!("invalid scrollby action {spec:?} (expected \"scrollby:<x>,<y>\")")
+                })?;
+                let parse_i64 = |s: &str, axis| {
+                    s.trim()
+                        .parse::<i64>()
+                        .map_err(|_| format!("invalid scrollby {axis} in {spec:?}"))
+                };
+                Ok(Action::ScrollBy {
+                    x: parse_i64(x, "x")?,
+                    y: parse_i64(y, "y")?,
+                })
+            }
+            other => Err(format!("unknown action verb {other:?} in {spec:?}")),
+        }
+    }
+}
+
 /// Build the CDP `(method, params)` call that performs `action`.
 ///
 /// The JS-backed actions return a boolean (whether the target element was
@@ -127,5 +177,62 @@ mod tests {
             expr(&Action::ScrollToBottom),
             "window.scrollTo(0,document.body.scrollHeight)"
         );
+    }
+
+    #[test]
+    fn parse_each_action_verb() {
+        assert_eq!(
+            Action::parse("navigate:https://e.com/").unwrap(),
+            Action::Navigate("https://e.com/".into())
+        );
+        assert_eq!(
+            Action::parse("click:.submit").unwrap(),
+            Action::Click(".submit".into())
+        );
+        assert_eq!(
+            Action::parse("scroll-bottom").unwrap(),
+            Action::ScrollToBottom
+        );
+        assert_eq!(
+            Action::parse("scrollby:0,500").unwrap(),
+            Action::ScrollBy { x: 0, y: 500 }
+        );
+    }
+
+    #[test]
+    fn parse_fill_splits_selector_and_value_on_first_equals() {
+        assert_eq!(
+            Action::parse("fill:#email=a@b.com").unwrap(),
+            Action::Fill {
+                selector: "#email".into(),
+                value: "a@b.com".into()
+            }
+        );
+        // Values may contain '='; only the first splits.
+        assert_eq!(
+            Action::parse("fill:#q=a=b").unwrap(),
+            Action::Fill {
+                selector: "#q".into(),
+                value: "a=b".into()
+            }
+        );
+    }
+
+    #[test]
+    fn parse_keeps_colons_in_selectors() {
+        // The verb splits on the first ':'; the selector keeps the rest.
+        assert_eq!(
+            Action::parse("click:input:focus").unwrap(),
+            Action::Click("input:focus".into())
+        );
+    }
+
+    #[test]
+    fn parse_rejects_malformed_specs() {
+        assert!(Action::parse("click").is_err()); // no colon
+        assert!(Action::parse("teleport:.x").is_err()); // unknown verb
+        assert!(Action::parse("fill:#x").is_err()); // no '='
+        assert!(Action::parse("scrollby:0").is_err()); // no ','
+        assert!(Action::parse("scrollby:a,b").is_err()); // non-numeric
     }
 }

@@ -37,6 +37,9 @@ pub struct CaptureOptions {
     pub session: crate::session::SessionState,
     /// Per-capture resource limits (time / byte budget). See [`crate::limits`].
     pub limits: crate::limits::ResourceLimits,
+    /// Agent actions (click/fill/scroll/navigate) run on the page after settle,
+    /// before capture. A non-empty list forces a browser render.
+    pub actions: Vec<crate::actions::Action>,
 }
 
 impl std::fmt::Debug for CaptureOptions {
@@ -55,6 +58,7 @@ impl std::fmt::Debug for CaptureOptions {
             )
             .field("session", &self.session)
             .field("limits", &self.limits)
+            .field("actions", &self.actions)
             .finish()
     }
 }
@@ -99,8 +103,10 @@ pub(crate) fn run(
     let deadline = opts.limits.deadline();
 
     // Step 1 — output gate: some outputs (or `--render always`) require a
-    // browser up front, so we don't bother with a cheap fetch.
-    if fetch::browser_required_upfront(formats, opts.render) {
+    // browser up front, so we don't bother with a cheap fetch. Agent actions
+    // also need a live page (unless the browser is explicitly forbidden).
+    let actions_need_browser = !opts.actions.is_empty() && opts.render != RenderMode::Never;
+    if fetch::browser_required_upfront(formats, opts.render) || actions_need_browser {
         tracing::debug!("output gate: browser required up front");
         return browser_capture(url, formats, opts, &deadline);
     }

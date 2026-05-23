@@ -92,6 +92,13 @@ pub(crate) fn capture(
         wait_for_ready(&cdp, sid, condition);
     }
 
+    // Agent actions (2.5): run click/fill/scroll/navigate on the settled page
+    // before capturing, so the capture reflects the post-action state.
+    for action in &opts.actions {
+        let (method, params) = crate::actions::to_cdp(action);
+        scmd(&cdp, sid, method, params)?;
+    }
+
     let mut raw = RawCapture {
         final_url: url.to_string(),
         used_browser: true,

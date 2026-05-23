@@ -6,7 +6,7 @@ use std::process::ExitCode;
 use clap::Parser;
 
 use amber_core::{
-    snapshot, CaptureOptions, Error, OutputFormat, RenderMode, ResourceLimits, SessionState,
+    snapshot, Action, CaptureOptions, Error, OutputFormat, RenderMode, ResourceLimits, SessionState,
 };
 
 /// AmberHTML — faithful local web-page capture (library + CLI).
@@ -83,6 +83,12 @@ struct Cli {
     /// Per-capture wall-clock budget in seconds (checked before rendering).
     #[arg(long, value_name = "SECONDS")]
     max_time: Option<u64>,
+
+    /// Agent action to run before capture (repeatable; forces a browser):
+    /// `click:<sel>`, `fill:<sel>=<val>`, `scroll-bottom`, `scrollby:<x>,<y>`,
+    /// or `navigate:<url>`.
+    #[arg(long = "action", value_name = "SPEC")]
+    actions: Vec<String>,
 }
 
 /// Parse a `Name: Value` header argument, splitting on the first colon (so the
@@ -235,6 +241,17 @@ fn main() -> ExitCode {
         }
     }
 
+    let mut actions = Vec::new();
+    for spec in &cli.actions {
+        match Action::parse(spec) {
+            Ok(a) => actions.push(a),
+            Err(e) => {
+                eprintln!("error: {e}");
+                return ExitCode::from(2);
+            }
+        }
+    }
+
     let opts = CaptureOptions {
         render: to_render_mode(cli.render),
         wait_for: cli.wait_for.clone(),
@@ -245,6 +262,7 @@ fn main() -> ExitCode {
             max_bytes: cli.max_bytes,
             max_duration: cli.max_time.map(std::time::Duration::from_secs),
         },
+        actions,
         ..Default::default()
     };
 

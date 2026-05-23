@@ -12,15 +12,37 @@
 
 use crate::cache::content_hash;
 
+/// Location of a written `response` record within the WARC buffer — the inputs
+/// a WACZ CDXJ index needs to point a replay tool at the record (task 5.4).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RecordLoc {
+    /// The record's `WARC-Target-URI`.
+    pub target_uri: String,
+    /// The record's `WARC-Date` (ISO 8601).
+    pub date: String,
+    /// Byte offset of the record (its `WARC/1.1` line) within the WARC.
+    pub offset: usize,
+    /// Total length of the record in bytes (headers + block + terminator).
+    pub length: usize,
+    /// SHA-256 of the wrapped HTTP response message (the record block).
+    pub block_digest: String,
+}
+
 /// Accumulates WARC/1.1 records into an in-memory byte buffer.
 #[derive(Debug, Default)]
 pub struct WarcWriter {
     buf: Vec<u8>,
+    records: Vec<RecordLoc>,
 }
 
 impl WarcWriter {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// The locations of the `response` records written so far (for indexing).
+    pub fn records(&self) -> &[RecordLoc] {
+        &self.records
     }
 
     /// Write a `warcinfo` record. `fields` is the `application/warc-fields`
@@ -44,6 +66,7 @@ impl WarcWriter {
     /// `target_uri` at `date` (ISO 8601, e.g. `2026-01-01T00:00:00Z`).
     pub fn response(&mut self, target_uri: &str, date: &str, http_response: &[u8]) {
         let id = record_id(target_uri, date, http_response);
+        let offset = self.buf.len();
         self.write_record(
             &[
                 ("WARC-Type", "response"),
@@ -54,6 +77,13 @@ impl WarcWriter {
             ],
             http_response,
         );
+        self.records.push(RecordLoc {
+            target_uri: target_uri.to_string(),
+            date: date.to_string(),
+            offset,
+            length: self.buf.len() - offset,
+            block_digest: content_hash(http_response),
+        });
     }
 
     /// Consume the writer, returning the WARC bytes.
@@ -180,6 +210,33 @@ mod tests {
         let out = String::from_utf8(w.into_bytes()).unwrap();
         // Two records → two "WARC/1.1" version lines.
         assert_eq!(out.matches("WARC/1.1\r\n").count(), 2);
+    }
+
+    #[test]
+    fn response_records_track_offset_and_length() {
+        let mut w = WarcWriter::new();
+        w.warcinfo("2026-01-01T00:00:00Z", "software: AmberHTML");
+        let block = http_response_block(200, "text/html", b"<html></html>");
+        w.response("https://example.com/", "2026-01-01T00:00:00Z", &block);
+        let records = w.records().to_vec();
+        let bytes = w.into_bytes();
+
+        assert_eq!(records.len(), 1, "only the response record is tracked");
+        let r = &records[0];
+        assert_eq!(r.target_uri, "https://example.com/");
+        // The [offset..offset+length] slice is exactly that record.
+        let rec = &bytes[r.offset..r.offset + r.length];
+        assert!(
+            rec.starts_with(b"WARC/1.1\r\n"),
+            "slice begins at the record"
+        );
+        assert!(
+            rec.ends_with(b"\r\n\r\n"),
+            "slice ends at the record terminator"
+        );
+        let rec = std::str::from_utf8(rec).unwrap();
+        assert!(rec.contains("WARC-Type: response\r\n"));
+        assert!(rec.contains("WARC-Target-URI: https://example.com/\r\n"));
     }
 
     #[test]

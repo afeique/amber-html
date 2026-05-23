@@ -288,23 +288,24 @@ impl Snapshot {
                 })?;
                 Ok(inline::mhtml_to_single_file_html(mhtml).into_bytes())
             }
-            OutputFormat::Warc => self.to_warc(&capture_timestamp()),
+            OutputFormat::Warc => Ok(self.build_warc(&capture_timestamp())?.0),
             OutputFormat::Wacz => {
                 let date = capture_timestamp();
-                let warc = self.to_warc(&date)?;
-                wacz::package(&warc, &[(self.url.as_str(), date.as_str())])
+                let (warc, records) = self.build_warc(&date)?;
+                wacz::package(&warc, &[(self.url.as_str(), date.as_str())], &records)
             }
         }
     }
 
     /// Assemble a single-page WARC/1.1: a `warcinfo` record plus a `response`
     /// record wrapping the captured HTML document (browser-rendered DOM
-    /// preferred, static fetch as fallback).
+    /// preferred, static fetch as fallback). Returns the WARC bytes plus the
+    /// response record's location, which the WACZ CDXJ index needs (5.4).
     ///
     /// This faithfully records the main document. Recording every subresource
     /// exchange (CSS/JS/images) from the browser's network layer is the
     /// remaining 5.3 integration; until then a WARC carries the page itself.
-    fn to_warc(&self, date: &str) -> Result<Vec<u8>> {
+    fn build_warc(&self, date: &str) -> Result<(Vec<u8>, Vec<warc::RecordLoc>)> {
         let html = self
             .raw
             .rendered_html
@@ -315,7 +316,8 @@ impl Snapshot {
         w.warcinfo(date, "software: AmberHTML\r\nformat: WARC File Format 1.1");
         let block = warc::http_response_block(200, "text/html; charset=utf-8", html.as_bytes());
         w.response(self.url.as_str(), date, &block);
-        Ok(w.into_bytes())
+        let records = w.records().to_vec();
+        Ok((w.into_bytes(), records))
     }
 
     /// Write `format` into `dir` using `name` (or the default URL+datetime name).

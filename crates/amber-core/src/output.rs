@@ -2,7 +2,7 @@
 //! See `Plans.md`.
 
 /// A single output representation.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, uniffi::Enum)]
 pub enum OutputFormat {
     /// Single-file inlined HTML (`data:` URIs + inlined `<style>`).
     Html,

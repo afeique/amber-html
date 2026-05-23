@@ -177,7 +177,7 @@ mirrors. Public FFI surface is **blocking** (tokio hidden inside core).
 | 0.3 | Managed pinned Chrome for Testing fetcher (download/cache/checksum-verify) | Fetcher downloads a pinned build, verifies checksum, caches; `AMBER_CHROMIUM_PATH` honored | 0.1 | cc:完了 |
 | 0.4 | Hand-rolled CDP pipe client (`--remote-debugging-pipe`, fd 3/4, NUL-delimited JSON) | Client spawns Chromium and round-trips a CDP request/response over the pipe | 0.1 | cc:完了 |
 | 0.5 | navigate + screenshot smoke test (end-to-end) | `cargo run` launches pinned Chromium and screenshots a URL to a file | 0.3, 0.4 | cc:完了 |
-| 0.6 | CI (build + test + clippy + fmt) | A green CI run on push/PR covering build, test, clippy, fmt | 0.1 | cc:TODO |
+| 0.6 | CI (build + test + clippy + fmt) | A green CI run on push/PR covering build, test, clippy, fmt | 0.1 | cc:完了 |
 
 ## Phase 1: v0.1 — Reader MVP (P0)
 

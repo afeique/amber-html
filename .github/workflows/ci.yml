@@ -1,0 +1,36 @@
+name: CI
+
+# Plans.md task 0.6 — build + test + clippy + fmt on every push and PR.
+on:
+  push:
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    name: build · test · clippy · fmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install rustfmt + clippy
+        run: rustup component add rustfmt clippy
+
+      - name: Cache cargo build
+        uses: Swatinem/rust-cache@v2
+
+      # The browser-driven tests are #[ignore]d and need a pinned Chromium, so
+      # the default test run stays hermetic and needs no browser on the runner.
+      - name: Format
+        run: cargo fmt --all --check
+
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Build
+        run: cargo build --workspace --locked
+
+      - name: Test
+        run: cargo test --workspace --locked

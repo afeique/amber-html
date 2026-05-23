@@ -58,6 +58,7 @@ pub mod capture;
 pub mod cdp;
 pub mod chromium;
 pub mod crawl;
+pub mod daemon;
 pub mod detect;
 pub mod diff;
 pub mod emulation;

@@ -22,6 +22,17 @@ struct Cli {
     #[arg(long)]
     mcp: bool,
 
+    /// Run as an HTTP daemon, serving `GET /capture?url=…&format=…` (and
+    /// `/healthz`). Ignores the URL and output flags.
+    #[arg(long)]
+    serve: bool,
+    /// Daemon listen address (with `--serve`).
+    #[arg(long, default_value = "127.0.0.1:8080")]
+    addr: String,
+    /// Max concurrent captures the daemon will run (with `--serve`).
+    #[arg(long, default_value_t = 4)]
+    concurrency: usize,
+
     /// Single-file inlined HTML (.html).
     #[arg(long)]
     html: bool,
@@ -223,6 +234,26 @@ fn run_mcp() -> ExitCode {
     }
 }
 
+/// Run the blocking HTTP daemon, serving captures with bounded concurrency.
+fn run_daemon(addr: &str, concurrency: usize) -> ExitCode {
+    let capture = |url: &str, format: &str| -> Result<String, String> {
+        let fmt = match format {
+            "readable" => OutputFormat::Readable,
+            _ => OutputFormat::Markdown,
+        };
+        let snap = snapshot(url, &[fmt], CaptureOptions::default()).map_err(|e| e.to_string())?;
+        let bytes = snap.render(fmt).map_err(|e| e.to_string())?;
+        Ok(String::from_utf8_lossy(&bytes).into_owned())
+    };
+    match amber_core::daemon::serve(addr, concurrency, capture) {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(e) => {
+            eprintln!("amber serve: {e}");
+            ExitCode::FAILURE
+        }
+    }
+}
+
 fn main() -> ExitCode {
     init_tracing();
 
@@ -231,9 +262,12 @@ fn main() -> ExitCode {
     if cli.mcp {
         return run_mcp();
     }
+    if cli.serve {
+        return run_daemon(&cli.addr, cli.concurrency);
+    }
 
     let Some(url) = cli.url.clone() else {
-        eprintln!("error: a URL is required (or use --mcp to run as an MCP server)");
+        eprintln!("error: a URL is required (or use --mcp / --serve)");
         return ExitCode::from(2);
     };
 

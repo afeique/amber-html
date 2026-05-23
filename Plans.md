@@ -283,7 +283,7 @@ mirrors. Public FFI surface is **blocking** (tokio hidden inside core).
 | 8.2 | API stability pass | Public API reviewed and frozen for 1.0 | 8.1 | cc:TODO |
 | 8.3 | Headed / stealth mode | Headed render available as an escalation | 1.4 | cc:完了 |
 | 8.4 | Bring-your-own-proxy hook | A user-supplied proxy is used for fetches/renders | 1.1, 1.4 | cc:完了 |
-| 8.5 | Reproducibility guarantees | Documented, tested reproducibility contract | 5.7 | cc:TODO |
+| 8.5 | Reproducibility guarantees | Documented, tested reproducibility contract | 5.7 | cc:完了 |
 | 8.6 | Broad packaging GA | Stable releases on all packaging channels | 6.7 | cc:TODO |
 
 ## Post-1.0: Specialized modes (P2)

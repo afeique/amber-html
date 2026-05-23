@@ -79,6 +79,11 @@ pub struct RawCapture {
     pub accessibility_tree: Option<serde_json::Value>,
     /// Whether a browser was used.
     pub used_browser: bool,
+    /// Capture instant as an ISO 8601 timestamp, fixed once at capture time so
+    /// timestamped outputs (WARC/WACZ) render reproducibly (8.5). `None` =
+    /// fall back to the current time at render (e.g. directly-built test
+    /// captures).
+    pub captured_at: Option<String>,
 }
 
 /// Run the capture pipeline (Plans.md):
@@ -175,6 +180,7 @@ fn static_capture(page: http::FetchedPage) -> RawCapture {
         final_url: page.final_url.to_string(),
         static_html: Some(page.html),
         used_browser: false,
+        captured_at: Some(crate::capture_timestamp()),
         ..Default::default()
     }
 }

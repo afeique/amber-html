@@ -95,6 +95,7 @@ pub(crate) fn capture(
     let mut raw = RawCapture {
         final_url: url.to_string(),
         used_browser: true,
+        captured_at: Some(crate::capture_timestamp()),
         ..Default::default()
     };
 

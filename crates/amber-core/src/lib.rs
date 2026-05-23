@@ -93,7 +93,7 @@ pub fn snapshot(url: &str, formats: &[OutputFormat], opts: CaptureOptions) -> Re
 }
 
 /// Current UTC instant as a WARC-style ISO 8601 timestamp (`2026-01-01T00:00:00Z`).
-fn capture_timestamp() -> String {
+pub(crate) fn capture_timestamp() -> String {
     chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string()
 }
 
@@ -246,6 +246,15 @@ impl Snapshot {
     }
 
     /// Render a single format to bytes.
+    ///
+    /// **Reproducibility (Plans.md 8.5):** rendering is a pure function of the
+    /// captured [`RawCapture`] — the same `Snapshot` renders byte-identical
+    /// output every time, for every format. Timestamped archive formats
+    /// (WARC/WACZ) embed the capture instant, which is fixed once at capture
+    /// time (not at render time), and the WACZ ZIP uses a fixed entry mtime, so
+    /// even those are stable across re-renders. Combined with the pinned
+    /// browser (5.7), the same input yields byte-stable output suitable for
+    /// evals and diffing.
     pub fn render(&self, format: OutputFormat) -> Result<Vec<u8>> {
         // Prefer browser-rendered HTML; fall back to the static fetch.
         let html = self
@@ -288,13 +297,23 @@ impl Snapshot {
                 })?;
                 Ok(inline::mhtml_to_single_file_html(mhtml).into_bytes())
             }
-            OutputFormat::Warc => Ok(self.build_warc(&capture_timestamp())?.0),
+            OutputFormat::Warc => Ok(self.build_warc(&self.capture_date())?.0),
             OutputFormat::Wacz => {
-                let date = capture_timestamp();
+                let date = self.capture_date();
                 let (warc, records) = self.build_warc(&date)?;
                 wacz::package(&warc, &[(self.url.as_str(), date.as_str())], &records)
             }
         }
+    }
+
+    /// The capture's timestamp for timestamped outputs. Fixed at capture time
+    /// (so repeated renders are byte-identical, 8.5); falls back to the current
+    /// time for captures built without one (e.g. some tests).
+    fn capture_date(&self) -> String {
+        self.raw
+            .captured_at
+            .clone()
+            .unwrap_or_else(capture_timestamp)
     }
 
     /// Assemble a single-page WARC/1.1: a `warcinfo` record plus a `response`
@@ -396,6 +415,33 @@ mod tests {
             html.contains("Hello Amber"),
             "single-file HTML should keep the body text:\n{html}"
         );
+    }
+
+    /// Reproducibility contract (8.5): a given `Snapshot` renders byte-identical
+    /// output across repeated calls — including the timestamped WARC/WACZ, whose
+    /// capture instant is fixed on the `RawCapture` (not taken at render time).
+    #[test]
+    fn renders_are_reproducible_for_a_given_capture() {
+        let snap = snapshot_from(RawCapture {
+            rendered_html: Some(
+                "<html><body><p>Reproducible capture</p></body></html>".to_string(),
+            ),
+            captured_at: Some("2026-01-02T03:04:05Z".to_string()),
+            ..Default::default()
+        });
+        for fmt in [
+            OutputFormat::Markdown,
+            OutputFormat::Readable,
+            OutputFormat::Warc,
+            OutputFormat::Wacz,
+        ] {
+            let first = snap.render(fmt).expect("render once");
+            let second = snap.render(fmt).expect("render twice");
+            assert_eq!(
+                first, second,
+                "format {fmt:?} must render byte-identically across calls"
+            );
+        }
     }
 
     /// Without a captured MHTML there is nothing to flatten — a clear error,

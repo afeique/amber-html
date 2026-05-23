@@ -291,7 +291,7 @@ mirrors. Public FFI surface is **blocking** (tokio hidden inside core).
 | Task | 内容 | DoD | Depends | Status |
 |------|------|-----|---------|--------|
 | 9.1 | Tamper-evident evidence capture (hash + timestamp + signature) | Capture produces a verifiable, signed snapshot | Phase 5 | cc:完了 |
-| 9.2 | Provenance-tagged corpus builder | Bulk captures emit a provenance-tagged dataset | 4.4, 7.6 | cc:TODO |
+| 9.2 | Provenance-tagged corpus builder | Bulk captures emit a provenance-tagged dataset | 4.4, 7.6 | cc:完了 |
 | 9.3 | Visual regression / page monitoring | Scheduled captures flag visual/content changes | 3.7, 7.7 | cc:TODO |
 
 ---

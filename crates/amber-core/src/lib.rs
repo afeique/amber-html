@@ -57,6 +57,7 @@ pub mod capi;
 pub mod capture;
 pub mod cdp;
 pub mod chromium;
+pub mod corpus;
 pub mod crawl;
 pub mod daemon;
 pub mod detect;
@@ -95,6 +96,7 @@ pub use blocking::{BlockPolicy, ResourceType};
 pub use budget::{chunk_text, estimate_cost, estimate_tokens, truncate_to_tokens, TokenAccounting};
 pub use cache::{content_hash, Cache, CacheEntry};
 pub use capture::{CaptureOptions, RawCapture};
+pub use corpus::{to_jsonl as corpus_to_jsonl, ProvenanceRecord};
 pub use crawl::{
     crawl, crawl_incremental, crawl_incremental_with, crawl_with, CrawlLimits, CrawlScope, Frontier,
 };
@@ -406,6 +408,25 @@ impl Snapshot {
         })
     }
 
+    /// Extract structured JSON against `schema` (via the caller's `client`) and
+    /// return it as a [`ProvenanceRecord`] — the value plus per-field DOM/URL
+    /// anchors, tagged with this capture's URL and instant. Collect these across
+    /// bulk captures and [`corpus_to_jsonl`] them into a provenance-tagged
+    /// dataset (Plans.md 9.2).
+    pub fn provenance_record<C: structured::LlmClient>(
+        &self,
+        schema: &str,
+        client: &C,
+    ) -> Result<ProvenanceRecord> {
+        let (value, anchors) = self.extract_with_provenance(schema, client)?;
+        Ok(ProvenanceRecord {
+            url: self.url.to_string(),
+            captured_at: self.capture_date(),
+            value,
+            anchors,
+        })
+    }
+
     /// Build an [evidence manifest](Snapshot::evidence_manifest) over `formats`
     /// and ed25519-sign it with `secret_seed` (a 32-byte secret key), returning
     /// a self-contained, verifiable [`SignedEvidence`] bundle (Plans.md 9.1).
@@ -575,6 +596,44 @@ mod tests {
         let mut tampered = signed.clone();
         tampered.manifest.outputs[0].bytes += 1;
         assert!(!tampered.verify());
+    }
+
+    /// `provenance_record` builds a corpus row: the extracted value plus
+    /// per-field anchors, tagged with the capture URL/instant; a batch of them
+    /// serializes to JSONL (9.2).
+    #[test]
+    fn snapshot_provenance_record_builds_a_corpus_row() {
+        struct Mock;
+        impl structured::LlmClient for Mock {
+            fn complete(&self, _prompt: &str) -> Result<String> {
+                Ok(r#"{"amount":"42 USD"}"#.to_string())
+            }
+        }
+        let snap = snapshot_from(RawCapture {
+            static_html: Some(
+                r#"<html><body><div id="main"><span class="amount">42 USD</span></div></body></html>"#
+                    .to_string(),
+            ),
+            captured_at: Some("2026-01-02T03:04:05Z".to_string()),
+            ..Default::default()
+        });
+
+        let record = snap
+            .provenance_record(r#"{"type":"object"}"#, &Mock)
+            .expect("record");
+        assert_eq!(record.url, "https://ex.com/");
+        assert_eq!(record.value["amount"], "42 USD");
+        let amount = record.anchors.iter().find(|f| f.path == "/amount").unwrap();
+        assert!(amount.anchor.is_some(), "field is anchored to the page");
+
+        let jsonl = corpus_to_jsonl(std::slice::from_ref(&record));
+        let row: serde_json::Value = serde_json::from_str(&jsonl).unwrap();
+        assert_eq!(row["url"], "https://ex.com/");
+        assert_eq!(row["provenance"][0]["path"], "/amount");
+        assert!(row["provenance"][0]["css_path"]
+            .as_str()
+            .unwrap()
+            .contains("span.amount"));
     }
 
     /// Without a captured MHTML there is nothing to flatten — a clear error,

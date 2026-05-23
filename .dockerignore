@@ -1,0 +1,10 @@
+# Keep the build context small + the image build hermetic.
+target/
+.git/
+.github/
+bindings/
+crates/amber-node/*.node
+crates/amber-node/node_modules/
+docs/
+*.md
+LICENSE-*

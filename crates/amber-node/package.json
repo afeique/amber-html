@@ -1,6 +1,6 @@
 {
   "name": "amber-html",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Node.js bindings for AmberHTML — local-first web-page capture.",
   "license": "MIT OR Apache-2.0",
   "main": "index.js",

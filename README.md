@@ -31,6 +31,19 @@ There is no analytics, no phone-home, no usage reporting. Once the browser is
 cached (or `AMBER_CHROMIUM_PATH` is set), AmberHTML runs fully offline — the
 only traffic is to the pages you capture.
 
+## Install
+
+```sh
+cargo install amber-cli                      # Rust / crates.io  → `amber`
+pipx install amber-html                       # Python (UniFFI)   → import amber_core
+npm install -g amber-html                     # Node (napi-rs)
+brew install afeique/amber/amber              # macOS/Linux (Homebrew tap)
+docker run --rm ghcr.io/afeique/amber-html https://example.com --markdown -o /out
+```
+
+Or grab a prebuilt binary from the [latest release](https://github.com/afeique/amber-html/releases).
+Releases are cut by pushing a `vX.Y.Z` tag; see [RELEASING.md](RELEASING.md).
+
 ## Quickstart
 
 Build the CLI from this workspace (a pinned Chrome for Testing is downloaded and

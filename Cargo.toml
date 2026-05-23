@@ -3,14 +3,16 @@ resolver = "2"
 members = ["crates/amber-core", "crates/amber-cli", "crates/uniffi-bindgen", "crates/amber-node"]
 
 [workspace.package]
-version = "0.0.0"
+version = "0.1.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/afeique/amber-html"
+homepage = "https://github.com/afeique/amber-html"
+readme = "README.md"
 authors = ["AmberHTML Contributors"]
 
 [workspace.dependencies]
-amber-core = { path = "crates/amber-core" }
+amber-core = { path = "crates/amber-core", version = "0.1.0" }
 url = "2"
 chrono = "0.4"
 serde_json = "1"

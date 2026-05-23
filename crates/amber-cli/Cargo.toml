@@ -4,8 +4,12 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
+homepage.workspace = true
+readme.workspace = true
 authors.workspace = true
-description = "AmberHTML command-line interface."
+description = "AmberHTML command-line interface — faithful local web-page capture."
+keywords = ["web", "scraping", "capture", "cli", "screenshot"]
+categories = ["command-line-utilities", "web-programming"]
 
 [[bin]]
 name = "amber"

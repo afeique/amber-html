@@ -1,0 +1,213 @@
+name: Release
+
+# Cut a release by pushing a tag, e.g.:  git tag v0.1.0 && git push origin v0.1.0
+# Each job publishes one distribution channel. See RELEASING.md for the secrets
+# / accounts each one needs.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write # create the GitHub Release + upload binaries
+  packages: write # push the image to GHCR
+  id-token: write # PyPI Trusted Publishing (OIDC)
+
+jobs:
+  # ── crates.io ────────────────────────────────────────────────────────────
+  crates:
+    name: Publish to crates.io
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: cargo publish (core, then cli)
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          set -euo pipefail
+          cargo publish -p amber-core
+          # Wait for the index so amber-cli can resolve the just-published core.
+          for _ in $(seq 1 30); do
+            if cargo publish -p amber-cli --dry-run >/dev/null 2>&1; then break; fi
+            sleep 10
+          done
+          cargo publish -p amber-cli
+
+  # ── Prebuilt CLI binaries → GitHub Release ───────────────────────────────
+  binaries:
+    name: Binary (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { target: x86_64-unknown-linux-gnu, os: ubuntu-latest, cross: false }
+          - { target: aarch64-unknown-linux-gnu, os: ubuntu-latest, cross: true }
+          - { target: x86_64-apple-darwin, os: macos-13, cross: false }
+          - { target: aarch64-apple-darwin, os: macos-14, cross: false }
+          - { target: x86_64-pc-windows-msvc, os: windows-latest, cross: false }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - name: Build
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ matrix.cross }}" = "true" ]; then
+            cargo install cross --locked
+            cross build --release --locked -p amber-cli --target ${{ matrix.target }}
+          else
+            cargo build --release --locked -p amber-cli --target ${{ matrix.target }}
+          fi
+      - name: Package
+        shell: bash
+        run: |
+          set -euo pipefail
+          name="amber-${{ github.ref_name }}-${{ matrix.target }}"
+          mkdir "$name"
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            cp "target/${{ matrix.target }}/release/amber.exe" "$name/"
+          else
+            cp "target/${{ matrix.target }}/release/amber" "$name/"
+          fi
+          cp README.md LICENSE-MIT LICENSE-APACHE "$name/" || true
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            7z a "$name.zip" "$name" >/dev/null
+          else
+            tar czf "$name.tar.gz" "$name"
+          fi
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            amber-*.tar.gz
+            amber-*.zip
+
+  # ── Docker image → GitHub Container Registry ─────────────────────────────
+  docker:
+    name: Docker image (GHCR)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  # ── PyPI wheels (UniFFI via maturin) ─────────────────────────────────────
+  wheels:
+    name: PyPI wheel (${{ matrix.platform.os }}/${{ matrix.platform.target }})
+    runs-on: ${{ matrix.platform.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - { os: ubuntu-latest, target: x86_64 }
+          - { os: ubuntu-latest, target: aarch64 }
+          - { os: macos-13, target: x86_64 }
+          - { os: macos-14, target: aarch64 }
+          - { os: windows-latest, target: x64 }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.platform.target }}
+          args: --release --out dist
+          manylinux: auto
+          sccache: "true"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.platform.os }}-${{ matrix.platform.target }}
+          path: dist
+
+  pypi-publish:
+    name: Publish to PyPI
+    needs: wheels
+    runs-on: ubuntu-latest
+    environment: pypi # configure Trusted Publishing for this env on PyPI
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: wheels-*
+          path: dist
+          merge-multiple: true
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist
+
+  # ── npm (napi-rs prebuilds) ──────────────────────────────────────────────
+  npm-build:
+    name: npm prebuild (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { target: x86_64-unknown-linux-gnu, os: ubuntu-latest }
+          - { target: x86_64-apple-darwin, os: macos-13 }
+          - { target: aarch64-apple-darwin, os: macos-14 }
+          - { target: x86_64-pc-windows-msvc, os: windows-latest }
+    defaults:
+      run:
+        working-directory: crates/amber-node
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - run: npx napi build --platform --release --target ${{ matrix.target }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: napi-${{ matrix.target }}
+          path: crates/amber-node/*.node
+
+  npm-publish:
+    name: Publish to npm
+    needs: npm-build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: crates/amber-node
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+      - run: npm install
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: napi-*
+          path: crates/amber-node/artifacts
+          merge-multiple: true
+      - name: Assemble per-platform packages + publish
+        run: |
+          npx napi create-npm-dirs
+          npx napi artifacts --output-dir ./artifacts
+          npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

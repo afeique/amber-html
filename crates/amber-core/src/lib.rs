@@ -15,6 +15,7 @@ pub mod blocking;
 pub mod browser;
 pub mod budget;
 pub mod cache;
+pub mod capi;
 pub mod capture;
 pub mod cdp;
 pub mod chromium;

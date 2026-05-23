@@ -71,7 +71,7 @@ pub use crawl::{
 pub use diff::{diff_lines, LineDiff};
 pub use emulation::{EmulationConfig, Viewport};
 pub use error::{Error, Result};
-pub use evidence::{EvidenceEntry, EvidenceManifest};
+pub use evidence::{EvidenceEntry, EvidenceManifest, SignedEvidence};
 pub use extract::dedup_text;
 pub use fetch::RenderMode;
 pub use limits::{Deadline, ResourceLimits};
@@ -375,6 +375,17 @@ impl Snapshot {
         })
     }
 
+    /// Build an [evidence manifest](Snapshot::evidence_manifest) over `formats`
+    /// and ed25519-sign it with `secret_seed` (a 32-byte secret key), returning
+    /// a self-contained, verifiable [`SignedEvidence`] bundle (Plans.md 9.1).
+    pub fn sign_evidence(
+        &self,
+        formats: &[OutputFormat],
+        secret_seed: &[u8; 32],
+    ) -> Result<SignedEvidence> {
+        Ok(self.evidence_manifest(formats)?.sign(secret_seed))
+    }
+
     /// Write `format` into `dir` using `name` (or the default URL+datetime name).
     /// Creates `dir` if missing and returns the written path.
     pub fn save(&self, format: OutputFormat, dir: &Path, name: Option<&str>) -> Result<PathBuf> {
@@ -514,6 +525,25 @@ mod tests {
             .evidence_manifest(&[OutputFormat::Markdown, OutputFormat::Warc])
             .unwrap();
         assert_eq!(manifest.digest(), again.digest());
+    }
+
+    /// `sign_evidence` produces a verifiable ed25519-signed bundle that fails
+    /// verification once the manifest is tampered (9.1).
+    #[test]
+    fn snapshot_sign_evidence_round_trips() {
+        let snap = snapshot_from(RawCapture {
+            rendered_html: Some("<html><body><p>Signed</p></body></html>".to_string()),
+            captured_at: Some("2026-01-02T03:04:05Z".to_string()),
+            ..Default::default()
+        });
+        let signed = snap
+            .sign_evidence(&[OutputFormat::Markdown], &[42u8; 32])
+            .expect("sign");
+        assert!(signed.verify());
+
+        let mut tampered = signed.clone();
+        tampered.manifest.outputs[0].bytes += 1;
+        assert!(!tampered.verify());
     }
 
     /// Without a captured MHTML there is nothing to flatten — a clear error,

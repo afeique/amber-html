@@ -71,6 +71,12 @@ pub(crate) fn capture(
         json!({ "enabled": true }),
     )?;
 
+    // Drop blocked resource classes (ad/tracker hosts + image/media/font
+    // extensions) so they're never fetched — leaner, faster renders (2.4).
+    if let Some((method, params)) = opts.block.set_blocked_urls_command() {
+        scmd(&cdp, sid, method, params)?;
+    }
+
     // Apply auth session headers (+ folded cookies) before navigating, so the
     // very first request to a behind-auth page is authenticated (3.3).
     if let Some((method, params)) = opts.session.extra_http_headers_command() {
@@ -614,6 +620,34 @@ mod tests {
         assert!(
             html.contains("W=800"),
             "viewport emulation did not take effect:\n{html}"
+        );
+    }
+
+    #[test]
+    #[ignore = "drives a real browser; run with --ignored (Chromium cached after first run)"]
+    fn live_resource_blocking_renders() {
+        let chromium = crate::browser::ensure_chromium().expect("ensure chromium");
+        // The page references a tracker host and an image; both are blocked.
+        // The render must still succeed and capture the page text (2.4).
+        let url = Url::parse(
+            "data:text/html,<html><body><p>Blocked render OK</p>\
+             <img src=\"https://doubleclick.net/x.png\"></body></html>",
+        )
+        .unwrap();
+        let opts = CaptureOptions {
+            render: crate::fetch::RenderMode::Always,
+            block: crate::blocking::BlockPolicy {
+                block_images: true,
+                ..Default::default()
+            }
+            .with_ad_trackers(),
+            ..Default::default()
+        };
+        let raw = capture(&chromium, &url, &[OutputFormat::Markdown], &opts).expect("capture");
+        let html = raw.rendered_html.as_deref().unwrap_or_default();
+        assert!(
+            html.contains("Blocked render OK"),
+            "blocking must not break the render:\n{html}"
         );
     }
 

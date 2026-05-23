@@ -6,7 +6,8 @@ use std::process::ExitCode;
 use clap::Parser;
 
 use amber_core::{
-    snapshot, Action, CaptureOptions, Error, OutputFormat, RenderMode, ResourceLimits, SessionState,
+    snapshot, Action, BlockPolicy, CaptureOptions, Error, OutputFormat, RenderMode, ResourceLimits,
+    SessionState,
 };
 
 /// AmberHTML — faithful local web-page capture (library + CLI).
@@ -89,6 +90,22 @@ struct Cli {
     /// or `navigate:<url>`.
     #[arg(long = "action", value_name = "SPEC")]
     actions: Vec<String>,
+
+    /// Block a common ad/tracker host preset during the render.
+    #[arg(long)]
+    block_ads: bool,
+    /// Block requests whose URL contains this substring (repeatable).
+    #[arg(long = "block", value_name = "SUBSTRING")]
+    block: Vec<String>,
+    /// Don't load images during the render.
+    #[arg(long)]
+    block_images: bool,
+    /// Don't load media (audio/video) during the render.
+    #[arg(long)]
+    block_media: bool,
+    /// Don't load web fonts during the render.
+    #[arg(long)]
+    block_fonts: bool,
 }
 
 /// Parse a `Name: Value` header argument, splitting on the first colon (so the
@@ -260,6 +277,17 @@ fn main() -> ExitCode {
         }
     }
 
+    let mut block = BlockPolicy::default();
+    if cli.block_ads {
+        block = block.with_ad_trackers();
+    }
+    block
+        .blocked_url_substrings
+        .extend(cli.block.iter().cloned());
+    block.block_images = cli.block_images;
+    block.block_media = cli.block_media;
+    block.block_fonts = cli.block_fonts;
+
     let opts = CaptureOptions {
         render: to_render_mode(cli.render),
         wait_for: cli.wait_for.clone(),
@@ -271,6 +299,7 @@ fn main() -> ExitCode {
             max_duration: cli.max_time.map(std::time::Duration::from_secs),
         },
         actions,
+        block,
         ..Default::default()
     };
 

@@ -3,8 +3,9 @@
 //!
 //! [`BlockPolicy`] decides which requests to drop — by resource type
 //! (images/media/fonts) and by URL substring (ad/tracker hosts). This is the
-//! pure policy + CDP command-construction layer; the render path enforces it
-//! (`Network.setBlockedURLs` for URL patterns, request interception for types).
+//! pure policy + CDP command-construction layer; the render path enforces it by
+//! sending [`BlockPolicy::set_blocked_urls_command`] (`Network.setBlockedURLs`),
+//! which drops both the substring patterns and per-type file-extension patterns.
 
 use serde_json::{json, Value};
 
@@ -47,13 +48,40 @@ impl BlockPolicy {
                 .any(|s| url.contains(s.as_str()))
     }
 
-    /// Wildcard URL patterns for `Network.setBlockedURLs` from the configured
-    /// substrings. (Type-based blocking is enforced via request interception.)
+    /// Wildcard URL patterns for `Network.setBlockedURLs`: the configured
+    /// substrings, plus file-extension patterns for each blocked resource type.
+    ///
+    /// Type blocking is enforced by extension here (e.g. `*.png*`) rather than
+    /// by CDP request interception — `setBlockedURLs` simply drops matches, with
+    /// no per-request pausing to manage (and so no risk of stalling a render).
+    /// The trade-off is a heuristic: extensionless resource URLs (e.g. an image
+    /// served from `/img?id=5`) slip through; byte-perfect type blocking would
+    /// need `Fetch` interception.
     pub fn blocked_url_patterns(&self) -> Vec<String> {
-        self.blocked_url_substrings
+        const IMAGE_EXTS: &[&str] = &[
+            "png", "jpg", "jpeg", "gif", "webp", "svg", "ico", "bmp", "avif",
+        ];
+        const MEDIA_EXTS: &[&str] = &["mp4", "webm", "ogg", "mp3", "wav", "m4a", "mov", "avi"];
+        const FONT_EXTS: &[&str] = &["woff", "woff2", "ttf", "otf", "eot"];
+
+        let mut patterns: Vec<String> = self
+            .blocked_url_substrings
             .iter()
             .map(|s| format!("*{s}*"))
-            .collect()
+            .collect();
+        let mut add_exts = |exts: &[&str]| {
+            patterns.extend(exts.iter().map(|ext| format!("*.{ext}*")));
+        };
+        if self.block_images {
+            add_exts(IMAGE_EXTS);
+        }
+        if self.block_media {
+            add_exts(MEDIA_EXTS);
+        }
+        if self.block_fonts {
+            add_exts(FONT_EXTS);
+        }
+        patterns
     }
 
     /// The `Network.setBlockedURLs` CDP command, or `None` when no URL patterns
@@ -118,6 +146,21 @@ mod tests {
             policy.blocked_url_patterns(),
             vec!["*ads.example*".to_string()]
         );
+    }
+
+    #[test]
+    fn blocked_types_add_extension_patterns() {
+        let policy = BlockPolicy {
+            block_images: true,
+            block_fonts: true,
+            ..Default::default()
+        };
+        let patterns = policy.blocked_url_patterns();
+        assert!(patterns.contains(&"*.png*".to_string()));
+        assert!(patterns.contains(&"*.webp*".to_string()));
+        assert!(patterns.contains(&"*.woff2*".to_string()));
+        // Media wasn't requested, so its extensions aren't added.
+        assert!(!patterns.iter().any(|p| p == "*.mp4*"));
     }
 
     #[test]

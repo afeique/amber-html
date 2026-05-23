@@ -40,6 +40,9 @@ pub struct CaptureOptions {
     /// Agent actions (click/fill/scroll/navigate) run on the page after settle,
     /// before capture. A non-empty list forces a browser render.
     pub actions: Vec<crate::actions::Action>,
+    /// Resource-blocking policy (ad/tracker hosts + image/media/font types)
+    /// applied on the browser render via `Network.setBlockedURLs`.
+    pub block: crate::blocking::BlockPolicy,
 }
 
 impl std::fmt::Debug for CaptureOptions {
@@ -59,6 +62,7 @@ impl std::fmt::Debug for CaptureOptions {
             .field("session", &self.session)
             .field("limits", &self.limits)
             .field("actions", &self.actions)
+            .field("block", &self.block)
             .finish()
     }
 }

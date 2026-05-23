@@ -1,7 +1,12 @@
 //! Error types for `amber-core`.
 
 /// Errors returned by the AmberHTML core.
+///
+/// `#[non_exhaustive]` (API-stability pass, 8.2): new error variants may be
+/// added in future versions without a breaking change, so downstream `match`es
+/// must include a wildcard arm.
 #[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
 pub enum Error {
     /// The provided URL could not be parsed.
     #[error("invalid URL: {0}")]

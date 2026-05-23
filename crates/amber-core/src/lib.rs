@@ -4,6 +4,34 @@
 //! requested representations from a single pass. The public API is intentionally
 //! blocking (async lives inside). See `Plans.md` for the full design.
 //!
+//! # API stability (8.2)
+//!
+//! The public surface is the free functions ([`snapshot`]), the [`Snapshot`]
+//! methods, [`CaptureOptions`] and the config types it composes
+//! ([`SessionState`], [`ResourceLimits`], [`BlockPolicy`], [`EmulationConfig`],
+//! [`Action`]), and the output/result types. [`Error`] is `#[non_exhaustive]`,
+//! so new error kinds are not breaking — match it with a wildcard arm.
+//! [`OutputFormat`] and [`RenderMode`] are intentionally *closed* sets and may
+//! be matched exhaustively. Toward 1.0 the goal is additive evolution:
+//! `CaptureOptions` grows by new fields (construct it with `..Default::default()`
+//! so additions don't break callers), not by changing existing ones:
+//!
+//! ```
+//! use amber_core::{CaptureOptions, Error, RenderMode};
+//!
+//! // Forward-compatible construction: future fields won't break this.
+//! let opts = CaptureOptions { render: RenderMode::Never, ..Default::default() };
+//!
+//! // Error is non_exhaustive, so matches need a wildcard arm.
+//! fn describe(e: &Error) -> &'static str {
+//!     match e {
+//!         Error::NoOutputSelected => "no format",
+//!         _ => "other",
+//!     }
+//! }
+//! # let _ = opts; let _ = describe(&Error::NoOutputSelected);
+//! ```
+//!
 //! # Local-first & private (1.16)
 //!
 //! AmberHTML makes network calls in exactly two places and nowhere else: the

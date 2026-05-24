@@ -1,0 +1,5 @@
+# Staged by generate.sh from the repo's C ABI (single source of truth).
+/lib/
+# Composer.
+/vendor/
+composer.lock

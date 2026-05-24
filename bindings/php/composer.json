@@ -1,0 +1,14 @@
+{
+  "name": "amber-html/amber-html",
+  "description": "Local-first web-page capture engine — PHP FFI bindings for AmberHTML.",
+  "type": "library",
+  "license": "MIT OR Apache-2.0",
+  "homepage": "https://github.com/afeique/amber-html",
+  "require": {
+    "php": ">=8.1",
+    "ext-ffi": "*"
+  },
+  "autoload": {
+    "classmap": ["src/"]
+  }
+}

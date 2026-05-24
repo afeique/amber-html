@@ -13,8 +13,20 @@ cpp_compat = true
 style = "type"
 
 [export]
-prefix = "amber_"
-# Only the C-ABI surface in capi.rs should appear in the header.
-include = ["amber_capture_markdown", "amber_capture_readable", "amber_string_free"]
+# Allowlist the full C-ABI surface in capi.rs so a regenerated header never
+# drifts from it. Keep this in sync when adding/removing `amber_*` symbols.
+# (No `prefix` here: the Rust symbols already carry the `amber_` prefix —
+# setting one would double it.)
+include = [
+  # Status codes.
+  "AMBER_OK", "AMBER_ERR_INVALID_INPUT", "AMBER_ERR_CAPTURE",
+  # Output-format selectors.
+  "AMBER_FORMAT_HTML", "AMBER_FORMAT_MHTML", "AMBER_FORMAT_MARKDOWN",
+  "AMBER_FORMAT_READABLE", "AMBER_FORMAT_WARC", "AMBER_FORMAT_WACZ",
+  "AMBER_FORMAT_SCREENSHOT", "AMBER_FORMAT_PDF",
+  # Functions.
+  "amber_capture_markdown", "amber_capture_readable", "amber_capture",
+  "amber_save", "amber_string_free", "amber_bytes_free",
+]
 
 [defines]

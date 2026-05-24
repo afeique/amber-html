@@ -62,6 +62,44 @@ int amber_capture(const char *url, int format, uint8_t **out, size_t *out_len);
 int amber_save(const char *url, int format, const char *dir, const char *name,
                char **out_path);
 
+/*
+ * Capture-once handle (Plans.md 10.1). An opaque captured page that renders or
+ * saves any format with no re-fetch/re-render — capturing many formats costs
+ * one pass instead of one capture per call.
+ */
+typedef struct AmberSnapshot AmberSnapshot;
+
+/*
+ * Capture `url` once for the `n_formats` AMBER_FORMAT_* selectors in `formats`,
+ * returning an opaque handle through `*out`. `formats` must be non-empty (no
+ * default output). On error returns non-zero with `*out` NULL. The caller owns
+ * the handle and must free it with `amber_snapshot_free`.
+ */
+int amber_snapshot(const char *url, const int *formats, size_t n_formats,
+                   AmberSnapshot **out);
+
+/*
+ * Render `format` from a handle into a newly-allocated byte buffer (`*out`,
+ * length `*out_len`). Works for every format. Free with `amber_bytes_free`.
+ */
+int amber_snapshot_render(const AmberSnapshot *snap, int format, uint8_t **out,
+                          size_t *out_len);
+
+/* Like amber_snapshot_render but writes a NUL-terminated string (text formats);
+ * free with `amber_string_free`. */
+int amber_snapshot_text(const AmberSnapshot *snap, int format, char **out);
+
+/*
+ * Save `format` from a handle into `dir`, returning the written path through
+ * `*out_path` (NUL-terminated). `name` is the file stem or NULL for a default.
+ * Free `*out_path` with `amber_string_free`.
+ */
+int amber_snapshot_save(const AmberSnapshot *snap, int format, const char *dir,
+                        const char *name, char **out_path);
+
+/* Free a handle returned by amber_snapshot. NULL is ignored. */
+void amber_snapshot_free(AmberSnapshot *snap);
+
 /* Free a string returned by amber_capture_* or amber_save. NULL is ignored. */
 void amber_string_free(char *s);
 

@@ -8,8 +8,9 @@
 //! foreign-language module.
 
 use std::path::Path;
+use std::sync::Arc;
 
-use crate::{snapshot, CaptureOptions, OutputFormat};
+use crate::{snapshot as core_snapshot, CaptureOptions, OutputFormat};
 
 /// Errors surfaced across the FFI boundary (a flat message keeps it portable).
 ///
@@ -37,7 +38,8 @@ impl CaptureError {
 /// Kotlin), or `Data` (Swift).
 #[uniffi::export]
 pub fn capture(url: String, format: OutputFormat) -> Result<Vec<u8>, CaptureError> {
-    let snap = snapshot(&url, &[format], CaptureOptions::default()).map_err(CaptureError::of)?;
+    let snap =
+        core_snapshot(&url, &[format], CaptureOptions::default()).map_err(CaptureError::of)?;
     snap.render(format).map_err(CaptureError::of)
 }
 
@@ -63,11 +65,77 @@ pub fn save(
     dir: String,
     name: Option<String>,
 ) -> Result<String, CaptureError> {
-    let snap = snapshot(&url, &[format], CaptureOptions::default()).map_err(CaptureError::of)?;
+    let snap =
+        core_snapshot(&url, &[format], CaptureOptions::default()).map_err(CaptureError::of)?;
     let path = snap
         .save(format, Path::new(&dir), name.as_deref())
         .map_err(CaptureError::of)?;
     Ok(path.display().to_string())
+}
+
+/// A captured page, reusable across many output formats (Plans.md 10.1).
+///
+/// [`snapshot`] runs the capture pipeline **once**; the returned object then
+/// renders or saves any of the requested formats with no re-fetch and no
+/// re-render. This is the engine's "render once, emit everything" promise,
+/// exposed across the FFI — capturing three formats costs one browser pass, not
+/// three. Bindings see it as an object: `snap.markdown()`, `snap.save(...)`, ….
+#[derive(Debug, uniffi::Object)]
+pub struct Snapshot {
+    inner: crate::Snapshot,
+}
+
+#[uniffi::export]
+impl Snapshot {
+    /// Render one `format` to raw bytes — text formats as UTF-8 bytes, binary
+    /// ones (Screenshot/Pdf/Mhtml/Warc/Wacz) as their encoded payload.
+    pub fn render(&self, format: OutputFormat) -> Result<Vec<u8>, CaptureError> {
+        self.inner.render(format).map_err(CaptureError::of)
+    }
+
+    /// Render one (text) `format` to UTF-8 text; binary formats error rather
+    /// than return mojibake.
+    pub fn text(&self, format: OutputFormat) -> Result<String, CaptureError> {
+        let bytes = self.render(format)?;
+        String::from_utf8(bytes).map_err(CaptureError::of)
+    }
+
+    /// Write one `format` into `dir` and return the written path. `name` is the
+    /// file stem (extension chosen by the format), or a `<safe-url> <date>
+    /// <time>` default when `None`; `dir` is created if missing.
+    pub fn save(
+        &self,
+        format: OutputFormat,
+        dir: String,
+        name: Option<String>,
+    ) -> Result<String, CaptureError> {
+        let path = self
+            .inner
+            .save(format, Path::new(&dir), name.as_deref())
+            .map_err(CaptureError::of)?;
+        Ok(path.display().to_string())
+    }
+
+    /// Convenience: this page's clean Markdown.
+    pub fn markdown(&self) -> Result<String, CaptureError> {
+        self.text(OutputFormat::Markdown)
+    }
+
+    /// Convenience: this page's readable plain text.
+    pub fn readable(&self) -> Result<String, CaptureError> {
+        self.text(OutputFormat::Readable)
+    }
+}
+
+/// Capture `url` **once** for the given `formats`, returning a reusable
+/// [`Snapshot`]. `formats` must be non-empty — it configures the capture pass
+/// and the browser-vs-static decision (Plans.md). Render or save any of them
+/// from the returned object.
+#[uniffi::export]
+pub fn snapshot(url: String, formats: Vec<OutputFormat>) -> Result<Arc<Snapshot>, CaptureError> {
+    let inner =
+        core_snapshot(&url, &formats, CaptureOptions::default()).map_err(CaptureError::of)?;
+    Ok(Arc::new(Snapshot { inner }))
 }
 
 /// Capture `url` and return its clean Markdown (convenience over [`capture_text`]).
@@ -117,5 +185,45 @@ mod tests {
         )
         .unwrap_err();
         assert!(matches!(err, CaptureError::Failed { .. }));
+    }
+
+    #[test]
+    fn snapshot_object_rejects_bad_url() {
+        let err = snapshot("not a url".to_string(), vec![OutputFormat::Markdown]).unwrap_err();
+        assert!(matches!(err, CaptureError::Failed { .. }));
+    }
+
+    #[test]
+    fn snapshot_object_renders_many_formats_from_one_capture() {
+        // Build the object from a known capture (no browser/network), then prove
+        // it serves multiple formats and re-renders deterministically — the
+        // "capture once, emit many" contract (Plans.md 10.1).
+        let url = url::Url::parse("https://example.com/").unwrap();
+        let raw = crate::RawCapture {
+            rendered_html: Some(
+                "<html><head><title>T</title></head><body><h1>Hi</h1><p>Body text here.</p></body></html>"
+                    .to_string(),
+            ),
+            ..Default::default()
+        };
+        let snap = Snapshot {
+            inner: crate::Snapshot::from_parts(url, raw),
+        };
+
+        let md = snap.markdown().unwrap();
+        assert!(
+            md.contains("Hi"),
+            "markdown should contain the heading: {md:?}"
+        );
+        let txt = snap.readable().unwrap();
+        assert!(
+            txt.contains("Body text"),
+            "readable should contain the body: {txt:?}"
+        );
+        // Re-rendering the same format from the same capture is stable.
+        assert_eq!(
+            snap.render(OutputFormat::Markdown).unwrap(),
+            md.into_bytes()
+        );
     }
 }

@@ -202,6 +202,190 @@ pub unsafe extern "C" fn amber_bytes_free(ptr: *mut u8, len: usize) {
     }
 }
 
+/// An opaque captured page (Plans.md 10.1). Produced by [`amber_snapshot`],
+/// reusable across formats, freed with [`amber_snapshot_free`].
+pub struct AmberSnapshot {
+    inner: crate::Snapshot,
+}
+
+/// Capture `url` **once** for the `n_formats` selectors in `formats`, returning
+/// an opaque handle through `*out`. The handle then serves any of those formats
+/// via [`amber_snapshot_render`] / [`amber_snapshot_text`] / [`amber_snapshot_save`]
+/// with no re-fetch and no re-render — capturing many formats costs one pass.
+///
+/// `formats` is an array of `AMBER_FORMAT_*` selectors; it must be non-empty
+/// (there is no default output). Returns [`AMBER_OK`] on success; on error a
+/// non-zero code with `*out` set to null. The caller owns the handle.
+///
+/// # Safety
+/// `url` must be a valid NUL-terminated C string; `formats` must point to
+/// `n_formats` `int`s (or be null only when `n_formats == 0`); `out` must be a
+/// valid, writable pointer to an `AmberSnapshot *`.
+#[no_mangle]
+pub unsafe extern "C" fn amber_snapshot(
+    url: *const c_char,
+    formats: *const c_int,
+    n_formats: usize,
+    out: *mut *mut AmberSnapshot,
+) -> c_int {
+    if url.is_null() || out.is_null() || (formats.is_null() && n_formats != 0) {
+        return AMBER_ERR_INVALID_INPUT;
+    }
+    *out = std::ptr::null_mut();
+
+    let Ok(url) = CStr::from_ptr(url).to_str() else {
+        return AMBER_ERR_INVALID_INPUT;
+    };
+    let selectors: &[c_int] = if n_formats == 0 {
+        &[]
+    } else {
+        std::slice::from_raw_parts(formats, n_formats)
+    };
+    let mut fmts = Vec::with_capacity(selectors.len());
+    for &f in selectors {
+        match format_from_int(f) {
+            Some(fmt) => fmts.push(fmt),
+            None => return AMBER_ERR_INVALID_INPUT,
+        }
+    }
+    if fmts.is_empty() {
+        // No default output (Plans.md): an empty set is invalid input.
+        return AMBER_ERR_INVALID_INPUT;
+    }
+
+    let snap = match snapshot(url, &fmts, CaptureOptions::default()) {
+        Ok(snap) => snap,
+        Err(_) => return AMBER_ERR_CAPTURE,
+    };
+    *out = Box::into_raw(Box::new(AmberSnapshot { inner: snap }));
+    AMBER_OK
+}
+
+/// Render `format` from a handle into a newly-allocated byte buffer (`*out`,
+/// length `*out_len`). Works for every format. On error returns non-zero with
+/// `*out` null and `*out_len` 0. Free the buffer with [`amber_bytes_free`].
+///
+/// # Safety
+/// `snap` must come from [`amber_snapshot`] (not yet freed); `out`/`out_len`
+/// must be valid, writable pointers.
+#[no_mangle]
+pub unsafe extern "C" fn amber_snapshot_render(
+    snap: *const AmberSnapshot,
+    format: c_int,
+    out: *mut *mut u8,
+    out_len: *mut usize,
+) -> c_int {
+    if snap.is_null() || out.is_null() || out_len.is_null() {
+        return AMBER_ERR_INVALID_INPUT;
+    }
+    *out = std::ptr::null_mut();
+    *out_len = 0;
+
+    let Some(format) = format_from_int(format) else {
+        return AMBER_ERR_INVALID_INPUT;
+    };
+    let bytes = match (*snap).inner.render(format) {
+        Ok(bytes) => bytes,
+        Err(_) => return AMBER_ERR_CAPTURE,
+    };
+    let boxed = bytes.into_boxed_slice();
+    *out_len = boxed.len();
+    *out = Box::into_raw(boxed) as *mut u8;
+    AMBER_OK
+}
+
+/// Like [`amber_snapshot_render`] but writes a NUL-terminated C string to `*out`
+/// (for the text formats). Free with [`amber_string_free`].
+///
+/// # Safety
+/// `snap` must come from [`amber_snapshot`]; `out` a valid, writable `char *`.
+#[no_mangle]
+pub unsafe extern "C" fn amber_snapshot_text(
+    snap: *const AmberSnapshot,
+    format: c_int,
+    out: *mut *mut c_char,
+) -> c_int {
+    if snap.is_null() || out.is_null() {
+        return AMBER_ERR_INVALID_INPUT;
+    }
+    *out = std::ptr::null_mut();
+
+    let Some(format) = format_from_int(format) else {
+        return AMBER_ERR_INVALID_INPUT;
+    };
+    let bytes = match (*snap).inner.render(format) {
+        Ok(bytes) => bytes,
+        Err(_) => return AMBER_ERR_CAPTURE,
+    };
+    let text = String::from_utf8_lossy(&bytes).into_owned();
+    match CString::new(text) {
+        Ok(cstr) => {
+            *out = cstr.into_raw();
+            AMBER_OK
+        }
+        Err(_) => AMBER_ERR_CAPTURE,
+    }
+}
+
+/// Save `format` from a handle into `dir`, returning the written path through
+/// `*out_path`. `name` is the file stem or null for a default name; `dir` is
+/// created if missing. Free `*out_path` with [`amber_string_free`].
+///
+/// # Safety
+/// `snap` must come from [`amber_snapshot`]; `dir` a valid NUL-terminated C
+/// string; `name` such a string or null; `out_path` a valid, writable `char *`.
+#[no_mangle]
+pub unsafe extern "C" fn amber_snapshot_save(
+    snap: *const AmberSnapshot,
+    format: c_int,
+    dir: *const c_char,
+    name: *const c_char,
+    out_path: *mut *mut c_char,
+) -> c_int {
+    if snap.is_null() || dir.is_null() || out_path.is_null() {
+        return AMBER_ERR_INVALID_INPUT;
+    }
+    *out_path = std::ptr::null_mut();
+
+    let Some(format) = format_from_int(format) else {
+        return AMBER_ERR_INVALID_INPUT;
+    };
+    let Ok(dir) = CStr::from_ptr(dir).to_str() else {
+        return AMBER_ERR_INVALID_INPUT;
+    };
+    let name = if name.is_null() {
+        None
+    } else {
+        match CStr::from_ptr(name).to_str() {
+            Ok(name) => Some(name),
+            Err(_) => return AMBER_ERR_INVALID_INPUT,
+        }
+    };
+
+    let path = match (*snap).inner.save(format, Path::new(dir), name) {
+        Ok(path) => path,
+        Err(_) => return AMBER_ERR_CAPTURE,
+    };
+    match CString::new(path.display().to_string()) {
+        Ok(cstr) => {
+            *out_path = cstr.into_raw();
+            AMBER_OK
+        }
+        Err(_) => AMBER_ERR_CAPTURE,
+    }
+}
+
+/// Free a handle returned by [`amber_snapshot`]. A null pointer is ignored.
+///
+/// # Safety
+/// `snap` must be a pointer from [`amber_snapshot`] (or null), freed at most once.
+#[no_mangle]
+pub unsafe extern "C" fn amber_snapshot_free(snap: *mut AmberSnapshot) {
+    if !snap.is_null() {
+        drop(Box::from_raw(snap));
+    }
+}
+
 /// Shared body for the `amber_capture_*` text entry points.
 ///
 /// # Safety
@@ -357,6 +541,91 @@ mod tests {
                 AMBER_ERR_CAPTURE
             );
             assert!(out.is_null());
+        }
+    }
+
+    #[test]
+    fn snapshot_handle_rejects_bad_args() {
+        let mut snap: *mut AmberSnapshot = std::ptr::null_mut();
+        let url = CString::new("https://example.com/").unwrap();
+        let fmts = [AMBER_FORMAT_MARKDOWN];
+        unsafe {
+            // Null url / null out.
+            assert_eq!(
+                amber_snapshot(std::ptr::null(), fmts.as_ptr(), 1, &mut snap),
+                AMBER_ERR_INVALID_INPUT
+            );
+            assert_eq!(
+                amber_snapshot(url.as_ptr(), fmts.as_ptr(), 1, std::ptr::null_mut()),
+                AMBER_ERR_INVALID_INPUT
+            );
+            // Empty format set (no default output) and unknown selector.
+            assert_eq!(
+                amber_snapshot(url.as_ptr(), std::ptr::null(), 0, &mut snap),
+                AMBER_ERR_INVALID_INPUT
+            );
+            assert!(snap.is_null());
+            let bad = [42];
+            assert_eq!(
+                amber_snapshot(url.as_ptr(), bad.as_ptr(), 1, &mut snap),
+                AMBER_ERR_INVALID_INPUT
+            );
+            assert!(snap.is_null());
+            // Bad URL → capture error, handle stays null.
+            let bad_url = CString::new("not a url").unwrap();
+            assert_eq!(
+                amber_snapshot(bad_url.as_ptr(), fmts.as_ptr(), 1, &mut snap),
+                AMBER_ERR_CAPTURE
+            );
+            assert!(snap.is_null());
+        }
+    }
+
+    #[test]
+    fn snapshot_handle_free_handles_null() {
+        unsafe { amber_snapshot_free(std::ptr::null_mut()) };
+    }
+
+    #[test]
+    fn snapshot_handle_renders_many_from_one_capture() {
+        // Build a handle from a known capture (no browser/network) and prove it
+        // serves multiple formats and frees cleanly — the C-ABI half of the
+        // "capture once, emit many" contract (Plans.md 10.1).
+        let url = url::Url::parse("https://example.com/").unwrap();
+        let raw = crate::RawCapture {
+            rendered_html: Some(
+                "<html><head><title>T</title></head><body><h1>Hi</h1><p>Body text here.</p></body></html>"
+                    .to_string(),
+            ),
+            ..Default::default()
+        };
+        let boxed = Box::into_raw(Box::new(AmberSnapshot {
+            inner: crate::Snapshot::from_parts(url, raw),
+        }));
+
+        unsafe {
+            // Markdown as text.
+            let mut text: *mut c_char = std::ptr::null_mut();
+            assert_eq!(
+                amber_snapshot_text(boxed, AMBER_FORMAT_MARKDOWN, &mut text),
+                AMBER_OK
+            );
+            assert!(!text.is_null());
+            let md = CStr::from_ptr(text).to_str().unwrap().to_owned();
+            assert!(md.contains("Hi"), "markdown: {md:?}");
+            amber_string_free(text);
+
+            // Readable as raw bytes — same capture, second format.
+            let mut buf: *mut u8 = std::ptr::null_mut();
+            let mut len: usize = 0;
+            assert_eq!(
+                amber_snapshot_render(boxed, AMBER_FORMAT_READABLE, &mut buf, &mut len),
+                AMBER_OK
+            );
+            assert!(!buf.is_null() && len > 0);
+            amber_bytes_free(buf, len);
+
+            amber_snapshot_free(boxed);
         }
     }
 }

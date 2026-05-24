@@ -39,8 +39,28 @@ int main(void) {
     printf("amber_save(HTML) -> %d, path=%s\n", rc, out ? out : "(null)");
     amber_string_free(out);
 
+    /* Capture-once handle: one capture, many formats (Plans.md 10.1). */
+    AmberSnapshot *snap = NULL;
+    int formats[] = {AMBER_FORMAT_MARKDOWN, AMBER_FORMAT_READABLE};
+    rc = amber_snapshot("not a url", formats, 2, &snap);
+    printf("amber_snapshot -> %d, handle=%p\n", rc, (void *)snap);
+    if (rc == AMBER_OK && snap) {
+        /* Render several formats from the single capture — no re-fetch. */
+        out = NULL;
+        amber_snapshot_text(snap, AMBER_FORMAT_MARKDOWN, &out);
+        printf("  markdown: %s\n", out ? out : "(null)");
+        amber_string_free(out);
+
+        char *path = NULL;
+        amber_snapshot_save(snap, AMBER_FORMAT_READABLE, "/tmp", "amber_c_example", &path);
+        printf("  saved readable: %s\n", path ? path : "(null)");
+        amber_string_free(path);
+    }
+    amber_snapshot_free(snap); /* safe even when NULL */
+
     /* Swap "not a url" for a real URL (e.g. "https://example.com") to drive a
-     * capture; the bytes path returns the encoded PDF/PNG/etc., and amber_save
-     * writes <dir>/<name>.<ext> and returns its path. */
+     * capture; the bytes path returns the encoded PDF/PNG/etc., amber_save
+     * writes <dir>/<name>.<ext>, and the handle renders many formats from one
+     * capture. */
     return 0;
 }

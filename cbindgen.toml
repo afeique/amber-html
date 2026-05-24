@@ -27,6 +27,9 @@ include = [
   # Functions.
   "amber_capture_markdown", "amber_capture_readable", "amber_capture",
   "amber_save", "amber_string_free", "amber_bytes_free",
+  # Capture-once handle (Plans.md 10.1).
+  "AmberSnapshot", "amber_snapshot", "amber_snapshot_render",
+  "amber_snapshot_text", "amber_snapshot_save", "amber_snapshot_free",
 ]
 
 [defines]

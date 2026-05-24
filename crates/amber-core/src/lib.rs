@@ -182,6 +182,15 @@ pub struct Snapshot {
     raw: RawCapture,
 }
 
+#[cfg(test)]
+impl Snapshot {
+    /// Build a `Snapshot` directly from its parts for hermetic tests — lets the
+    /// FFI/C-ABI binding tests exercise render/save without a browser capture.
+    pub(crate) fn from_parts(url: Url, raw: RawCapture) -> Self {
+        Snapshot { url, raw }
+    }
+}
+
 impl Snapshot {
     /// Extract structured page metadata (title, lang, description, canonical,
     /// OpenGraph, links) from the captured HTML.

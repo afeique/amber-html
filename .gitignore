@@ -27,3 +27,7 @@
 
 # Node addon build artifacts (amber-node)
 crates/amber-node/*.node
+
+# Python
+__pycache__/
+*.pyc

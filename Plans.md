@@ -120,7 +120,7 @@ This phase exposes the core's render-once promise across the FFI as a reusable
 | 10.1 | **`Snapshot` object across UniFFI + C ABI** — `snapshot(url, formats)` returns a handle; `render`/`text`/`save`/`markdown`/`readable` methods reuse one capture; C side is an opaque handle + `*_free` | One capture serves N formats; UniFFI object + C handle build; error/null-path tests green | - | cc:完了 |
 | 10.2 | **Node (napi) surface parity** — all-format `capture(format)`/`captureText`/`save` + a `Snapshot` object | `require('amber')` exposes the widened surface + capture-once object; smoke green | 10.1 | cc:完了 |
 | 10.3 | **Propagate `Snapshot` object** into the Ruby/Swift/Kotlin/Go/C# wrappers + per-language smoke | Each wrapper exposes the object idiomatically; smoke compiles/passes | 10.1 | cc:完了 |
-| 10.4 | **Python import ergonomics** — `import amber` (a `uniffi.toml` namespace or a thin `amber` wrapper re-exporting `amber_core`) | `import amber; amber.snapshot(url, [...])` works; docs updated | 10.1 | cc:TODO |
+| 10.4 | **Python import ergonomics** — `import amber` (a `uniffi.toml` namespace or a thin `amber` wrapper re-exporting `amber_core`) | `import amber; amber.snapshot(url, [...])` works; docs updated | 10.1 | cc:完了 |
 
 ## Phase 11: Long-tail C-ABI language bindings (P1/P2)
 

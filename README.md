@@ -37,7 +37,7 @@ only traffic is to the pages you capture.
 
 ```sh
 cargo install amber-cli                      # Rust / crates.io  → `amber`
-pipx install amber-html                       # Python (UniFFI)   → import amber_core
+pipx install amber-html                       # Python (UniFFI)   → import amber
 npm install -g amber-html                     # Node (napi-rs)
 brew install afeique/amber/amber              # macOS/Linux (Homebrew tap)
 docker run --rm ghcr.io/afeique/amber-html https://example.com --markdown -o /out

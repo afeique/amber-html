@@ -7,18 +7,22 @@ validated end-to-end here.
 
 ## Python (UniFFI) — 6.1, done
 
-The Rust core builds as a `cdylib` and exports a small UniFFI surface
-(`capture_markdown`, `capture_readable`; see `crates/amber-core/src/ffi.rs`).
+The Rust core builds as a `cdylib` and exports the full UniFFI surface
+(`capture`/`capture_text`/`save`, `capture_markdown`/`capture_readable`, and the
+capture-once `Snapshot` object; see `crates/amber-core/src/ffi.rs`). The wheel
+also ships a thin pure-Python `amber` package (`python/amber/`, via maturin
+`python-source`) that re-exports the generated `amber_core`, so users
+`import amber` (Plans.md 10.4); `import amber_core` still works.
 
 **Validated end-to-end** in this environment — `maturin build` produces a wheel
 (invoking the `uniffi-bindgen` crate to generate the bindings), and the
-pip-installed wheel imports as `amber_core` and runs:
+pip-installed wheel imports as `amber` (or `amber_core`) and runs:
 
 ```sh
 pip install maturin
 maturin build --release                       # → target/wheels/amber_html-*.whl
 pip install target/wheels/amber_html-*.whl
-python -c "import amber_core; amber_core.capture_markdown('https://example.com')"
+python -c "import amber; amber.capture_markdown('https://example.com')"  # or: import amber_core
 ```
 
 For local dev, `maturin develop` installs into the active venv. `uniffi-bindgen`

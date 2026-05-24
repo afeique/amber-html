@@ -29,6 +29,10 @@ dynamic = ["version"]
 [tool.maturin]
 bindings = "uniffi"
 manifest-path = "crates/amber-core/Cargo.toml"
-# The generated module is `amber_core`, exposing capture_markdown(url) /
-# capture_readable(url) (see crates/amber-core/src/ffi.rs).
+# The UniFFI-generated extension module is `amber_core` (capture/capture_text/
+# save/snapshot + the Snapshot object; see crates/amber-core/src/ffi.rs).
 module-name = "amber_core"
+# Ship a thin pure-Python `amber` package alongside it so users `import amber`
+# (Plans.md 10.4). It re-exports `amber_core` unchanged; both names work. The
+# wrapper lives in python/amber/__init__.py.
+python-source = "python"

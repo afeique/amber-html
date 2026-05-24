@@ -32,8 +32,11 @@ regenerates it. See `examples/c/example.c` for a wrapper that builds + links.
 
 ## Node (napi-rs) — 6.3, done
 
-`crates/amber-node` is a napi-rs binding crate exposing `captureMarkdown(url)`
-/ `captureReadable(url)` over the core.
+`crates/amber-node` is a napi-rs binding crate exposing the full surface over
+the core: `capture(url, format)` → `Buffer`, `captureText`, `save`,
+`captureMarkdown`/`captureReadable`, a `Format` enum, and a `snapshot(url,
+formats)` → `Snapshot` object that renders/saves many formats from one capture
+(Plans.md 10.2).
 
 **Validated:** the addon builds and loads + runs under Node:
 

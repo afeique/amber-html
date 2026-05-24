@@ -44,6 +44,30 @@ docker run --rm ghcr.io/afeique/amber-html https://example.com --markdown -o /ou
 Or grab a prebuilt binary from the [latest release](https://github.com/afeique/amber-html/releases).
 Releases are cut by pushing a `vX.Y.Z` tag; see [RELEASING.md](RELEASING.md).
 
+## Language bindings
+
+The Rust core is embeddable in-process from many languages through two binding
+engines — [UniFFI](https://mozilla.github.io/uniffi-rs/) and a C ABI — plus
+napi-rs for Node. Every binding exposes the same capture surface: `capture` (any
+format → bytes), `capture_markdown` / `capture_readable` (text), and `save`
+(write a file).
+
+| Language | Install | Engine | Source |
+|---|---|---|---|
+| **Rust** | `cargo add amber-core` | native | [`crates/amber-core`](crates/amber-core) |
+| **Python** | `pipx install amber-html` | UniFFI | [`pyproject.toml`](pyproject.toml) |
+| **Node.js** | `npm install amber-html` | napi-rs | [`crates/amber-node`](crates/amber-node) |
+| **Ruby** | `gem install amber-html` | UniFFI | [`bindings/ruby`](bindings/ruby) |
+| **Swift** | SwiftPM (xcframework) | UniFFI | [`bindings/swift`](bindings/swift) |
+| **Kotlin / Java** | `io.github.afeique:amber-html` | UniFFI + JNA | [`bindings/kotlin`](bindings/kotlin) |
+| **Go** | cgo (`generate.sh` + `go get`) | C ABI | [`bindings/go`](bindings/go) |
+| **C# / .NET** | `dotnet add package AmberHtml` | C ABI (P/Invoke) | [`bindings/csharp`](bindings/csharp) |
+| **C / C++** | link the cdylib + [`include/amber.h`](include/amber.h) | C ABI | [`examples/c`](examples/c) |
+
+Each `bindings/<lang>/` has a `README.md` and a `generate.sh` that builds the
+native library and generates/stages the binding. Any other language with C FFI
+(PHP, Dart, Lua, R, …) can bind to the C ABI directly.
+
 ## Quickstart
 
 Build the CLI from this workspace (a pinned Chrome for Testing is downloaded and

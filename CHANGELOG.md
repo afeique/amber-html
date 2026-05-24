@@ -33,8 +33,11 @@ screenshot, and PDF from one capture pass.
   reuse, per-capture time/byte/memory/CPU limits, metrics, recurring captures,
   content/visual change monitoring.
 - **Evidence** — tamper-evident manifests with ed25519 signatures.
-- **Bindings** — Python (UniFFI/maturin), Node (napi-rs), a C ABI (cbindgen),
-  plus the CLI and MCP server.
+- **Bindings** — a uniform capture surface (`capture` → bytes for any of the 8
+  formats, `capture_markdown`/`capture_readable` text, `save` to file) across
+  Python (UniFFI/maturin), Ruby (UniFFI), Swift (UniFFI xcframework), Kotlin/Java
+  (UniFFI + JNA), Node (napi-rs), Go (cgo), C#/.NET (P/Invoke), and a C ABI
+  (`include/amber.h`), plus the CLI and MCP server.
 - **Reproducibility** — byte-stable output for a given capture + pinned browser.
 - CI (build/test/clippy/fmt) and a release pipeline for crates.io, PyPI, npm,
   GHCR, GitHub binaries, and Homebrew.

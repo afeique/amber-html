@@ -2,9 +2,14 @@
 
 AmberHTML ships to **crates.io** (`amber-core`, `amber-cli`), **PyPI**
 (`amber-html`, Python via UniFFI), **npm** (`amber-html`, Node via napi-rs),
-**GHCR** (a Docker image), **GitHub Releases** (prebuilt CLI binaries), and
-**Homebrew** (a tap). `.github/workflows/release.yml` does all of it when you
-push a `vX.Y.Z` tag.
+**RubyGems** (`amber-html`, via UniFFI), **NuGet** (`AmberHtml`, .NET via
+P/Invoke), **GHCR** (a Docker image), **GitHub Releases** (prebuilt CLI
+binaries), and **Homebrew** (a tap). `.github/workflows/release.yml` does all of
+it when you push a `vX.Y.Z` tag.
+
+Three more bindings are built+tested in CI but published with one ecosystem-
+specific manual step each — see [§5](#5-language-bindings-with-a-manual-publish-step):
+**Maven Central** (Kotlin/Java), **SwiftPM** (Swift), and the **Go module**.
 
 The pipeline is built and the configs are validated locally (crates package
 via `cargo publish --dry-run`; the Python wheel and Node addon build + import;
@@ -25,6 +30,8 @@ Secrets and variables → Actions**.
 | **npm** | `npm login`, then create an **automation** access token (npmjs.com → Access Tokens). Confirm the name `amber-html` is free (`npm view amber-html`). | `NPM_TOKEN` |
 | **GHCR** | Nothing — uses the built-in `GITHUB_TOKEN`. After the first push, make the package **public** (repo → Packages → amber-html → visibility). | *none* |
 | **Homebrew** | Create a tap repo **`afeique/homebrew-amber`** and add `packaging/homebrew/amber.rb` to its `Formula/` dir. | *none* |
+| **RubyGems** | Sign in at rubygems.org → **Settings → API keys → New** (scope: push). Confirm `amber-html` is free. | `RUBYGEMS_API_KEY` |
+| **NuGet** | Sign in at nuget.org → **API Keys → Create** (scope: push). Confirm the `AmberHtml` id is free. | `NUGET_API_KEY` |
 
 Check the names are available before the first release:
 `cargo search amber-core`, `npm view amber-html`, and the PyPI project page.
@@ -59,10 +66,41 @@ Check the names are available before the first release:
 cargo install amber-cli                       # Rust / crates.io
 pipx install amber-html                        # Python (or: pip install amber-html)
 npm install -g amber-html                      # Node
+gem install amber-html                         # Ruby
+dotnet add package AmberHtml                    # C# / .NET
 brew install afeique/amber/amber               # macOS/Linux (Homebrew tap)
 docker run --rm ghcr.io/afeique/amber-html <url> --markdown -o /out
 # or grab a prebuilt binary from the GitHub Release.
 ```
+
+## 5. Language bindings with a manual publish step
+
+These are validated in CI (`.github/workflows/bindings.yml`) but each registry
+needs ecosystem-specific setup that isn't fully automated yet. Each
+`bindings/<lang>/` has a `generate.sh` and a README.
+
+- **Maven Central (Kotlin/Java)** — `bindings/kotlin` publishes via Gradle
+  (`maven-publish`), but Central needs a Sonatype/Central-Portal account, a GPG
+  signing key, and the signing + a publishing-repository (e.g. the
+  `gradle-nexus.publish-plugin`) added to `build.gradle.kts`. One-time:
+  ```sh
+  bindings/kotlin/generate.sh
+  cd bindings/kotlin && AMBER_VERSION="${TAG#v}" gradle publish   # to the configured OSSRH/Central repo
+  ```
+- **SwiftPM (Swift)** — consumers fetch from the git tag, so the tag itself is
+  the "publish". The catch is the binary `xcframework`: build a multi-slice
+  xcframework, zip it, attach it to the GitHub Release, then point
+  `bindings/swift/Package.swift`'s `binaryTarget` at that `url:` + `checksum:`
+  (the checksum is only known after upload, so it lands in a follow-up commit):
+  ```sh
+  bindings/swift/build-xcframework.sh        # add the other Apple slices for a real release
+  ditto -c -k --keepParent AmberCoreFFI.xcframework AmberCoreFFI.xcframework.zip
+  swift package compute-checksum AmberCoreFFI.xcframework.zip
+  ```
+- **Go module** — `go get github.com/afeique/amber-html/bindings/go@<tag>` reads
+  the tag directly; no registry push. Because it links the native library via
+  cgo, document that users run `bindings/go/generate.sh` (or publish a
+  prebuilt-per-platform companion module).
 
 ## Notes / gotchas
 

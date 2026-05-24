@@ -1,0 +1,4 @@
+# Build artifacts produced by generate.sh / gem build.
+/lib/amber_core.rb
+/lib/libamber_core.*
+*.gem

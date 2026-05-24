@@ -12,15 +12,20 @@ use std::path::Path;
 use crate::{snapshot, CaptureOptions, OutputFormat};
 
 /// Errors surfaced across the FFI boundary (a flat message keeps it portable).
+///
+/// The single variant carries a *named* field (`reason`) rather than a tuple —
+/// UniFFI's Ruby backend only generates valid code for named fields.
 #[derive(Debug, thiserror::Error, uniffi::Error)]
 pub enum CaptureError {
-    #[error("capture failed: {0}")]
-    Failed(String),
+    #[error("capture failed: {reason}")]
+    Failed { reason: String },
 }
 
 impl CaptureError {
     fn of(e: impl std::fmt::Display) -> Self {
-        CaptureError::Failed(e.to_string())
+        CaptureError::Failed {
+            reason: e.to_string(),
+        }
     }
 }
 
@@ -83,7 +88,9 @@ mod tests {
 
     #[test]
     fn capture_error_displays_message() {
-        let e = CaptureError::Failed("boom".to_string());
+        let e = CaptureError::Failed {
+            reason: "boom".to_string(),
+        };
         assert!(e.to_string().contains("boom"));
     }
 
@@ -91,13 +98,13 @@ mod tests {
     fn capture_markdown_rejects_bad_url() {
         // The FFI facade surfaces core errors as CaptureError, never panics.
         let err = capture_markdown("not a url".to_string()).unwrap_err();
-        assert!(matches!(err, CaptureError::Failed(_)));
+        assert!(matches!(err, CaptureError::Failed { .. }));
     }
 
     #[test]
     fn capture_bytes_rejects_bad_url() {
         let err = capture("not a url".to_string(), OutputFormat::Screenshot).unwrap_err();
-        assert!(matches!(err, CaptureError::Failed(_)));
+        assert!(matches!(err, CaptureError::Failed { .. }));
     }
 
     #[test]
@@ -109,6 +116,6 @@ mod tests {
             Some("amber_ffi_test".to_string()),
         )
         .unwrap_err();
-        assert!(matches!(err, CaptureError::Failed(_)));
+        assert!(matches!(err, CaptureError::Failed { .. }));
     }
 }

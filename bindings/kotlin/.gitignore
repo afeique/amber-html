@@ -1,0 +1,5 @@
+# Build artifacts produced by generate.sh / gradle.
+/src/main/kotlin/uniffi/
+/src/main/resources/
+/.gradle/
+/build/

@@ -1,0 +1,5 @@
+# Build artifacts produced by generate.sh / build-xcframework.sh / swift build.
+/Sources/AmberHTML/amber_core.swift
+/AmberCoreFFI.xcframework/
+/.xcframework-build/
+/.build/

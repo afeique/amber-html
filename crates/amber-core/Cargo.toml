@@ -12,8 +12,10 @@ keywords = ["web", "scraping", "capture", "chromium", "cdp"]
 categories = ["web-programming", "api-bindings"]
 
 [lib]
-# rlib for the CLI/other Rust crates; cdylib for the UniFFI language bindings.
-crate-type = ["cdylib", "rlib"]
+# rlib for the CLI/other Rust crates; cdylib for the UniFFI language bindings
+# and napi/Node; staticlib for the C ABI's static consumers (a Swift xcframework,
+# cgo static linking, …).
+crate-type = ["cdylib", "rlib", "staticlib"]
 
 [dependencies]
 url.workspace = true

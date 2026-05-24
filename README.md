@@ -6,8 +6,10 @@
 > single capture pass: Markdown, readable text, single-file HTML, MHTML,
 > WARC/WACZ, screenshot, and PDF.
 
-> 🚧 **Status: early development.** The architecture is set; implementation is
-> just beginning. Expect rapid change.
+> **Status: v0.1 — feature-complete, pre-release.** The engine and all output
+> formats work today; bindings span Python, Node, a C ABI, Ruby, Swift,
+> Kotlin/JVM, Go, and C#. Windows browser capture and the first published
+> packages are in progress (see [Plans.md](Plans.md)).
 
 ## What it is
 

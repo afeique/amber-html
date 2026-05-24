@@ -1,0 +1,5 @@
+# Build artifacts produced by generate.sh / dotnet.
+/src/AmberHtml/runtimes/
+**/bin/
+**/obj/
+*.nupkg

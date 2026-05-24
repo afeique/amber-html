@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>disable</ImplicitUsings>
+
+    <!-- NuGet package metadata. -->
+    <PackageId>AmberHtml</PackageId>
+    <Version Condition="'$(AMBER_VERSION)' != ''">$(AMBER_VERSION)</Version>
+    <Version Condition="'$(AMBER_VERSION)' == ''">0.1.0</Version>
+    <Authors>Afeique Sheikh</Authors>
+    <Description>Local-first web-page capture: Markdown, HTML, MHTML, WARC/WACZ, screenshot, PDF. P/Invoke bindings over the amber-core C ABI.</Description>
+    <PackageLicenseExpression>MIT OR Apache-2.0</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/afeique/amber-html</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/afeique/amber-html</RepositoryUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="" />
+    <!-- Native libraries, staged by generate.sh into runtimes/<rid>/native/, are
+         packed so NuGet's RID resolution loads the right one at run time. -->
+    <Content Include="runtimes/**" Pack="true" PackagePath="runtimes/" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

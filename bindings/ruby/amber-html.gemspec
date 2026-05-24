@@ -12,6 +12,10 @@ Gem::Specification.new do |s|
   s.licenses    = ["MIT", "Apache-2.0"]
   s.required_ruby_version = ">= 2.6"
 
+  # CI builds one platform-specific gem per target; set GEM_PLATFORM, e.g.
+  # `GEM_PLATFORM=x86_64-linux gem build amber-html.gemspec`.
+  s.platform = ENV["GEM_PLATFORM"] if ENV["GEM_PLATFORM"]
+
   # The generated module + the native library are produced by generate.sh and
   # bundled here; CI builds one platform-specific gem per target.
   s.files = Dir["lib/**/*.rb"] + Dir["lib/libamber_core.*"] + ["README.md"]

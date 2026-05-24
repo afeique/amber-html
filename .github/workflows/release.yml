@@ -211,3 +211,88 @@ jobs:
           npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  # ── RubyGems (UniFFI) ────────────────────────────────────────────────────
+  # One platform gem per OS/arch, each bundling that platform's native library.
+  gem:
+    name: RubyGems (${{ matrix.plat }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, plat: x86_64-linux }
+          - { os: macos-13, plat: x86_64-darwin }
+          - { os: macos-14, plat: arm64-darwin }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+      - name: Build platform gem
+        run: |
+          set -euo pipefail
+          gem install ffi --no-document
+          bindings/ruby/generate.sh
+          cd bindings/ruby
+          GEM_PLATFORM="${{ matrix.plat }}" AMBER_VERSION="${GITHUB_REF_NAME#v}" \
+            gem build amber-html.gemspec
+      - name: Push to RubyGems
+        env:
+          GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
+        run: cd bindings/ruby && gem push *.gem
+
+  # ── NuGet (.NET P/Invoke) ────────────────────────────────────────────────
+  # Build each RID's native library, then pack one package bundling all of them.
+  nuget-natives:
+    name: NuGet native (${{ matrix.rid }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, rid: linux-x64 }
+          - { os: macos-13, rid: osx-x64 }
+          - { os: macos-14, rid: osx-arm64 }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build native lib
+        run: bindings/csharp/generate.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nuget-native-${{ matrix.rid }}
+          path: bindings/csharp/src/AmberHtml/runtimes/${{ matrix.rid }}/native/*
+
+  nuget-publish:
+    name: Publish to NuGet
+    needs: nuget-natives
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: nuget-native-*
+          path: /tmp/natives
+      - name: Stage per-RID native libraries
+        run: |
+          set -euo pipefail
+          for d in /tmp/natives/nuget-native-*; do
+            rid="${d##*nuget-native-}"
+            mkdir -p "bindings/csharp/src/AmberHtml/runtimes/$rid/native"
+            cp "$d"/* "bindings/csharp/src/AmberHtml/runtimes/$rid/native/"
+          done
+      - name: Pack + push
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          set -euo pipefail
+          cd bindings/csharp
+          dotnet pack src/AmberHtml/AmberHtml.csproj -c Release \
+            -p:AMBER_VERSION="${GITHUB_REF_NAME#v}" -o nupkg
+          dotnet nuget push "nupkg/*.nupkg" --api-key "$NUGET_API_KEY" \
+            --source https://api.nuget.org/v3/index.json --skip-duplicate

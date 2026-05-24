@@ -1,0 +1,81 @@
+name: Bindings
+
+# Build/compile every language binding on each push and PR so packaging or
+# binding-API regressions are caught early. These jobs are hermetic: they
+# compile and link the bindings (cgo/JNA/P-Invoke/xcframework) but do not run
+# the live-browser smoke tests (those need a pinned Chromium and run locally),
+# mirroring ci.yml where browser tests are #[ignore]d.
+
+on:
+  push:
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  unix-bindings:
+    name: ruby · go · kotlin · csharp (build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+
+      # --- Ruby (UniFFI + ffi): generate, then load the library (binds symbols
+      #     via dlopen) without capturing. ---
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+      - name: Ruby binding loads
+        run: |
+          gem install ffi --no-document
+          bindings/ruby/generate.sh
+          ruby -e 'require_relative "bindings/ruby/lib/amber_html"; abort("capture missing") unless AmberHtml.respond_to?(:capture)'
+
+      # --- Go (cgo): compile + link the test binary without running it. ---
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "stable"
+      - name: Go binding builds
+        run: |
+          bindings/go/generate.sh
+          cd bindings/go
+          go vet ./...
+          go test -run "^$" ./...   # compile + link, run zero tests
+
+      # --- Kotlin (UniFFI + JNA): compile main + test sources. ---
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.7"
+      - name: Kotlin binding compiles
+        run: |
+          bindings/kotlin/generate.sh
+          cd bindings/kotlin
+          gradle --no-daemon compileTestKotlin
+
+      # --- C# (.NET P/Invoke): build the library + test project. ---
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: C# binding builds
+        run: |
+          bindings/csharp/generate.sh
+          cd bindings/csharp
+          dotnet build
+
+  swift-binding:
+    name: swift (build)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+      - name: Swift binding builds
+        run: |
+          bindings/swift/build-xcframework.sh
+          bindings/swift/generate.sh
+          cd bindings/swift
+          swift build

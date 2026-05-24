@@ -3,6 +3,7 @@ import uniffi.amber_core.OutputFormat
 import uniffi.amber_core.capture
 import uniffi.amber_core.captureMarkdown
 import uniffi.amber_core.save
+import uniffi.amber_core.snapshot
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertTrue
@@ -41,5 +42,28 @@ class SmokeTest {
     @Test
     fun badUrlThrows() {
         assertFailsWith<CaptureException.Failed> { captureMarkdown("not a url") }
+    }
+
+    @Test
+    fun snapshotRendersManyFromOneCapture() {
+        // One capture, many formats (Plans.md 10.1/10.3); Snapshot is AutoCloseable.
+        snapshot(url, listOf(OutputFormat.MARKDOWN, OutputFormat.PDF)).use { snap ->
+            assertContains(snap.markdown(), "Smoke")
+
+            val pdf = snap.render(OutputFormat.PDF)
+            assertTrue(pdf.copyOfRange(0, 4).contentEquals("%PDF".toByteArray()))
+
+            val dir = System.getProperty("java.io.tmpdir") + "/amber-kt-smoke"
+            val path = snap.save(OutputFormat.READABLE, dir, "snap")
+            assertTrue(path.endsWith("snap.txt"))
+            assertTrue(java.io.File(path).exists())
+        }
+    }
+
+    @Test
+    fun snapshotBadUrlThrows() {
+        assertFailsWith<CaptureException.Failed> {
+            snapshot("not a url", listOf(OutputFormat.MARKDOWN))
+        }
     }
 }

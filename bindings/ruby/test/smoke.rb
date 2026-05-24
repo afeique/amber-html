@@ -23,4 +23,20 @@ rescue AmberHtml::CaptureError::Failed
   # expected — the facade surfaces capture failures as CaptureError::Failed
 end
 
-puts "ruby smoke OK (markdown #{md.bytesize}B, pdf #{pdf.bytesize}B, png #{png.bytesize}B)"
+# Capture-once Snapshot object (Plans.md 10.1): one capture serves many formats.
+require "tmpdir"
+snap = AmberHtml.snapshot(url, [AmberHtml::OutputFormat::MARKDOWN, AmberHtml::OutputFormat::PDF])
+raise "snapshot markdown missing content" unless snap.markdown.include?("Smoke")
+raise "snapshot not a PDF" unless snap.render(AmberHtml::OutputFormat::PDF)[0, 4] == "%PDF"
+saved = snap.save(AmberHtml::OutputFormat::READABLE, Dir.tmpdir, "amber_ruby_snap")
+raise "snapshot save failed" unless File.exist?(saved)
+
+begin
+  AmberHtml.snapshot("not a url", [AmberHtml::OutputFormat::MARKDOWN])
+  raise "expected an error for a bad URL (snapshot)"
+rescue AmberHtml::CaptureError::Failed
+  # expected
+end
+
+puts "ruby smoke OK (markdown #{md.bytesize}B, pdf #{pdf.bytesize}B, png #{png.bytesize}B, " \
+     "snapshot #{snap.markdown.bytesize}B md)"

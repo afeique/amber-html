@@ -31,6 +31,11 @@ png = AmberHtml.capture("https://example.com", AmberHtml::OutputFormat::SCREENSH
 # Or write straight to a file (returns the written path):
 path = AmberHtml.save("https://example.com", AmberHtml::OutputFormat::HTML, "out", "page")
 
+# Capture once, emit many — one render serves every format:
+snap = AmberHtml.snapshot("https://example.com", [AmberHtml::OutputFormat::MARKDOWN, AmberHtml::OutputFormat::PDF])
+snap_md  = snap.markdown
+snap_pdf = snap.render(AmberHtml::OutputFormat::PDF)
+
 # Failures surface as AmberHtml::CaptureError::Failed.
 ```
 

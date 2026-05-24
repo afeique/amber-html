@@ -30,4 +30,22 @@ final class SmokeTests: XCTestCase {
     func testBadURLThrows() {
         XCTAssertThrowsError(try captureMarkdown(url: "not a url"))
     }
+
+    func testSnapshotRendersManyFromOneCapture() throws {
+        // One capture, many formats (Plans.md 10.1/10.3).
+        let snap = try snapshot(url: url, formats: [.markdown, .pdf])
+        XCTAssertTrue(try snap.markdown().contains("Smoke"))
+
+        let pdf = try snap.render(format: .pdf)
+        XCTAssertEqual(Array(pdf.prefix(4)), Array("%PDF".utf8))
+
+        let dir = NSTemporaryDirectory() + "amber-swift-smoke"
+        let path = try snap.save(format: .readable, dir: dir, name: "snap")
+        XCTAssertTrue(path.hasSuffix("snap.txt"))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: path))
+    }
+
+    func testSnapshotBadURLThrows() {
+        XCTAssertThrowsError(try snapshot(url: "not a url", formats: [.markdown]))
+    }
 }

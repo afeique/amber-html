@@ -33,6 +33,11 @@ let png = try capture(url: "https://example.com", format: .screenshot)
 // Or write straight to a file (returns the written path):
 let path = try save(url: "https://example.com", format: .html, dir: "out", name: "page")
 
+// Capture once, emit many — one render serves every format:
+let snap = try snapshot(url: "https://example.com", formats: [.markdown, .pdf])
+let snapMd = try snap.markdown()
+let snapPdf = try snap.render(format: .pdf)
+
 // Failures throw CaptureError.Failed(reason:).
 ```
 

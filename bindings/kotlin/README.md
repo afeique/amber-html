@@ -31,6 +31,12 @@ val png = capture("https://example.com", OutputFormat.SCREENSHOT)
 // Or write straight to a file (returns the written path):
 val path = save("https://example.com", OutputFormat.HTML, "out", "page")
 
+// Capture once, emit many — one render serves every format (AutoCloseable):
+snapshot("https://example.com", listOf(OutputFormat.MARKDOWN, OutputFormat.PDF)).use { snap ->
+    val snapMd = snap.markdown()
+    val snapPdf = snap.render(OutputFormat.PDF)
+}
+
 // Failures throw CaptureException.Failed.
 ```
 

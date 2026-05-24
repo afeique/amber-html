@@ -30,6 +30,12 @@ png, err := amber.Capture("https://example.com", amber.FormatScreenshot)
 
 // Or write straight to a file (returns the written path):
 path, err := amber.Save("https://example.com", amber.FormatHTML, "out", "page")
+
+// Capture once, emit many — one render serves every format:
+snap, err := amber.NewSnapshot("https://example.com", amber.FormatMarkdown, amber.FormatPDF)
+defer snap.Close()
+md2, _ := snap.Markdown()
+pdf2, _ := snap.Render(amber.FormatPDF)
 ```
 
 `Format` values: `FormatHTML`, `FormatMHTML`, `FormatMarkdown`, `FormatReadable`,

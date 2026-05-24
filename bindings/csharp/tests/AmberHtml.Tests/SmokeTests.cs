@@ -43,4 +43,26 @@ public class SmokeTests
     {
         Assert.Throws<AmberException>(() => Amber.CaptureMarkdown("not a url"));
     }
+
+    [Fact]
+    public void SnapshotRendersManyFromOneCapture()
+    {
+        // One capture, many formats (Plans.md 10.1/10.3).
+        using var snap = Amber.Snapshot(Url, Format.Markdown, Format.Pdf);
+        Assert.Contains("Smoke", snap.Markdown());
+
+        var pdf = snap.Render(Format.Pdf);
+        Assert.Equal(new byte[] { 0x25, 0x50, 0x44, 0x46 }, pdf[..4]); // %PDF
+
+        var dir = Path.Combine(Path.GetTempPath(), "amber-csharp-smoke");
+        var path = snap.Save(Format.Readable, dir, "snap");
+        Assert.EndsWith("snap.txt", path);
+        Assert.True(File.Exists(path));
+    }
+
+    [Fact]
+    public void SnapshotBadUrlThrows()
+    {
+        Assert.Throws<AmberException>(() => Amber.Snapshot("not a url", Format.Markdown));
+    }
 }

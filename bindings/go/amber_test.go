@@ -59,3 +59,39 @@ func TestBadURL(t *testing.T) {
 		t.Fatalf("expected ErrCapture, got %v", err)
 	}
 }
+
+func TestSnapshotRendersManyFromOneCapture(t *testing.T) {
+	// One capture, many formats (Plans.md 10.1/10.3).
+	snap, err := NewSnapshot(smokeURL, FormatMarkdown, FormatPDF)
+	if err != nil {
+		t.Fatalf("NewSnapshot: %v", err)
+	}
+	defer snap.Close()
+
+	md, err := snap.Markdown()
+	if err != nil || !strings.Contains(md, "Smoke") {
+		t.Fatalf("Markdown: %v / %q", err, md)
+	}
+	pdf, err := snap.Render(FormatPDF)
+	if err != nil || !bytes.HasPrefix(pdf, []byte("%PDF")) {
+		t.Fatalf("Render PDF: %v (len=%d)", err, len(pdf))
+	}
+	dir := filepath.Join(os.TempDir(), "amber-go-smoke")
+	path, err := snap.Save(FormatReadable, dir, "snap")
+	if err != nil || !strings.HasSuffix(path, "snap.txt") {
+		t.Fatalf("Save: %v / %q", err, path)
+	}
+	if _, err := os.Stat(path); err != nil {
+		t.Fatalf("written file missing: %v", err)
+	}
+}
+
+func TestSnapshotBadArgs(t *testing.T) {
+	if _, err := NewSnapshot("not a url", FormatMarkdown); !errors.Is(err, ErrCapture) {
+		t.Fatalf("expected ErrCapture for a bad URL, got %v", err)
+	}
+	// No formats → no default output → invalid input.
+	if _, err := NewSnapshot(smokeURL); !errors.Is(err, ErrInvalidInput) {
+		t.Fatalf("expected ErrInvalidInput for empty formats, got %v", err)
+	}
+}

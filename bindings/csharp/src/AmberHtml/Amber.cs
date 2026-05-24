@@ -112,4 +112,117 @@ public static class Amber
         try { return Marshal.PtrToStringUTF8(ptr) ?? string.Empty; }
         finally { amber_string_free(ptr); }
     }
+
+    /// <summary>
+    /// Capture <paramref name="url"/> once for the given <paramref name="formats"/>,
+    /// returning a reusable <see cref="Snapshot"/> — capture once, emit many. At
+    /// least one format is required (there is no default output).
+    /// </summary>
+    public static Snapshot Snapshot(string url, params Format[] formats) =>
+        AmberHtml.Snapshot.Capture(url, formats);
+}
+
+/// <summary>
+/// A captured page, reusable across many output formats (Plans.md 10.1/10.3).
+/// One capture serves every format with no re-fetch and no re-render. Dispose it
+/// (or use a <c>using</c> block) to release the native handle.
+/// </summary>
+public sealed class Snapshot : IDisposable
+{
+    private const string Lib = "amber_core";
+    private const int Ok = 0;
+    private const int ErrInvalidInput = 1;
+
+    private IntPtr _handle;
+
+    private Snapshot(IntPtr handle) => _handle = handle;
+
+    [DllImport(Lib)]
+    private static extern int amber_snapshot(
+        [MarshalAs(UnmanagedType.LPUTF8Str)] string url,
+        int[] formats, UIntPtr nFormats, out IntPtr outSnap);
+
+    [DllImport(Lib)]
+    private static extern int amber_snapshot_render(
+        IntPtr snap, int format, out IntPtr outPtr, out UIntPtr outLen);
+
+    [DllImport(Lib)]
+    private static extern int amber_snapshot_text(IntPtr snap, int format, out IntPtr outPtr);
+
+    [DllImport(Lib)]
+    private static extern int amber_snapshot_save(
+        IntPtr snap, int format,
+        [MarshalAs(UnmanagedType.LPUTF8Str)] string dir,
+        [MarshalAs(UnmanagedType.LPUTF8Str)] string? name,
+        out IntPtr outPath);
+
+    [DllImport(Lib)]
+    private static extern void amber_snapshot_free(IntPtr snap);
+
+    [DllImport(Lib)]
+    private static extern void amber_string_free(IntPtr s);
+
+    [DllImport(Lib)]
+    private static extern void amber_bytes_free(IntPtr ptr, UIntPtr len);
+
+    private static string Describe(int rc) =>
+        rc == ErrInvalidInput ? "invalid input" : "capture failed";
+
+    /// <summary>Capture <paramref name="url"/> once for <paramref name="formats"/>.</summary>
+    public static Snapshot Capture(string url, params Format[] formats)
+    {
+        var selectors = Array.ConvertAll(formats, f => (int)f);
+        int rc = amber_snapshot(url, selectors, (UIntPtr)selectors.Length, out IntPtr handle);
+        if (rc != Ok) throw new AmberException(Describe(rc));
+        return new Snapshot(handle);
+    }
+
+    /// <summary>Render <paramref name="format"/> from the capture as encoded bytes.</summary>
+    public byte[] Render(Format format)
+    {
+        int rc = amber_snapshot_render(_handle, (int)format, out IntPtr ptr, out UIntPtr len);
+        if (rc != Ok) throw new AmberException(Describe(rc));
+        try
+        {
+            int n = checked((int)len);
+            var bytes = new byte[n];
+            if (n > 0) Marshal.Copy(ptr, bytes, 0, n);
+            return bytes;
+        }
+        finally { amber_bytes_free(ptr, len); }
+    }
+
+    /// <summary>Render <paramref name="format"/> from the capture as UTF-8 text.</summary>
+    public string Text(Format format)
+    {
+        int rc = amber_snapshot_text(_handle, (int)format, out IntPtr ptr);
+        if (rc != Ok) throw new AmberException(Describe(rc));
+        try { return Marshal.PtrToStringUTF8(ptr) ?? string.Empty; }
+        finally { amber_string_free(ptr); }
+    }
+
+    /// <summary>Save <paramref name="format"/> into <paramref name="dir"/>; returns the path.</summary>
+    public string Save(Format format, string dir, string? name = null)
+    {
+        int rc = amber_snapshot_save(_handle, (int)format, dir, name, out IntPtr ptr);
+        if (rc != Ok) throw new AmberException(Describe(rc));
+        try { return Marshal.PtrToStringUTF8(ptr) ?? string.Empty; }
+        finally { amber_string_free(ptr); }
+    }
+
+    /// <summary>The captured page's clean Markdown.</summary>
+    public string Markdown() => Text(Format.Markdown);
+
+    /// <summary>The captured page's readable plain text.</summary>
+    public string Readable() => Text(Format.Readable);
+
+    /// <summary>Release the native handle.</summary>
+    public void Dispose()
+    {
+        if (_handle != IntPtr.Zero)
+        {
+            amber_snapshot_free(_handle);
+            _handle = IntPtr.Zero;
+        }
+    }
 }

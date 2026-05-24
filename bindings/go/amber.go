@@ -119,3 +119,92 @@ func Save(url string, format Format, dir, name string) (string, error) {
 	defer C.amber_string_free(out)
 	return C.GoString(out), nil
 }
+
+// Snapshot is a captured page, reusable across formats — capture once, emit
+// many. Create it with NewSnapshot, render or save any format without
+// re-capturing, and release it with Close.
+type Snapshot struct {
+	ptr *C.AmberSnapshot
+}
+
+// NewSnapshot captures url once for the given formats, returning a handle that
+// renders or saves any of them with no re-fetch and no re-render. formats must
+// be non-empty (there is no default output). Call Close when done.
+func NewSnapshot(url string, formats ...Format) (*Snapshot, error) {
+	curl := C.CString(url)
+	defer C.free(unsafe.Pointer(curl))
+
+	var cformats *C.int
+	if len(formats) > 0 {
+		sel := make([]C.int, len(formats))
+		for i, f := range formats {
+			sel[i] = C.int(f)
+		}
+		// amber_snapshot reads the array synchronously and does not retain it,
+		// so passing a pointer into Go memory for the call is allowed by cgo.
+		cformats = &sel[0]
+	}
+
+	var ptr *C.AmberSnapshot
+	rc := C.amber_snapshot(curl, cformats, C.size_t(len(formats)), &ptr)
+	if rc != C.AMBER_OK {
+		return nil, errFromCode(rc)
+	}
+	return &Snapshot{ptr: ptr}, nil
+}
+
+// Render returns format from the captured page as encoded bytes.
+func (s *Snapshot) Render(format Format) ([]byte, error) {
+	var out *C.uint8_t
+	var outLen C.size_t
+	if rc := C.amber_snapshot_render(s.ptr, C.int(format), &out, &outLen); rc != C.AMBER_OK {
+		return nil, errFromCode(rc)
+	}
+	defer C.amber_bytes_free(out, outLen)
+	return C.GoBytes(unsafe.Pointer(out), C.int(outLen)), nil
+}
+
+// Text returns format from the captured page as UTF-8 text (text formats).
+func (s *Snapshot) Text(format Format) (string, error) {
+	var out *C.char
+	if rc := C.amber_snapshot_text(s.ptr, C.int(format), &out); rc != C.AMBER_OK {
+		return "", errFromCode(rc)
+	}
+	defer C.amber_string_free(out)
+	return C.GoString(out), nil
+}
+
+// Save writes format from the captured page into dir, returning the written
+// path. name is the file stem (an empty name uses a default); dir is created if
+// missing.
+func (s *Snapshot) Save(format Format, dir, name string) (string, error) {
+	cdir := C.CString(dir)
+	defer C.free(unsafe.Pointer(cdir))
+
+	var cname *C.char
+	if name != "" {
+		cname = C.CString(name)
+		defer C.free(unsafe.Pointer(cname))
+	}
+
+	var out *C.char
+	if rc := C.amber_snapshot_save(s.ptr, C.int(format), cdir, cname, &out); rc != C.AMBER_OK {
+		return "", errFromCode(rc)
+	}
+	defer C.amber_string_free(out)
+	return C.GoString(out), nil
+}
+
+// Markdown returns the captured page's clean Markdown.
+func (s *Snapshot) Markdown() (string, error) { return s.Text(FormatMarkdown) }
+
+// Readable returns the captured page's readable plain text.
+func (s *Snapshot) Readable() (string, error) { return s.Text(FormatReadable) }
+
+// Close releases the snapshot's native resources. Safe to call more than once.
+func (s *Snapshot) Close() {
+	if s.ptr != nil {
+		C.amber_snapshot_free(s.ptr)
+		s.ptr = nil
+	}
+}

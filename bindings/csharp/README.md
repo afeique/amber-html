@@ -26,6 +26,11 @@ byte[] png = Amber.Capture("https://example.com", Format.Screenshot);
 // Or write straight to a file (returns the written path):
 string path = Amber.Save("https://example.com", Format.Html, "out", "page");
 
+// Capture once, emit many — one render serves every format:
+using var snap = Amber.Snapshot("https://example.com", Format.Markdown, Format.Pdf);
+string snapMd  = snap.Markdown();
+byte[] snapPdf = snap.Render(Format.Pdf);
+
 // Failures throw AmberException.
 ```
 

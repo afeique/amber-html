@@ -259,4 +259,3 @@ Status legend mirrors `Plans.md` (`cc:TODO` etc.). Suggested IDs use a `D.`
 3. **§3.3 Tier 1** (Ruby, C#, conda) — the explicit asks.
 4. **§3.4 Tier 2**, then **§3.5 Tier 3** opportunistically.
 5. **§3.2 ergonomics** in parallel, gated on coordination with the other agent.
-</content>

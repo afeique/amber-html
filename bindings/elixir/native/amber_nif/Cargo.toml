@@ -1,0 +1,18 @@
+[package]
+name = "amber_nif"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Elixir/Erlang NIF for AmberHTML (rustler over amber-core)."
+publish = false
+
+[lib]
+name = "amber_nif"
+# An Erlang NIF is a cdylib loaded by the BEAM.
+crate-type = ["cdylib"]
+
+[dependencies]
+amber-core = { workspace = true }
+rustler = "0.37"

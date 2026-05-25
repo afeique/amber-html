@@ -1,0 +1,9 @@
+# Elixir / mix
+/_build/
+/deps/
+/doc/
+*.ez
+amber-*.tar
+# The Rust NIF builds into the workspace target/ (gitignored at the repo root);
+# ignore a local target here too in case mix builds out-of-workspace.
+/native/amber_nif/target/

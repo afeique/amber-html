@@ -134,7 +134,7 @@ browser/network (matching the C/Go/Ruby pattern already in the repo).
 | 11.2 | **Dart/Flutter** binding (`dart:ffi`) + `pubspec.yaml` + smoke | `Amber.captureMarkdown(url)`; `dart test` smoke green; `bindings/dart` | 10.1 | cc:完了 (CI-validated — no Dart SDK locally) |
 | 11.3 | **Lua** binding (LuaJIT FFI / C module) + `.rockspec` + smoke | `require('amber').capture_markdown(url)`; smoke green; `bindings/lua` | 10.1 | cc:完了 (CI-validated — no LuaJIT locally) |
 | 11.4 | **R** binding (C interface via `.Call`/FFI) + package skeleton + smoke | `amber::capture_markdown(url)`; smoke green; `bindings/r` | 10.1 | cc:完了 (CI-validated — no R locally; least-validated, see notes) |
-| 11.5 | **Elixir** binding (C ABI via NIF; rustler or raw) + `mix.exs` + smoke | `Amber.capture_markdown/1`; `mix test` smoke green; `bindings/elixir` | 10.1 | cc:TODO |
+| 11.5 | **Elixir** binding (rustler NIF on amber-core, dirty IO) + `mix.exs` + smoke | `Amber.capture_markdown/1`; `mix test` smoke green; `bindings/elixir` | 10.1 | cc:完了 (NIF compiles+clippy locally; mix test CI-gated — no Elixir) |
 
 ## Phase 12: Windows compatibility (P0 — release blocker; CI-validated)
 
@@ -190,8 +190,9 @@ credential/account → marked `(user)`; the agent prepares all config/manifests.
 - **Build/test:** `cargo build --workspace --locked` + `cargo test --workspace`
   must stay green; browser/live tests are `#[ignore]`d (run with `-- --ignored`
   against the pinned Chromium).
-- **Open question (Phase 11/Elixir):** rustler NIF (idiomatic, adds a Rust dep)
-  vs. raw C-ABI over the existing header (consistent with the other long-tail
-  wrappers). Default to the C-ABI route for consistency unless a NIF is clearly
-  better.
+- **Resolved (Phase 11/Elixir):** chose a **rustler NIF** over a hand C NIF — it
+  calls `amber-core`'s Rust API directly (no C marshaling), is dirty-IO scheduled
+  (captures block on a browser), and compiles under the workspace `cargo` build
+  so CI compile-checks it. The NIF crate is a workspace member (like
+  `amber-node`); the mix project lives in `bindings/elixir`.
 </content>

@@ -1,6 +1,12 @@
 [workspace]
 resolver = "2"
-members = ["crates/amber-core", "crates/amber-cli", "crates/uniffi-bindgen", "crates/amber-node"]
+members = [
+    "crates/amber-core",
+    "crates/amber-cli",
+    "crates/uniffi-bindgen",
+    "crates/amber-node",
+    "bindings/elixir/native/amber_nif",
+]
 
 [workspace.package]
 version = "0.1.0"

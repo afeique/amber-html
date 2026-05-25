@@ -161,7 +161,7 @@ panic is removed and Windows artifacts are gated so nothing ships broken.
 | 13.1 | **README/docs accuracy** — drop the "early development" banner; reflect feature-complete v0.1 (front page for crates.io/PyPI/npm) | README has no stale "just beginning" copy | - | cc:完了 |
 | 13.2 | **C-ABI header consistency gate** in CI — compile + link + run `examples/c` against `include/amber.h` (robust vs. a brittle cbindgen text-diff: proves the header matches the exported symbols) | CI fails if the header drifts from the ABI; validated locally (links + runs) | - | cc:完了 |
 | 13.3 | **Binding smoke matrix** — `bindings.yml` builds/loads every binding per push: C ABI, Python, Node, Ruby, Go, C#, Swift, Kotlin, PHP, Lua, Dart, Elixir (hermetic: load + bad-URL/compile, no browser). **R** is a documented gap (external-dylib linking unvalidated) | Each wired binding compiles/loads per push; PHP/Node/Python commands validated locally | 11.x | cc:完了 |
-| 13.4 | **MSRV + publish dry-run gates** — pin MSRV and check it; `cargo publish --dry-run` for core+cli; a `release.yml` `workflow_dispatch` dry-run path | Pre-tag gates pass; first real publish is de-risked | - | cc:TODO |
+| 13.4 | **MSRV + publish dry-run gates** — pin MSRV (1.88, floor set by `zip`; validated by building core+cli on it) + a CI `release-readiness` job that builds on MSRV and runs `cargo publish --dry-run -p amber-core` per push | Pre-tag gates pass; first real publish is de-risked | - | cc:完了 |
 
 ## Phase 14: Distribution GA & packaging (P1/P2)
 

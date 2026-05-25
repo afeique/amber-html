@@ -34,3 +34,21 @@ jobs:
 
       - name: Test
         run: cargo test --workspace --locked
+
+  # Guards the MSRV and that the crates.io crates still package cleanly, so the
+  # first real publish isn't a surprise (Plans.md 13.4). MSRV (1.88) is the floor
+  # validated locally — building amber-core/amber-cli on it; bump if a dep needs
+  # newer. The dry-run packages + verify-compiles amber-core (amber-cli's path
+  # dep on core can't resolve from the registry until core is published, so it's
+  # published-then-polled in release.yml, not dry-run here).
+  release-readiness:
+    name: MSRV 1.88 · publish dry-run
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.88.0
+      - uses: Swatinem/rust-cache@v2
+      - name: Build published crates on MSRV
+        run: cargo build -p amber-core -p amber-cli --locked
+      - name: Packaging check (amber-core)
+        run: cargo publish -p amber-core --dry-run --locked

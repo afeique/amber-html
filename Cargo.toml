@@ -11,6 +11,10 @@ members = [
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
+# MSRV: validated by building amber-core + amber-cli on this toolchain (13.4).
+# Floor is set by the `zip` dependency (8.6 → rustc 1.88); the CI MSRV job
+# guards it. Bump only when a dependency or our own code requires newer.
+rust-version = "1.88"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/afeique/amber-html"
 homepage = "https://github.com/afeique/amber-html"

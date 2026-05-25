@@ -6,32 +6,7 @@ adhere to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-### Added
-- **Capture-once `Snapshot` across every binding** — `snapshot(url, formats)`
-  returns a reusable handle that renders/saves any format from a single capture
-  (no more one-render-per-format). Exposed in UniFFI, the C ABI (opaque
-  `AmberSnapshot*`), Node, Ruby, Swift, Kotlin, Go, and C#.
-- **New language bindings** over the C ABI / a NIF: **PHP** (FFI), **Dart**
-  (`dart:ffi`), **Lua** (LuaJIT FFI), **R** (`.Call` shim), and **Elixir**
-  (rustler NIF, dirty-IO scheduled) — each under `bindings/`.
-- **Node surface parity** — `capture`/`captureText`/`save` + a `Format` enum +
-  the `Snapshot` class.
-- **Python** ships an `import amber` wrapper over the generated `amber_core`.
-- **Linux packaging** — `.deb`/`.rpm` metadata, an AUR `PKGBUILD`, and a Nix
-  `flake.nix`.
-- **Release provenance** — CycloneDX SBOMs (core + CLI), keyless (sigstore)
-  cosign signatures attached to the GitHub Release.
-- **CI hardening** — every binding builds/loads per push; a C-ABI header
-  consistency gate; an MSRV (1.88) + `cargo publish --dry-run` gate; a
-  `cargo-public-api` baseline + diff gate for the 1.0 API contract.
-
-### Changed
-- **Windows:** browser-backed capture now returns a clean `Unsupported` error
-  instead of panicking (the CDP debug pipe is Unix-only for now; static
-  captures still work). Windows is gated out of the release artifacts until the
-  pipe handle-inheritance lands and is validated on a Windows runner.
-
-## [0.1.0] - 2026-05-23
+## [0.1.0] - 2026-05-25
 
 First public release. A local-first web-page capture engine: a Rust core
 (`amber-core`) + CLI (`amber`) that render any page in a pinned, auto-managed
@@ -58,14 +33,33 @@ screenshot, and PDF from one capture pass.
   reuse, per-capture time/byte/memory/CPU limits, metrics, recurring captures,
   content/visual change monitoring.
 - **Evidence** — tamper-evident manifests with ed25519 signatures.
-- **Bindings** — a uniform capture surface (`capture` → bytes for any of the 8
-  formats, `capture_markdown`/`capture_readable` text, `save` to file) across
-  Python (UniFFI/maturin), Ruby (UniFFI), Swift (UniFFI xcframework), Kotlin/Java
-  (UniFFI + JNA), Node (napi-rs), Go (cgo), C#/.NET (P/Invoke), and a C ABI
-  (`include/amber.h`), plus the CLI and MCP server.
+- **Bindings** — a uniform capture surface across many languages. One capture
+  yields a reusable `Snapshot` (`snapshot(url, formats)`) that renders or saves
+  any format with no re-render, alongside `capture` (bytes for any of the 8
+  formats), `capture_markdown`/`capture_readable`, and `save`. Available in
+  Python (UniFFI/maturin, with an `import amber` wrapper), Node (napi-rs, full
+  surface + `Snapshot`), Ruby (UniFFI), Swift (UniFFI xcframework), Kotlin/Java
+  (UniFFI + JNA), Go (cgo), C#/.NET (P/Invoke), a C ABI (`include/amber.h`,
+  opaque `AmberSnapshot*`), and — over the C ABI / a NIF — PHP (FFI), Dart
+  (`dart:ffi`), Lua (LuaJIT FFI), R (`.Call`), and Elixir (rustler); plus the
+  CLI and MCP server.
 - **Reproducibility** — byte-stable output for a given capture + pinned browser.
-- CI (build/test/clippy/fmt) and a release pipeline for crates.io, PyPI, npm,
-  GHCR, GitHub binaries, and Homebrew.
+- **Packaging** — a tag-driven release pipeline publishing to crates.io, PyPI,
+  npm, RubyGems, NuGet, GHCR (Docker), GitHub Release binaries, and Homebrew,
+  plus `.deb`/`.rpm` metadata, an AUR `PKGBUILD`, and a Nix `flake.nix` for the
+  CLI.
+- **Release provenance** — CycloneDX SBOMs (core + CLI) and keyless (sigstore)
+  cosign signatures attached to the GitHub Release.
+- **CI** — build/test/clippy/fmt; every binding builds/loads per push; a C-ABI
+  header-consistency gate; an MSRV (1.88) + `cargo publish --dry-run` gate; and
+  a `cargo-public-api` baseline + diff gate for the 1.0 API contract.
+
+### Known limitations
+- **Windows:** the 0.1.0 artifacts are Unix-only. Static HTTP captures work on
+  Windows, but browser-backed capture is gated out of the release pending
+  validation of the `CreateProcessW` debug-pipe path on a Windows CI runner;
+  until that job is green it returns a clean `Unsupported` error rather than
+  running (the implementation exists but is unverified off-Windows).
 
 [Unreleased]: https://github.com/afeique/amber-html/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/afeique/amber-html/releases/tag/v0.1.0

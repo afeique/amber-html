@@ -21,3 +21,25 @@ amber-core.workspace = true
 clap.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
+
+# Linux packaging (Plans.md 14.6). `.deb` via `cargo deb`; `.rpm` via
+# `cargo generate-rpm`. cargo-deb auto-includes the `amber` binary; both pull
+# the release binary from the workspace target dir.
+[package.metadata.deb]
+maintainer = "AmberHTML Contributors <noreply@github.com>"
+copyright = "2026, AmberHTML Contributors"
+license-file = ["../../LICENSE-MIT", "0"]
+section = "web"
+priority = "optional"
+extended-description = """
+Local-first web-page capture engine. Renders any page in a pinned Chromium over \
+the Chrome DevTools Protocol — only when a page needs a browser — and emits \
+Markdown, readable text, single-file HTML, MHTML, WARC/WACZ, screenshot, or PDF \
+from one capture pass. A pinned Chrome for Testing downloads on first browser use."""
+
+[package.metadata.generate-rpm]
+assets = [
+  { source = "target/release/amber", dest = "/usr/bin/amber", mode = "0755" },
+  { source = "README.md", dest = "/usr/share/doc/amber-html/README.md", mode = "0644", doc = true },
+  { source = "LICENSE-MIT", dest = "/usr/share/doc/amber-html/LICENSE-MIT", mode = "0644", doc = true },
+]

@@ -176,7 +176,7 @@ credential/account → marked `(user)`; the agent prepares all config/manifests.
 | 14.3 | **RubyGems + NuGet publish** — release jobs exist; add secrets | `gem install amber-html` / `dotnet add package` work | 14.2 | cc:TODO (user) |
 | 14.4 | **Maven Central · SwiftPM/CocoaPods · Go module tag · conda-forge** | Installable from each ecosystem | 10.3 | cc:TODO |
 | 14.5 | **Windows managers** — Scoop · WinGet · Chocolatey manifests | Each install path verified on Windows | 12.3, 14.2 | cc:TODO |
-| 14.6 | **Linux** — AUR · Nix flake · `.deb` (cargo-deb) · `.rpm` (cargo-generate-rpm) | Each install path verified | 14.2 | cc:TODO |
+| 14.6 | **Linux** — AUR · Nix flake · `.deb` (cargo-deb) · `.rpm` (cargo-generate-rpm) | Config landed: `.deb` built + validated locally; `.rpm` metadata, `packaging/aur/PKGBUILD`, root `flake.nix` written (build on Linux/by user). Publishing to AUR/nixpkgs is a user step | 14.2 | cc:完了 |
 | 14.7 | **C-ABI long-tail packaging** — vcpkg/Conan (C/C++); Packagist (PHP) · luarocks (Lua) · CRAN (R) · Hex (Elixir) · pub.dev (Dart) | Each language installs from its registry | 11.x | cc:TODO |
 | 14.8 | **Release trust** — sign artifacts (cosign/sigstore) + attach an SBOM | Signatures + SBOM on each release | 14.2 | cc:TODO (user) |
 

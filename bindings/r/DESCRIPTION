@@ -1,0 +1,15 @@
+Package: amber
+Type: Package
+Title: Local-First Web-Page Capture (AmberHTML)
+Version: 0.1.0
+Authors@R: person("AmberHTML Contributors", role = c("aut", "cre"),
+                  email = "noreply@example.com")
+Description: R bindings for AmberHTML, a local-first web-page capture engine.
+    Wraps the amber-core C ABI via .Call to capture pages as Markdown, readable
+    text, single-file HTML, MHTML, WARC/WACZ, PDF, or a screenshot. The native
+    amber-core library must be staged before building (see generate.sh).
+License: MIT + file LICENSE
+Encoding: UTF-8
+NeedsCompilation: yes
+Suggests: testthat (>= 3.0.0)
+URL: https://github.com/afeique/amber-html

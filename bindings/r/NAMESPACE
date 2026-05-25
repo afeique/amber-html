@@ -1,0 +1,7 @@
+useDynLib(amber, .registration = TRUE)
+export(Format)
+export(capture_markdown)
+export(capture_readable)
+export(capture)
+export(save_capture)
+export(snapshot)

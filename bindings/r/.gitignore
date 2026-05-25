@@ -1,0 +1,8 @@
+# Staged by generate.sh from the repo's C ABI (single source of truth).
+/src/amber.h
+/src/libamber_core.*
+# Build artifacts.
+/src/*.o
+/src/*.so
+/src/*.dll
+*.Rcheck/

@@ -1,0 +1,5 @@
+# Link the staged amber-core native library (placed in src/ by generate.sh).
+# At build time the working dir is this src/ copy, so -L. finds libamber_core;
+# the rpath lets the installed amber.so locate a co-located libamber_core, and
+# CI/users can also set (DY)LD_LIBRARY_PATH to where libamber_core lives.
+PKG_LIBS = -L. -lamber_core -Wl,-rpath,'$$ORIGIN' -Wl,-rpath,@loader_path

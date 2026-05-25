@@ -48,26 +48,3 @@ defmodule Amber do
     %Amber.Snapshot{ref: Native.snapshot(url, Enum.map(formats, &format/1))}
   end
 end
-
-defmodule Amber.Snapshot do
-  @moduledoc "A captured page, reusable across formats (Plans.md 10.1/11.5)."
-  defstruct [:ref]
-
-  @doc "Render `format` as encoded bytes (a binary)."
-  def render(%__MODULE__{ref: ref}, format),
-    do: Amber.Native.snapshot_render(ref, Amber.format(format))
-
-  @doc "Render `format` as UTF-8 text."
-  def text(%__MODULE__{ref: ref}, format),
-    do: Amber.Native.snapshot_text(ref, Amber.format(format))
-
-  @doc "Write `format` into `dir`; returns the written path."
-  def save(%__MODULE__{ref: ref}, format, dir, name \\ nil),
-    do: Amber.Native.snapshot_save(ref, Amber.format(format), dir, name)
-
-  @doc "The captured page's clean Markdown."
-  def markdown(snap), do: text(snap, :markdown)
-
-  @doc "The captured page's readable plain text."
-  def readable(snap), do: text(snap, :readable)
-end

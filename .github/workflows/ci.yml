@@ -52,3 +52,29 @@ jobs:
         run: cargo build -p amber-core -p amber-cli --locked
       - name: Packaging check (amber-core)
         run: cargo publish -p amber-core --dry-run --locked
+
+  # API-stability guard for 1.0 (Plans.md 15.1): diff amber-core's public API
+  # against the committed baseline (crates/amber-core/public-api.txt) so every
+  # change to the public surface — especially the FFI/binding contract — is
+  # explicit and reviewed. Nightly is pinned for reproducible rustdoc-JSON output;
+  # refresh the baseline (and this pin) intentionally when the API changes.
+  public-api:
+    name: public API surface
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-05-24
+      - uses: Swatinem/rust-cache@v2
+      - name: Install cargo-public-api
+        run: cargo install cargo-public-api --locked
+      - name: Diff public API against the committed baseline
+        run: |
+          set -euo pipefail
+          cargo +nightly-2026-05-24 public-api -p amber-core --simplified > /tmp/current-api.txt
+          if ! diff -u crates/amber-core/public-api.txt /tmp/current-api.txt; then
+            echo "::error::amber-core's public API changed. If intended, refresh the baseline:"
+            echo "  cargo +nightly-2026-05-24 public-api -p amber-core --simplified > crates/amber-core/public-api.txt"
+            exit 1
+          fi

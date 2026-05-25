@@ -184,7 +184,7 @@ credential/account → marked `(user)`; the agent prepares all config/manifests.
 
 | Task | 内容 | DoD | Depends | Status |
 |------|------|-----|---------|--------|
-| 15.1 | **Public API freeze review** — audit `amber-core` exports + the FFI/Snapshot surface; document the stability contract; deny accidental breakage with `cargo-public-api` in CI | Public API reviewed, documented, and CI-guarded for 1.0 | 10.x | cc:WIP |
+| 15.1 | **Public API freeze review** — audit `amber-core` exports + the FFI/Snapshot surface; document the stability contract; deny accidental breakage with `cargo-public-api` in CI | Public API reviewed, documented, and CI-guarded for 1.0 | 10.x | cc:完了 (committed `crates/amber-core/public-api.txt` baseline + nightly-pinned CI diff gate; surface is wide — everything pub — which is itself a pre-1.0 narrowing candidate) |
 
 ---
 

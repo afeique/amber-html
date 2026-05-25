@@ -1,0 +1,2203 @@
+pub mod amber_core
+pub mod amber_core::actions
+pub enum amber_core::actions::Action
+pub amber_core::actions::Action::Click(alloc::string::String)
+pub amber_core::actions::Action::Fill
+pub amber_core::actions::Action::Fill::selector: alloc::string::String
+pub amber_core::actions::Action::Fill::value: alloc::string::String
+pub amber_core::actions::Action::Navigate(alloc::string::String)
+pub amber_core::actions::Action::ScrollBy
+pub amber_core::actions::Action::ScrollBy::x: i64
+pub amber_core::actions::Action::ScrollBy::y: i64
+pub amber_core::actions::Action::ScrollToBottom
+impl amber_core::actions::Action
+pub fn amber_core::actions::Action::parse(spec: &str) -> core::result::Result<amber_core::actions::Action, alloc::string::String>
+impl core::clone::Clone for amber_core::actions::Action
+pub fn amber_core::actions::Action::clone(&self) -> amber_core::actions::Action
+impl core::cmp::Eq for amber_core::actions::Action
+impl core::cmp::PartialEq for amber_core::actions::Action
+pub fn amber_core::actions::Action::eq(&self, other: &amber_core::actions::Action) -> bool
+impl core::fmt::Debug for amber_core::actions::Action
+pub fn amber_core::actions::Action::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for amber_core::actions::Action
+impl core::marker::Freeze for amber_core::actions::Action
+impl core::marker::Send for amber_core::actions::Action
+impl core::marker::Sync for amber_core::actions::Action
+impl core::marker::Unpin for amber_core::actions::Action
+impl core::marker::UnsafeUnpin for amber_core::actions::Action
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::actions::Action
+impl core::panic::unwind_safe::UnwindSafe for amber_core::actions::Action
+pub fn amber_core::actions::to_cdp(action: &amber_core::actions::Action) -> (&'static str, serde_json::value::Value)
+pub mod amber_core::blocking
+pub enum amber_core::blocking::ResourceType
+pub amber_core::blocking::ResourceType::Document
+pub amber_core::blocking::ResourceType::Font
+pub amber_core::blocking::ResourceType::Image
+pub amber_core::blocking::ResourceType::Media
+pub amber_core::blocking::ResourceType::Other
+pub amber_core::blocking::ResourceType::Script
+pub amber_core::blocking::ResourceType::Stylesheet
+pub amber_core::blocking::ResourceType::Xhr
+impl core::clone::Clone for amber_core::blocking::ResourceType
+pub fn amber_core::blocking::ResourceType::clone(&self) -> amber_core::blocking::ResourceType
+impl core::cmp::Eq for amber_core::blocking::ResourceType
+impl core::cmp::PartialEq for amber_core::blocking::ResourceType
+pub fn amber_core::blocking::ResourceType::eq(&self, other: &amber_core::blocking::ResourceType) -> bool
+impl core::fmt::Debug for amber_core::blocking::ResourceType
+pub fn amber_core::blocking::ResourceType::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for amber_core::blocking::ResourceType
+impl core::marker::StructuralPartialEq for amber_core::blocking::ResourceType
+impl core::marker::Freeze for amber_core::blocking::ResourceType
+impl core::marker::Send for amber_core::blocking::ResourceType
+impl core::marker::Sync for amber_core::blocking::ResourceType
+impl core::marker::Unpin for amber_core::blocking::ResourceType
+impl core::marker::UnsafeUnpin for amber_core::blocking::ResourceType
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::blocking::ResourceType
+impl core::panic::unwind_safe::UnwindSafe for amber_core::blocking::ResourceType
+pub struct amber_core::blocking::BlockPolicy
+pub amber_core::blocking::BlockPolicy::block_fonts: bool
+pub amber_core::blocking::BlockPolicy::block_images: bool
+pub amber_core::blocking::BlockPolicy::block_media: bool
+pub amber_core::blocking::BlockPolicy::blocked_url_substrings: alloc::vec::Vec<alloc::string::String>
+impl amber_core::blocking::BlockPolicy
+pub fn amber_core::blocking::BlockPolicy::blocked_url_patterns(&self) -> alloc::vec::Vec<alloc::string::String>
+pub fn amber_core::blocking::BlockPolicy::set_blocked_urls_command(&self) -> core::option::Option<(&'static str, serde_json::value::Value)>
+pub fn amber_core::blocking::BlockPolicy::should_block(&self, url: &str, kind: amber_core::blocking::ResourceType) -> bool
+pub fn amber_core::blocking::BlockPolicy::with_ad_trackers(self) -> Self
+impl core::clone::Clone for amber_core::blocking::BlockPolicy
+pub fn amber_core::blocking::BlockPolicy::clone(&self) -> amber_core::blocking::BlockPolicy
+impl core::default::Default for amber_core::blocking::BlockPolicy
+pub fn amber_core::blocking::BlockPolicy::default() -> amber_core::blocking::BlockPolicy
+impl core::fmt::Debug for amber_core::blocking::BlockPolicy
+pub fn amber_core::blocking::BlockPolicy::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for amber_core::blocking::BlockPolicy
+impl core::marker::Send for amber_core::blocking::BlockPolicy
+impl core::marker::Sync for amber_core::blocking::BlockPolicy
+impl core::marker::Unpin for amber_core::blocking::BlockPolicy
+impl core::marker::UnsafeUnpin for amber_core::blocking::BlockPolicy
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::blocking::BlockPolicy
+impl core::panic::unwind_safe::UnwindSafe for amber_core::blocking::BlockPolicy
+pub mod amber_core::browser
+pub struct amber_core::browser::SettlePolicy
+pub amber_core::browser::SettlePolicy::auto_scroll: bool
+pub amber_core::browser::SettlePolicy::fonts_ready: bool
+pub amber_core::browser::SettlePolicy::network_idle: bool
+pub amber_core::browser::SettlePolicy::settle_delay_ms: u64
+pub amber_core::browser::SettlePolicy::wait_load: bool
+impl core::clone::Clone for amber_core::browser::SettlePolicy
+pub fn amber_core::browser::SettlePolicy::clone(&self) -> amber_core::browser::SettlePolicy
+impl core::default::Default for amber_core::browser::SettlePolicy
+pub fn amber_core::browser::SettlePolicy::default() -> Self
+impl core::fmt::Debug for amber_core::browser::SettlePolicy
+pub fn amber_core::browser::SettlePolicy::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for amber_core::browser::SettlePolicy
+impl core::marker::Send for amber_core::browser::SettlePolicy
+impl core::marker::Sync for amber_core::browser::SettlePolicy
+impl core::marker::Unpin for amber_core::browser::SettlePolicy
+impl core::marker::UnsafeUnpin for amber_core::browser::SettlePolicy
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::browser::SettlePolicy
+impl core::panic::unwind_safe::UnwindSafe for amber_core::browser::SettlePolicy
+pub trait amber_core::browser::CdpTransport
+pub fn amber_core::browser::CdpTransport::send(&mut self, method: &str, params: serde_json::value::Value) -> amber_core::error::Result<serde_json::value::Value>
+impl amber_core::browser::CdpTransport for amber_core::cdp::PipeCdp
+pub fn amber_core::cdp::PipeCdp::send(&mut self, method: &str, params: serde_json::value::Value) -> amber_core::error::Result<serde_json::value::Value>
+pub fn amber_core::browser::ensure_chromium() -> amber_core::error::Result<std::path::PathBuf>
+pub mod amber_core::budget
+pub struct amber_core::budget::TokenAccounting
+pub amber_core::budget::TokenAccounting::markdown: usize
+pub amber_core::budget::TokenAccounting::readable: usize
+impl amber_core::budget::TokenAccounting
+pub fn amber_core::budget::TokenAccounting::markdown_cost(&self, usd_per_1k_tokens: f64) -> f64
+pub fn amber_core::budget::TokenAccounting::readable_cost(&self, usd_per_1k_tokens: f64) -> f64
+impl core::clone::Clone for amber_core::budget::TokenAccounting
+pub fn amber_core::budget::TokenAccounting::clone(&self) -> amber_core::budget::TokenAccounting
+impl core::cmp::Eq for amber_core::budget::TokenAccounting
+impl core::cmp::PartialEq for amber_core::budget::TokenAccounting
+pub fn amber_core::budget::TokenAccounting::eq(&self, other: &amber_core::budget::TokenAccounting) -> bool
+impl core::default::Default for amber_core::budget::TokenAccounting
+pub fn amber_core::budget::TokenAccounting::default() -> amber_core::budget::TokenAccounting
+impl core::fmt::Debug for amber_core::budget::TokenAccounting
+pub fn amber_core::budget::TokenAccounting::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for amber_core::budget::TokenAccounting
+impl core::marker::StructuralPartialEq for amber_core::budget::TokenAccounting
+impl core::marker::Freeze for amber_core::budget::TokenAccounting
+impl core::marker::Send for amber_core::budget::TokenAccounting
+impl core::marker::Sync for amber_core::budget::TokenAccounting
+impl core::marker::Unpin for amber_core::budget::TokenAccounting
+impl core::marker::UnsafeUnpin for amber_core::budget::TokenAccounting
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::budget::TokenAccounting
+impl core::panic::unwind_safe::UnwindSafe for amber_core::budget::TokenAccounting
+pub fn amber_core::budget::chunk_text(text: &str, max_tokens: usize) -> alloc::vec::Vec<alloc::string::String>
+pub fn amber_core::budget::estimate_cost(tokens: usize, usd_per_1k_tokens: f64) -> f64
+pub fn amber_core::budget::estimate_tokens(text: &str) -> usize
+pub fn amber_core::budget::truncate_to_tokens(text: &str, max_tokens: usize) -> (alloc::string::String, usize)
+pub mod amber_core::cache
+pub struct amber_core::cache::Cache
+impl amber_core::cache::Cache
+pub fn amber_core::cache::Cache::conditional_headers(&self, url: &str) -> alloc::vec::Vec<(&'static str, alloc::string::String)>
+pub fn amber_core::cache::Cache::get(&self, url: &str) -> core::option::Option<&amber_core::cache::CacheEntry>
+pub fn amber_core::cache::Cache::is_unchanged(&self, url: &str, body: &[u8]) -> bool
+pub fn amber_core::cache::Cache::new() -> Self
+pub fn amber_core::cache::Cache::record(&mut self, url: &str, body: &[u8], etag: core::option::Option<alloc::string::String>, last_modified: core::option::Option<alloc::string::String>)
+impl core::default::Default for amber_core::cache::Cache
+pub fn amber_core::cache::Cache::default() -> amber_core::cache::Cache
+impl core::fmt::Debug for amber_core::cache::Cache
+pub fn amber_core::cache::Cache::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for amber_core::cache::Cache
+impl core::marker::Send for amber_core::cache::Cache
+impl core::marker::Sync for amber_core::cache::Cache
+impl core::marker::Unpin for amber_core::cache::Cache
+impl core::marker::UnsafeUnpin for amber_core::cache::Cache
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::cache::Cache
+impl core::panic::unwind_safe::UnwindSafe for amber_core::cache::Cache
+pub struct amber_core::cache::CacheEntry
+pub amber_core::cache::CacheEntry::content_hash: alloc::string::String
+pub amber_core::cache::CacheEntry::etag: core::option::Option<alloc::string::String>
+pub amber_core::cache::CacheEntry::last_modified: core::option::Option<alloc::string::String>
+impl core::clone::Clone for amber_core::cache::CacheEntry
+pub fn amber_core::cache::CacheEntry::clone(&self) -> amber_core::cache::CacheEntry
+impl core::cmp::Eq for amber_core::cache::CacheEntry
+impl core::cmp::PartialEq for amber_core::cache::CacheEntry
+pub fn amber_core::cache::CacheEntry::eq(&self, other: &amber_core::cache::CacheEntry) -> bool
+impl core::default::Default for amber_core::cache::CacheEntry
+pub fn amber_core::cache::CacheEntry::default() -> amber_core::cache::CacheEntry
+impl core::fmt::Debug for amber_core::cache::CacheEntry
+pub fn amber_core::cache::CacheEntry::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for amber_core::cache::CacheEntry
+impl core::marker::Freeze for amber_core::cache::CacheEntry
+impl core::marker::Send for amber_core::cache::CacheEntry
+impl core::marker::Sync for amber_core::cache::CacheEntry
+impl core::marker::Unpin for amber_core::cache::CacheEntry
+impl core::marker::UnsafeUnpin for amber_core::cache::CacheEntry
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::cache::CacheEntry
+impl core::panic::unwind_safe::UnwindSafe for amber_core::cache::CacheEntry
+pub fn amber_core::cache::content_hash(bytes: &[u8]) -> alloc::string::String
+pub mod amber_core::capi
+pub struct amber_core::capi::AmberSnapshot
+impl core::marker::Freeze for amber_core::capi::AmberSnapshot
+impl core::marker::Send for amber_core::capi::AmberSnapshot
+impl core::marker::Sync for amber_core::capi::AmberSnapshot
+impl core::marker::Unpin for amber_core::capi::AmberSnapshot
+impl core::marker::UnsafeUnpin for amber_core::capi::AmberSnapshot
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::capi::AmberSnapshot
+impl core::panic::unwind_safe::UnwindSafe for amber_core::capi::AmberSnapshot
+pub const amber_core::capi::AMBER_ERR_CAPTURE: core::ffi::primitives::c_int
+pub const amber_core::capi::AMBER_ERR_INVALID_INPUT: core::ffi::primitives::c_int
+pub const amber_core::capi::AMBER_FORMAT_HTML: core::ffi::primitives::c_int
+pub const amber_core::capi::AMBER_FORMAT_MARKDOWN: core::ffi::primitives::c_int
+pub const amber_core::capi::AMBER_FORMAT_MHTML: core::ffi::primitives::c_int
+pub const amber_core::capi::AMBER_FORMAT_PDF: core::ffi::primitives::c_int
+pub const amber_core::capi::AMBER_FORMAT_READABLE: core::ffi::primitives::c_int
+pub const amber_core::capi::AMBER_FORMAT_SCREENSHOT: core::ffi::primitives::c_int
+pub const amber_core::capi::AMBER_FORMAT_WACZ: core::ffi::primitives::c_int
+pub const amber_core::capi::AMBER_FORMAT_WARC: core::ffi::primitives::c_int
+pub const amber_core::capi::AMBER_OK: core::ffi::primitives::c_int
+#[no_mangle] pub unsafe c fn amber_core::capi::amber_bytes_free(ptr: *mut u8, len: usize)
+#[no_mangle] pub unsafe c fn amber_core::capi::amber_capture(url: *const core::ffi::primitives::c_char, format: core::ffi::primitives::c_int, out: *mut *mut u8, out_len: *mut usize) -> core::ffi::primitives::c_int
+#[no_mangle] pub unsafe c fn amber_core::capi::amber_capture_markdown(url: *const core::ffi::primitives::c_char, out: *mut *mut core::ffi::primitives::c_char) -> core::ffi::primitives::c_int
+#[no_mangle] pub unsafe c fn amber_core::capi::amber_capture_readable(url: *const core::ffi::primitives::c_char, out: *mut *mut core::ffi::primitives::c_char) -> core::ffi::primitives::c_int
+#[no_mangle] pub unsafe c fn amber_core::capi::amber_save(url: *const core::ffi::primitives::c_char, format: core::ffi::primitives::c_int, dir: *const core::ffi::primitives::c_char, name: *const core::ffi::primitives::c_char, out_path: *mut *mut core::ffi::primitives::c_char) -> core::ffi::primitives::c_int
+#[no_mangle] pub unsafe c fn amber_core::capi::amber_snapshot(url: *const core::ffi::primitives::c_char, formats: *const core::ffi::primitives::c_int, n_formats: usize, out: *mut *mut amber_core::capi::AmberSnapshot) -> core::ffi::primitives::c_int
+#[no_mangle] pub unsafe c fn amber_core::capi::amber_snapshot_free(snap: *mut amber_core::capi::AmberSnapshot)
+#[no_mangle] pub unsafe c fn amber_core::capi::amber_snapshot_render(snap: *const amber_core::capi::AmberSnapshot, format: core::ffi::primitives::c_int, out: *mut *mut u8, out_len: *mut usize) -> core::ffi::primitives::c_int
+#[no_mangle] pub unsafe c fn amber_core::capi::amber_snapshot_save(snap: *const amber_core::capi::AmberSnapshot, format: core::ffi::primitives::c_int, dir: *const core::ffi::primitives::c_char, name: *const core::ffi::primitives::c_char, out_path: *mut *mut core::ffi::primitives::c_char) -> core::ffi::primitives::c_int
+#[no_mangle] pub unsafe c fn amber_core::capi::amber_snapshot_text(snap: *const amber_core::capi::AmberSnapshot, format: core::ffi::primitives::c_int, out: *mut *mut core::ffi::primitives::c_char) -> core::ffi::primitives::c_int
+#[no_mangle] pub unsafe c fn amber_core::capi::amber_string_free(s: *mut core::ffi::primitives::c_char)
+pub mod amber_core::capture
+pub struct amber_core::capture::CaptureOptions
+pub amber_core::capture::CaptureOptions::accessibility: bool
+pub amber_core::capture::CaptureOptions::actions: alloc::vec::Vec<amber_core::actions::Action>
+pub amber_core::capture::CaptureOptions::block: amber_core::blocking::BlockPolicy
+pub amber_core::capture::CaptureOptions::emulation: amber_core::emulation::EmulationConfig
+pub amber_core::capture::CaptureOptions::headed: bool
+pub amber_core::capture::CaptureOptions::limits: amber_core::limits::ResourceLimits
+pub amber_core::capture::CaptureOptions::min_content: core::option::Option<usize>
+pub amber_core::capture::CaptureOptions::proxy: core::option::Option<alloc::string::String>
+pub amber_core::capture::CaptureOptions::render: amber_core::fetch::RenderMode
+pub amber_core::capture::CaptureOptions::session: amber_core::session::SessionState
+pub amber_core::capture::CaptureOptions::settle: amber_core::browser::SettlePolicy
+pub amber_core::capture::CaptureOptions::wait_for: core::option::Option<alloc::string::String>
+impl core::clone::Clone for amber_core::capture::CaptureOptions
+pub fn amber_core::capture::CaptureOptions::clone(&self) -> amber_core::capture::CaptureOptions
+impl core::default::Default for amber_core::capture::CaptureOptions
+pub fn amber_core::capture::CaptureOptions::default() -> amber_core::capture::CaptureOptions
+impl core::fmt::Debug for amber_core::capture::CaptureOptions
+pub fn amber_core::capture::CaptureOptions::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for amber_core::capture::CaptureOptions
+impl core::marker::Send for amber_core::capture::CaptureOptions
+impl core::marker::Sync for amber_core::capture::CaptureOptions
+impl core::marker::Unpin for amber_core::capture::CaptureOptions
+impl core::marker::UnsafeUnpin for amber_core::capture::CaptureOptions
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::capture::CaptureOptions
+impl core::panic::unwind_safe::UnwindSafe for amber_core::capture::CaptureOptions
+pub struct amber_core::capture::RawCapture
+pub amber_core::capture::RawCapture::accessibility_tree: core::option::Option<serde_json::value::Value>
+pub amber_core::capture::RawCapture::captured_at: core::option::Option<alloc::string::String>
+pub amber_core::capture::RawCapture::final_url: alloc::string::String
+pub amber_core::capture::RawCapture::mhtml: core::option::Option<alloc::string::String>
+pub amber_core::capture::RawCapture::pdf: core::option::Option<alloc::vec::Vec<u8>>
+pub amber_core::capture::RawCapture::rendered_html: core::option::Option<alloc::string::String>
+pub amber_core::capture::RawCapture::screenshot_png: core::option::Option<alloc::vec::Vec<u8>>
+pub amber_core::capture::RawCapture::static_html: core::option::Option<alloc::string::String>
+pub amber_core::capture::RawCapture::used_browser: bool
+impl core::default::Default for amber_core::capture::RawCapture
+pub fn amber_core::capture::RawCapture::default() -> amber_core::capture::RawCapture
+impl core::fmt::Debug for amber_core::capture::RawCapture
+pub fn amber_core::capture::RawCapture::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for amber_core::capture::RawCapture
+impl core::marker::Send for amber_core::capture::RawCapture
+impl core::marker::Sync for amber_core::capture::RawCapture
+impl core::marker::Unpin for amber_core::capture::RawCapture
+impl core::marker::UnsafeUnpin for amber_core::capture::RawCapture
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::capture::RawCapture
+impl core::panic::unwind_safe::UnwindSafe for amber_core::capture::RawCapture
+pub mod amber_core::cdp
+pub enum amber_core::cdp::CdpError
+pub amber_core::cdp::CdpError::ConnectionClosed
+pub amber_core::cdp::CdpError::Io(std::io::error::Error)
+pub amber_core::cdp::CdpError::Malformed(alloc::string::String)
+pub amber_core::cdp::CdpError::Protocol
+pub amber_core::cdp::CdpError::Protocol::code: i64
+pub amber_core::cdp::CdpError::Protocol::message: alloc::string::String
+pub amber_core::cdp::CdpError::Spawn(std::io::error::Error)
+pub amber_core::cdp::CdpError::Timeout(u64)
+impl core::error::Error for amber_core::cdp::CdpError
+pub fn amber_core::cdp::CdpError::source(&self) -> core::option::Option<&(dyn core::error::Error + 'static)>
+impl core::fmt::Debug for amber_core::cdp::CdpError
+pub fn amber_core::cdp::CdpError::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::fmt::Display for amber_core::cdp::CdpError
+pub fn amber_core::cdp::CdpError::fmt(&self, __formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for amber_core::cdp::CdpError
+impl core::marker::Send for amber_core::cdp::CdpError
+impl core::marker::Sync for amber_core::cdp::CdpError
+impl core::marker::Unpin for amber_core::cdp::CdpError
+impl core::marker::UnsafeUnpin for amber_core::cdp::CdpError
+impl !core::panic::unwind_safe::RefUnwindSafe for amber_core::cdp::CdpError
+impl !core::panic::unwind_safe::UnwindSafe for amber_core::cdp::CdpError
+pub struct amber_core::cdp::FrameReader
+impl amber_core::cdp::FrameReader
+pub fn amber_core::cdp::FrameReader::new() -> Self
+pub fn amber_core::cdp::FrameReader::pending_len(&self) -> usize
+pub fn amber_core::cdp::FrameReader::push(&mut self, chunk: &[u8]) -> alloc::vec::Vec<alloc::vec::Vec<u8>>
+impl core::default::Default for amber_core::cdp::FrameReader
+pub fn amber_core::cdp::FrameReader::default() -> amber_core::cdp::FrameReader
+impl core::fmt::Debug for amber_core::cdp::FrameReader
+pub fn amber_core::cdp::FrameReader::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for amber_core::cdp::FrameReader
+impl core::marker::Send for amber_core::cdp::FrameReader
+impl core::marker::Sync for amber_core::cdp::FrameReader
+impl core::marker::Unpin for amber_core::cdp::FrameReader
+impl core::marker::UnsafeUnpin for amber_core::cdp::FrameReader
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::cdp::FrameReader
+impl core::panic::unwind_safe::UnwindSafe for amber_core::cdp::FrameReader
+pub struct amber_core::cdp::PipeCdp
+impl amber_core::cdp::PipeCdp
+pub fn amber_core::cdp::PipeCdp::events(&self) -> core::option::Option<std::sync::mpsc::Receiver<serde_json::value::Value>>
+pub fn amber_core::cdp::PipeCdp::send(&self, method: &str, params: serde_json::value::Value) -> core::result::Result<serde_json::value::Value, amber_core::cdp::CdpError>
+pub fn amber_core::cdp::PipeCdp::send_to(&self, session_id: core::option::Option<&str>, method: &str, params: serde_json::value::Value) -> core::result::Result<serde_json::value::Value, amber_core::cdp::CdpError>
+pub fn amber_core::cdp::PipeCdp::spawn(chromium: &std::path::Path, extra_args: &[alloc::string::String]) -> core::result::Result<amber_core::cdp::PipeCdp, amber_core::cdp::CdpError>
+pub fn amber_core::cdp::PipeCdp::spawn_with_caps(chromium: &std::path::Path, extra_args: &[alloc::string::String], limits: amber_core::cdp::ProcessLimits) -> core::result::Result<amber_core::cdp::PipeCdp, amber_core::cdp::CdpError>
+pub fn amber_core::cdp::PipeCdp::spawn_with_limits(chromium: &std::path::Path, extra_args: &[alloc::string::String], timeout: core::time::Duration, limits: amber_core::cdp::ProcessLimits) -> core::result::Result<amber_core::cdp::PipeCdp, amber_core::cdp::CdpError>
+pub fn amber_core::cdp::PipeCdp::spawn_with_timeout(chromium: &std::path::Path, extra_args: &[alloc::string::String], timeout: core::time::Duration) -> core::result::Result<amber_core::cdp::PipeCdp, amber_core::cdp::CdpError>
+impl amber_core::browser::CdpTransport for amber_core::cdp::PipeCdp
+pub fn amber_core::cdp::PipeCdp::send(&mut self, method: &str, params: serde_json::value::Value) -> amber_core::error::Result<serde_json::value::Value>
+impl core::ops::drop::Drop for amber_core::cdp::PipeCdp
+pub fn amber_core::cdp::PipeCdp::drop(&mut self)
+impl !core::marker::Freeze for amber_core::cdp::PipeCdp
+impl core::marker::Send for amber_core::cdp::PipeCdp
+impl core::marker::Sync for amber_core::cdp::PipeCdp
+impl core::marker::Unpin for amber_core::cdp::PipeCdp
+impl core::marker::UnsafeUnpin for amber_core::cdp::PipeCdp
+impl !core::panic::unwind_safe::RefUnwindSafe for amber_core::cdp::PipeCdp
+impl !core::panic::unwind_safe::UnwindSafe for amber_core::cdp::PipeCdp
+pub struct amber_core::cdp::ProcessLimits
+pub amber_core::cdp::ProcessLimits::max_cpu_seconds: core::option::Option<u64>
+pub amber_core::cdp::ProcessLimits::max_memory_bytes: core::option::Option<u64>
+impl core::clone::Clone for amber_core::cdp::ProcessLimits
+pub fn amber_core::cdp::ProcessLimits::clone(&self) -> amber_core::cdp::ProcessLimits
+impl core::default::Default for amber_core::cdp::ProcessLimits
+pub fn amber_core::cdp::ProcessLimits::default() -> amber_core::cdp::ProcessLimits
+impl core::fmt::Debug for amber_core::cdp::ProcessLimits
+pub fn amber_core::cdp::ProcessLimits::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for amber_core::cdp::ProcessLimits
+impl core::marker::Freeze for amber_core::cdp::ProcessLimits
+impl core::marker::Send for amber_core::cdp::ProcessLimits
+impl core::marker::Sync for amber_core::cdp::ProcessLimits
+impl core::marker::Unpin for amber_core::cdp::ProcessLimits
+impl core::marker::UnsafeUnpin for amber_core::cdp::ProcessLimits
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::cdp::ProcessLimits
+impl core::panic::unwind_safe::UnwindSafe for amber_core::cdp::ProcessLimits
+pub mod amber_core::chromium
+pub enum amber_core::chromium::CftPlatform
+pub amber_core::chromium::CftPlatform::Linux64
+pub amber_core::chromium::CftPlatform::MacArm64
+pub amber_core::chromium::CftPlatform::MacX64
+pub amber_core::chromium::CftPlatform::Win32
+pub amber_core::chromium::CftPlatform::Win64
+impl amber_core::chromium::CftPlatform
+pub fn amber_core::chromium::CftPlatform::as_str(self) -> &'static str
+pub fn amber_core::chromium::CftPlatform::detect() -> core::result::Result<Self, amber_core::chromium::ChromiumError>
+pub fn amber_core::chromium::CftPlatform::from_os_arch(os: &str, arch: &str) -> core::result::Result<Self, amber_core::chromium::ChromiumError>
+impl core::clone::Clone for amber_core::chromium::CftPlatform
+pub fn amber_core::chromium::CftPlatform::clone(&self) -> amber_core::chromium::CftPlatform
+impl core::cmp::Eq for amber_core::chromium::CftPlatform
+impl core::cmp::PartialEq for amber_core::chromium::CftPlatform
+pub fn amber_core::chromium::CftPlatform::eq(&self, other: &amber_core::chromium::CftPlatform) -> bool
+impl core::fmt::Debug for amber_core::chromium::CftPlatform
+pub fn amber_core::chromium::CftPlatform::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for amber_core::chromium::CftPlatform
+impl core::marker::StructuralPartialEq for amber_core::chromium::CftPlatform
+impl core::marker::Freeze for amber_core::chromium::CftPlatform
+impl core::marker::Send for amber_core::chromium::CftPlatform
+impl core::marker::Sync for amber_core::chromium::CftPlatform
+impl core::marker::Unpin for amber_core::chromium::CftPlatform
+impl core::marker::UnsafeUnpin for amber_core::chromium::CftPlatform
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::chromium::CftPlatform
+impl core::panic::unwind_safe::UnwindSafe for amber_core::chromium::CftPlatform
+pub enum amber_core::chromium::ChromiumError
+pub amber_core::chromium::ChromiumError::BinaryNotFound(std::path::PathBuf)
+pub amber_core::chromium::ChromiumError::Download(alloc::string::String)
+pub amber_core::chromium::ChromiumError::Extract(alloc::string::String)
+pub amber_core::chromium::ChromiumError::Io(std::io::error::Error)
+pub amber_core::chromium::ChromiumError::UnsupportedPlatform(alloc::string::String)
+impl core::convert::From<std::io::error::Error> for amber_core::chromium::ChromiumError
+pub fn amber_core::chromium::ChromiumError::from(source: std::io::error::Error) -> Self
+impl core::error::Error for amber_core::chromium::ChromiumError
+pub fn amber_core::chromium::ChromiumError::source(&self) -> core::option::Option<&(dyn core::error::Error + 'static)>
+impl core::fmt::Debug for amber_core::chromium::ChromiumError
+pub fn amber_core::chromium::ChromiumError::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::fmt::Display for amber_core::chromium::ChromiumError
+pub fn amber_core::chromium::ChromiumError::fmt(&self, __formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for amber_core::chromium::ChromiumError
+impl core::marker::Send for amber_core::chromium::ChromiumError
+impl core::marker::Sync for amber_core::chromium::ChromiumError
+impl core::marker::Unpin for amber_core::chromium::ChromiumError
+impl core::marker::UnsafeUnpin for amber_core::chromium::ChromiumError
+impl !core::panic::unwind_safe::RefUnwindSafe for amber_core::chromium::ChromiumError
+impl !core::panic::unwind_safe::UnwindSafe for amber_core::chromium::ChromiumError
+pub const amber_core::chromium::CFT_VERSION: &str
+pub fn amber_core::chromium::ensure_chromium() -> core::result::Result<std::path::PathBuf, amber_core::chromium::ChromiumError>
+pub mod amber_core::corpus
+pub struct amber_core::corpus::ProvenanceRecord
+pub amber_core::corpus::ProvenanceRecord::anchors: alloc::vec::Vec<amber_core::provenance::FieldProvenance>
+pub amber_core::corpus::ProvenanceRecord::captured_at: alloc::string::String
+pub amber_core::corpus::ProvenanceRecord::url: alloc::string::String
+pub amber_core::corpus::ProvenanceRecord::value: serde_json::value::Value
+impl amber_core::corpus::ProvenanceRecord
+pub fn amber_core::corpus::ProvenanceRecord::to_json(&self) -> serde_json::value::Value
+impl core::clone::Clone for amber_core::corpus::ProvenanceRecord
+pub fn amber_core::corpus::ProvenanceRecord::clone(&self) -> amber_core::corpus::ProvenanceRecord
+impl core::fmt::Debug for amber_core::corpus::ProvenanceRecord
+pub fn amber_core::corpus::ProvenanceRecord::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for amber_core::corpus::ProvenanceRecord
+impl core::marker::Send for amber_core::corpus::ProvenanceRecord
+impl core::marker::Sync for amber_core::corpus::ProvenanceRecord
+impl core::marker::Unpin for amber_core::corpus::ProvenanceRecord
+impl core::marker::UnsafeUnpin for amber_core::corpus::ProvenanceRecord
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::corpus::ProvenanceRecord
+impl core::panic::unwind_safe::UnwindSafe for amber_core::corpus::ProvenanceRecord
+pub fn amber_core::corpus::to_jsonl(records: &[amber_core::corpus::ProvenanceRecord]) -> alloc::string::String
+pub mod amber_core::crawl
+pub struct amber_core::crawl::CrawlLimits
+pub amber_core::crawl::CrawlLimits::max_depth: usize
+pub amber_core::crawl::CrawlLimits::max_pages: usize
+pub amber_core::crawl::CrawlLimits::min_delay_ms: u64
+impl core::clone::Clone for amber_core::crawl::CrawlLimits
+pub fn amber_core::crawl::CrawlLimits::clone(&self) -> amber_core::crawl::CrawlLimits
+impl core::default::Default for amber_core::crawl::CrawlLimits
+pub fn amber_core::crawl::CrawlLimits::default() -> Self
+impl core::fmt::Debug for amber_core::crawl::CrawlLimits
+pub fn amber_core::crawl::CrawlLimits::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for amber_core::crawl::CrawlLimits
+impl core::marker::Freeze for amber_core::crawl::CrawlLimits
+impl core::marker::Send for amber_core::crawl::CrawlLimits
+impl core::marker::Sync for amber_core::crawl::CrawlLimits
+impl core::marker::Unpin for amber_core::crawl::CrawlLimits
+impl core::marker::UnsafeUnpin for amber_core::crawl::CrawlLimits
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::crawl::CrawlLimits
+impl core::panic::unwind_safe::UnwindSafe for amber_core::crawl::CrawlLimits
+pub struct amber_core::crawl::CrawlScope
+impl amber_core::crawl::CrawlScope
+pub fn amber_core::crawl::CrawlScope::in_scope(&self, url: &url::Url) -> bool
+pub fn amber_core::crawl::CrawlScope::including_subdomains(self, yes: bool) -> Self
+pub fn amber_core::crawl::CrawlScope::same_host(seed: &url::Url) -> Self
+pub fn amber_core::crawl::CrawlScope::under_path(self, prefix: impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for amber_core::crawl::CrawlScope
+pub fn amber_core::crawl::CrawlScope::clone(&self) -> amber_core::crawl::CrawlScope
+impl core::fmt::Debug for amber_core::crawl::CrawlScope
+pub fn amber_core::crawl::CrawlScope::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for amber_core::crawl::CrawlScope
+impl core::marker::Send for amber_core::crawl::CrawlScope
+impl core::marker::Sync for amber_core::crawl::CrawlScope
+impl core::marker::Unpin for amber_core::crawl::CrawlScope
+impl core::marker::UnsafeUnpin for amber_core::crawl::CrawlScope
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::crawl::CrawlScope
+impl core::panic::unwind_safe::UnwindSafe for amber_core::crawl::CrawlScope
+pub struct amber_core::crawl::Frontier
+impl amber_core::crawl::Frontier
+pub fn amber_core::crawl::Frontier::add_links<I>(&mut self, parent_depth: usize, links: I) -> usize where I: core::iter::traits::collect::IntoIterator<Item = url::Url>
+pub fn amber_core::crawl::Frontier::dispatched(&self) -> usize
+pub fn amber_core::crawl::Frontier::enqueue(&mut self, url: url::Url, depth: usize) -> bool
+pub fn amber_core::crawl::Frontier::new(seed: url::Url, scope: amber_core::crawl::CrawlScope, limits: amber_core::crawl::CrawlLimits) -> Self
+pub fn amber_core::crawl::Frontier::next_url(&mut self) -> core::option::Option<(url::Url, usize)>
+impl core::fmt::Debug for amber_core::crawl::Frontier
+pub fn amber_core::crawl::Frontier::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for amber_core::crawl::Frontier
+impl core::marker::Send for amber_core::crawl::Frontier
+impl core::marker::Sync for amber_core::crawl::Frontier
+impl core::marker::Unpin for amber_core::crawl::Frontier
+impl core::marker::UnsafeUnpin for amber_core::crawl::Frontier
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::crawl::Frontier
+impl core::panic::unwind_safe::UnwindSafe for amber_core::crawl::Frontier
+pub const amber_core::crawl::CRAWL_USER_AGENT: &str
+pub fn amber_core::crawl::crawl(seed: url::Url, scope: amber_core::crawl::CrawlScope, limits: amber_core::crawl::CrawlLimits) -> alloc::vec::Vec<url::Url>
+pub fn amber_core::crawl::crawl_incremental(seed: url::Url, scope: amber_core::crawl::CrawlScope, limits: amber_core::crawl::CrawlLimits, cache: &mut amber_core::cache::Cache) -> alloc::vec::Vec<url::Url>
+pub fn amber_core::crawl::crawl_incremental_with<F>(seed: url::Url, scope: amber_core::crawl::CrawlScope, limits: amber_core::crawl::CrawlLimits, cache: &mut amber_core::cache::Cache, fetch: F) -> alloc::vec::Vec<url::Url> where F: core::ops::function::FnMut(&url::Url) -> (alloc::vec::Vec<u8>, alloc::vec::Vec<url::Url>)
+pub fn amber_core::crawl::crawl_with<F>(seed: url::Url, scope: amber_core::crawl::CrawlScope, limits: amber_core::crawl::CrawlLimits, fetch_links: F) -> alloc::vec::Vec<url::Url> where F: core::ops::function::FnMut(&url::Url) -> alloc::vec::Vec<url::Url>
+pub mod amber_core::daemon
+pub struct amber_core::daemon::Request
+pub amber_core::daemon::Request::method: alloc::string::String
+pub amber_core::daemon::Request::path: alloc::string::String
+pub amber_core::daemon::Request::query: alloc::vec::Vec<(alloc::string::String, alloc::string::String)>
+impl amber_core::daemon::Request
+pub fn amber_core::daemon::Request::query(&self, name: &str) -> core::option::Option<&str>
+impl core::clone::Clone for amber_core::daemon::Request
+pub fn amber_core::daemon::Request::clone(&self) -> amber_core::daemon::Request
+impl core::cmp::Eq for amber_core::daemon::Request
+impl core::cmp::PartialEq for amber_core::daemon::Request
+pub fn amber_core::daemon::Request::eq(&self, other: &amber_core::daemon::Request) -> bool
+impl core::fmt::Debug for amber_core::daemon::Request
+pub fn amber_core::daemon::Request::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for amber_core::daemon::Request
+impl core::marker::Freeze for amber_core::daemon::Request
+impl core::marker::Send for amber_core::daemon::Request
+impl core::marker::Sync for amber_core::daemon::Request
+impl core::marker::Unpin for amber_core::daemon::Request
+impl core::marker::UnsafeUnpin for amber_core::daemon::Request
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::daemon::Request
+impl core::panic::unwind_safe::UnwindSafe for amber_core::daemon::Request
+pub fn amber_core::daemon::handle<F>(req: &amber_core::daemon::Request, capture: &F) -> (u16, alloc::string::String, alloc::vec::Vec<u8>) where F: core::ops::function::Fn(&str, &str) -> core::result::Result<alloc::string::String, alloc::string::String>
+pub fn amber_core::daemon::handle_conn<F>(stream: std::net::tcp::TcpStream, pool: &amber_core::pool::Pool<()>, capture: &F) where F: core::ops::function::Fn(&str, &str) -> core::result::Result<alloc::string::String, alloc::string::String>
+pub fn amber_core::daemon::http_response(status: u16, content_type: &str, body: &[u8]) -> alloc::vec::Vec<u8>
+pub fn amber_core::daemon::parse_request(reader: &mut impl std::io::BufRead) -> core::option::Option<amber_core::daemon::Request>
+pub fn amber_core::daemon::serve<F>(addr: &str, capacity: usize, capture: F) -> std::io::error::Result<()> where F: core::ops::function::Fn(&str, &str) -> core::result::Result<alloc::string::String, alloc::string::String> + core::marker::Send + core::marker::Sync + 'static
+pub mod amber_core::detect
+pub enum amber_core::detect::Sufficiency
+pub amber_core::detect::Sufficiency::NeedsBrowser
+pub amber_core::detect::Sufficiency::Static
+pub amber_core::detect::Sufficiency::Uncertain
+impl core::clone::Clone for amber_core::detect::Sufficiency
+pub fn amber_core::detect::Sufficiency::clone(&self) -> amber_core::detect::Sufficiency
+impl core::cmp::Eq for amber_core::detect::Sufficiency
+impl core::cmp::PartialEq for amber_core::detect::Sufficiency
+pub fn amber_core::detect::Sufficiency::eq(&self, other: &amber_core::detect::Sufficiency) -> bool
+impl core::fmt::Debug for amber_core::detect::Sufficiency
+pub fn amber_core::detect::Sufficiency::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for amber_core::detect::Sufficiency
+impl core::marker::StructuralPartialEq for amber_core::detect::Sufficiency
+impl core::marker::Freeze for amber_core::detect::Sufficiency
+impl core::marker::Send for amber_core::detect::Sufficiency
+impl core::marker::Sync for amber_core::detect::Sufficiency
+impl core::marker::Unpin for amber_core::detect::Sufficiency
+impl core::marker::UnsafeUnpin for amber_core::detect::Sufficiency
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::detect::Sufficiency
+impl core::panic::unwind_safe::UnwindSafe for amber_core::detect::Sufficiency
+pub const amber_core::detect::CONTENT_FLOOR: usize
+pub fn amber_core::detect::assess(html: &str, content_floor: usize) -> amber_core::detect::Sufficiency
+pub mod amber_core::diff
+pub struct amber_core::diff::LineDiff
+pub amber_core::diff::LineDiff::added: alloc::vec::Vec<alloc::string::String>
+pub amber_core::diff::LineDiff::removed: alloc::vec::Vec<alloc::string::String>
+impl amber_core::diff::LineDiff
+pub fn amber_core::diff::LineDiff::is_changed(&self) -> bool
+impl core::clone::Clone for amber_core::diff::LineDiff
+pub fn amber_core::diff::LineDiff::clone(&self) -> amber_core::diff::LineDiff
+impl core::cmp::Eq for amber_core::diff::LineDiff
+impl core::cmp::PartialEq for amber_core::diff::LineDiff
+pub fn amber_core::diff::LineDiff::eq(&self, other: &amber_core::diff::LineDiff) -> bool
+impl core::default::Default for amber_core::diff::LineDiff
+pub fn amber_core::diff::LineDiff::default() -> amber_core::diff::LineDiff
+impl core::fmt::Debug for amber_core::diff::LineDiff
+pub fn amber_core::diff::LineDiff::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for amber_core::diff::LineDiff
+impl core::marker::Freeze for amber_core::diff::LineDiff
+impl core::marker::Send for amber_core::diff::LineDiff
+impl core::marker::Sync for amber_core::diff::LineDiff
+impl core::marker::Unpin for amber_core::diff::LineDiff
+impl core::marker::UnsafeUnpin for amber_core::diff::LineDiff
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::diff::LineDiff
+impl core::panic::unwind_safe::UnwindSafe for amber_core::diff::LineDiff
+pub fn amber_core::diff::diff_lines(old: &str, new: &str) -> amber_core::diff::LineDiff
+pub mod amber_core::emulation
+pub struct amber_core::emulation::EmulationConfig
+pub amber_core::emulation::EmulationConfig::dark_mode: bool
+pub amber_core::emulation::EmulationConfig::locale: core::option::Option<alloc::string::String>
+pub amber_core::emulation::EmulationConfig::timezone: core::option::Option<alloc::string::String>
+pub amber_core::emulation::EmulationConfig::user_agent: core::option::Option<alloc::string::String>
+pub amber_core::emulation::EmulationConfig::viewport: core::option::Option<amber_core::emulation::Viewport>
+impl core::clone::Clone for amber_core::emulation::EmulationConfig
+pub fn amber_core::emulation::EmulationConfig::clone(&self) -> amber_core::emulation::EmulationConfig
+impl core::default::Default for amber_core::emulation::EmulationConfig
+pub fn amber_core::emulation::EmulationConfig::default() -> amber_core::emulation::EmulationConfig
+impl core::fmt::Debug for amber_core::emulation::EmulationConfig
+pub fn amber_core::emulation::EmulationConfig::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for amber_core::emulation::EmulationConfig
+impl core::marker::Send for amber_core::emulation::EmulationConfig
+impl core::marker::Sync for amber_core::emulation::EmulationConfig
+impl core::marker::Unpin for amber_core::emulation::EmulationConfig
+impl core::marker::UnsafeUnpin for amber_core::emulation::EmulationConfig
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::emulation::EmulationConfig
+impl core::panic::unwind_safe::UnwindSafe for amber_core::emulation::EmulationConfig
+pub struct amber_core::emulation::Viewport
+pub amber_core::emulation::Viewport::device_scale_factor: f64
+pub amber_core::emulation::Viewport::height: u32
+pub amber_core::emulation::Viewport::mobile: bool
+pub amber_core::emulation::Viewport::width: u32
+impl amber_core::emulation::Viewport
+pub fn amber_core::emulation::Viewport::desktop(width: u32, height: u32) -> Self
+impl core::clone::Clone for amber_core::emulation::Viewport
+pub fn amber_core::emulation::Viewport::clone(&self) -> amber_core::emulation::Viewport
+impl core::cmp::PartialEq for amber_core::emulation::Viewport
+pub fn amber_core::emulation::Viewport::eq(&self, other: &amber_core::emulation::Viewport) -> bool
+impl core::fmt::Debug for amber_core::emulation::Viewport
+pub fn amber_core::emulation::Viewport::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for amber_core::emulation::Viewport
+impl core::marker::StructuralPartialEq for amber_core::emulation::Viewport
+impl core::marker::Freeze for amber_core::emulation::Viewport
+impl core::marker::Send for amber_core::emulation::Viewport
+impl core::marker::Sync for amber_core::emulation::Viewport
+impl core::marker::Unpin for amber_core::emulation::Viewport
+impl core::marker::UnsafeUnpin for amber_core::emulation::Viewport
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::emulation::Viewport
+impl core::panic::unwind_safe::UnwindSafe for amber_core::emulation::Viewport
+pub fn amber_core::emulation::commands(cfg: &amber_core::emulation::EmulationConfig) -> alloc::vec::Vec<(&'static str, serde_json::value::Value)>
+pub mod amber_core::error
+#[non_exhaustive] pub enum amber_core::error::Error
+pub amber_core::error::Error::Browser(alloc::string::String)
+pub amber_core::error::Error::Extraction(alloc::string::String)
+pub amber_core::error::Error::Fetch(alloc::string::String)
+pub amber_core::error::Error::HttpStatus(u16, alloc::string::String)
+pub amber_core::error::Error::InvalidUrl(alloc::string::String)
+pub amber_core::error::Error::Io(std::io::error::Error)
+pub amber_core::error::Error::NoOutputSelected
+pub amber_core::error::Error::NotImplemented(&'static str)
+impl core::convert::From<std::io::error::Error> for amber_core::error::Error
+pub fn amber_core::error::Error::from(source: std::io::error::Error) -> Self
+impl core::error::Error for amber_core::error::Error
+pub fn amber_core::error::Error::source(&self) -> core::option::Option<&(dyn core::error::Error + 'static)>
+impl core::fmt::Debug for amber_core::error::Error
+pub fn amber_core::error::Error::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::fmt::Display for amber_core::error::Error
+pub fn amber_core::error::Error::fmt(&self, __formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for amber_core::error::Error
+impl core::marker::Send for amber_core::error::Error
+impl core::marker::Sync for amber_core::error::Error
+impl core::marker::Unpin for amber_core::error::Error
+impl core::marker::UnsafeUnpin for amber_core::error::Error
+impl !core::panic::unwind_safe::RefUnwindSafe for amber_core::error::Error
+impl !core::panic::unwind_safe::UnwindSafe for amber_core::error::Error
+pub type amber_core::error::Result<T> = core::result::Result<T, amber_core::error::Error>
+pub mod amber_core::evidence
+pub struct amber_core::evidence::EvidenceEntry
+pub amber_core::evidence::EvidenceEntry::bytes: usize
+pub amber_core::evidence::EvidenceEntry::format: alloc::string::String
+pub amber_core::evidence::EvidenceEntry::sha256: alloc::string::String
+impl core::clone::Clone for amber_core::evidence::EvidenceEntry
+pub fn amber_core::evidence::EvidenceEntry::clone(&self) -> amber_core::evidence::EvidenceEntry
+impl core::cmp::Eq for amber_core::evidence::EvidenceEntry
+impl core::cmp::PartialEq for amber_core::evidence::EvidenceEntry
+pub fn amber_core::evidence::EvidenceEntry::eq(&self, other: &amber_core::evidence::EvidenceEntry) -> bool
+impl core::fmt::Debug for amber_core::evidence::EvidenceEntry
+pub fn amber_core::evidence::EvidenceEntry::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for amber_core::evidence::EvidenceEntry
+impl core::marker::Freeze for amber_core::evidence::EvidenceEntry
+impl core::marker::Send for amber_core::evidence::EvidenceEntry
+impl core::marker::Sync for amber_core::evidence::EvidenceEntry
+impl core::marker::Unpin for amber_core::evidence::EvidenceEntry
+impl core::marker::UnsafeUnpin for amber_core::evidence::EvidenceEntry
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::evidence::EvidenceEntry
+impl core::panic::unwind_safe::UnwindSafe for amber_core::evidence::EvidenceEntry
+pub struct amber_core::evidence::EvidenceManifest
+pub amber_core::evidence::EvidenceManifest::captured_at: alloc::string::String
+pub amber_core::evidence::EvidenceManifest::outputs: alloc::vec::Vec<amber_core::evidence::EvidenceEntry>
+pub amber_core::evidence::EvidenceManifest::url: alloc::string::String
+impl amber_core::evidence::EvidenceManifest
+pub fn amber_core::evidence::EvidenceManifest::digest(&self) -> alloc::string::String
+pub fn amber_core::evidence::EvidenceManifest::sign(&self, secret_seed: &[u8; 32]) -> amber_core::evidence::SignedEvidence
+pub fn amber_core::evidence::EvidenceManifest::to_json(&self) -> alloc::string::String
+impl core::clone::Clone for amber_core::evidence::EvidenceManifest
+pub fn amber_core::evidence::EvidenceManifest::clone(&self) -> amber_core::evidence::EvidenceManifest
+impl core::cmp::Eq for amber_core::evidence::EvidenceManifest
+impl core::cmp::PartialEq for amber_core::evidence::EvidenceManifest
+pub fn amber_core::evidence::EvidenceManifest::eq(&self, other: &amber_core::evidence::EvidenceManifest) -> bool
+impl core::fmt::Debug for amber_core::evidence::EvidenceManifest
+pub fn amber_core::evidence::EvidenceManifest::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for amber_core::evidence::EvidenceManifest
+impl core::marker::Freeze for amber_core::evidence::EvidenceManifest
+impl core::marker::Send for amber_core::evidence::EvidenceManifest
+impl core::marker::Sync for amber_core::evidence::EvidenceManifest
+impl core::marker::Unpin for amber_core::evidence::EvidenceManifest
+impl core::marker::UnsafeUnpin for amber_core::evidence::EvidenceManifest
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::evidence::EvidenceManifest
+impl core::panic::unwind_safe::UnwindSafe for amber_core::evidence::EvidenceManifest
+pub struct amber_core::evidence::SignedEvidence
+pub amber_core::evidence::SignedEvidence::algorithm: alloc::string::String
+pub amber_core::evidence::SignedEvidence::manifest: amber_core::evidence::EvidenceManifest
+pub amber_core::evidence::SignedEvidence::public_key: alloc::string::String
+pub amber_core::evidence::SignedEvidence::signature: alloc::string::String
+impl amber_core::evidence::SignedEvidence
+pub fn amber_core::evidence::SignedEvidence::to_json(&self) -> alloc::string::String
+pub fn amber_core::evidence::SignedEvidence::verify(&self) -> bool
+impl core::clone::Clone for amber_core::evidence::SignedEvidence
+pub fn amber_core::evidence::SignedEvidence::clone(&self) -> amber_core::evidence::SignedEvidence
+impl core::cmp::Eq for amber_core::evidence::SignedEvidence
+impl core::cmp::PartialEq for amber_core::evidence::SignedEvidence
+pub fn amber_core::evidence::SignedEvidence::eq(&self, other: &amber_core::evidence::SignedEvidence) -> bool
+impl core::fmt::Debug for amber_core::evidence::SignedEvidence
+pub fn amber_core::evidence::SignedEvidence::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for amber_core::evidence::SignedEvidence
+impl core::marker::Freeze for amber_core::evidence::SignedEvidence
+impl core::marker::Send for amber_core::evidence::SignedEvidence
+impl core::marker::Sync for amber_core::evidence::SignedEvidence
+impl core::marker::Unpin for amber_core::evidence::SignedEvidence
+impl core::marker::UnsafeUnpin for amber_core::evidence::SignedEvidence
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::evidence::SignedEvidence
+impl core::panic::unwind_safe::UnwindSafe for amber_core::evidence::SignedEvidence
+pub mod amber_core::extract
+pub fn amber_core::extract::dedup_text(text: &str) -> alloc::string::String
+pub fn amber_core::extract::detect_language(text: &str) -> core::option::Option<alloc::string::String>
+pub fn amber_core::extract::to_markdown(html: &str) -> alloc::string::String
+pub fn amber_core::extract::to_readable(html: &str) -> alloc::string::String
+pub mod amber_core::fetch
+pub enum amber_core::fetch::RenderMode
+pub amber_core::fetch::RenderMode::Always
+pub amber_core::fetch::RenderMode::Auto
+pub amber_core::fetch::RenderMode::Never
+impl core::clone::Clone for amber_core::fetch::RenderMode
+pub fn amber_core::fetch::RenderMode::clone(&self) -> amber_core::fetch::RenderMode
+impl core::cmp::Eq for amber_core::fetch::RenderMode
+impl core::cmp::PartialEq for amber_core::fetch::RenderMode
+pub fn amber_core::fetch::RenderMode::eq(&self, other: &amber_core::fetch::RenderMode) -> bool
+impl core::default::Default for amber_core::fetch::RenderMode
+pub fn amber_core::fetch::RenderMode::default() -> amber_core::fetch::RenderMode
+impl core::fmt::Debug for amber_core::fetch::RenderMode
+pub fn amber_core::fetch::RenderMode::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for amber_core::fetch::RenderMode
+impl core::marker::StructuralPartialEq for amber_core::fetch::RenderMode
+impl core::marker::Freeze for amber_core::fetch::RenderMode
+impl core::marker::Send for amber_core::fetch::RenderMode
+impl core::marker::Sync for amber_core::fetch::RenderMode
+impl core::marker::Unpin for amber_core::fetch::RenderMode
+impl core::marker::UnsafeUnpin for amber_core::fetch::RenderMode
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::fetch::RenderMode
+impl core::panic::unwind_safe::UnwindSafe for amber_core::fetch::RenderMode
+pub fn amber_core::fetch::browser_required_upfront(formats: &[amber_core::output::OutputFormat], mode: amber_core::fetch::RenderMode) -> bool
+pub mod amber_core::ffi
+pub enum amber_core::ffi::CaptureError
+pub amber_core::ffi::CaptureError::Failed
+pub amber_core::ffi::CaptureError::Failed::reason: alloc::string::String
+impl core::error::Error for amber_core::ffi::CaptureError
+impl core::fmt::Debug for amber_core::ffi::CaptureError
+pub fn amber_core::ffi::CaptureError::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::fmt::Display for amber_core::ffi::CaptureError
+pub fn amber_core::ffi::CaptureError::fmt(&self, __formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<UT> uniffi_core::ffi_converter_traits::ConvertError<UT> for amber_core::ffi::CaptureError
+pub fn amber_core::ffi::CaptureError::try_convert_unexpected_callback_error(e: uniffi_core::ffi::callbackinterface::UnexpectedUniFFICallbackError) -> anyhow::Result<Self>
+impl<UT> uniffi_core::ffi_converter_traits::FfiConverter<UT> for amber_core::ffi::CaptureError
+pub type amber_core::ffi::CaptureError::FfiType = uniffi_core::ffi::rustbuffer::RustBuffer
+pub const amber_core::ffi::CaptureError::TYPE_ID_META: uniffi_core::metadata::MetadataBuffer
+pub fn amber_core::ffi::CaptureError::lower(v: Self) -> uniffi_core::ffi::rustbuffer::RustBuffer
+pub fn amber_core::ffi::CaptureError::try_lift(buf: uniffi_core::ffi::rustbuffer::RustBuffer) -> anyhow::Result<Self>
+pub fn amber_core::ffi::CaptureError::try_read(buf: &mut &[u8]) -> anyhow::Result<Self>
+pub fn amber_core::ffi::CaptureError::write(obj: Self, buf: &mut alloc::vec::Vec<u8>)
+impl<UT> uniffi_core::ffi_converter_traits::Lift<UT> for amber_core::ffi::CaptureError
+pub type amber_core::ffi::CaptureError::FfiType = <amber_core::ffi::CaptureError as uniffi_core::ffi_converter_traits::FfiConverter<UT>>::FfiType
+pub fn amber_core::ffi::CaptureError::try_lift(v: Self::FfiType) -> anyhow::Result<Self>
+pub fn amber_core::ffi::CaptureError::try_read(buf: &mut &[u8]) -> anyhow::Result<Self>
+impl<UT> uniffi_core::ffi_converter_traits::LiftRef<UT> for amber_core::ffi::CaptureError
+pub type amber_core::ffi::CaptureError::LiftType = amber_core::ffi::CaptureError
+impl<UT> uniffi_core::ffi_converter_traits::LiftReturn<UT> for amber_core::ffi::CaptureError
+pub type amber_core::ffi::CaptureError::ReturnType = <amber_core::ffi::CaptureError as uniffi_core::ffi_converter_traits::Lift<UT>>::FfiType
+pub fn amber_core::ffi::CaptureError::try_lift_successful_return(v: Self::ReturnType) -> anyhow::Result<Self>
+impl<UT> uniffi_core::ffi_converter_traits::Lower<UT> for amber_core::ffi::CaptureError
+pub type amber_core::ffi::CaptureError::FfiType = <amber_core::ffi::CaptureError as uniffi_core::ffi_converter_traits::FfiConverter<UT>>::FfiType
+pub fn amber_core::ffi::CaptureError::lower(obj: Self) -> Self::FfiType
+pub fn amber_core::ffi::CaptureError::write(obj: Self, buf: &mut alloc::vec::Vec<u8>)
+impl<UT> uniffi_core::ffi_converter_traits::LowerError<UT> for amber_core::ffi::CaptureError
+pub fn amber_core::ffi::CaptureError::lower_error(obj: Self) -> uniffi_core::ffi::rustbuffer::RustBuffer
+impl<UT> uniffi_core::ffi_converter_traits::LowerReturn<UT> for amber_core::ffi::CaptureError
+pub type amber_core::ffi::CaptureError::ReturnType = <amber_core::ffi::CaptureError as uniffi_core::ffi_converter_traits::Lower<UT>>::FfiType
+pub fn amber_core::ffi::CaptureError::lower_return(v: Self) -> anyhow::Result<Self::ReturnType, uniffi_core::ffi::rustcalls::RustCallError>
+impl<UT> uniffi_core::ffi_converter_traits::TypeId<UT> for amber_core::ffi::CaptureError
+pub const amber_core::ffi::CaptureError::TYPE_ID_META: uniffi_core::metadata::MetadataBuffer
+impl core::marker::Freeze for amber_core::ffi::CaptureError
+impl core::marker::Send for amber_core::ffi::CaptureError
+impl core::marker::Sync for amber_core::ffi::CaptureError
+impl core::marker::Unpin for amber_core::ffi::CaptureError
+impl core::marker::UnsafeUnpin for amber_core::ffi::CaptureError
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::ffi::CaptureError
+impl core::panic::unwind_safe::UnwindSafe for amber_core::ffi::CaptureError
+pub struct amber_core::ffi::Snapshot
+impl amber_core::ffi::Snapshot
+pub fn amber_core::ffi::Snapshot::markdown(&self) -> core::result::Result<alloc::string::String, amber_core::ffi::CaptureError>
+pub fn amber_core::ffi::Snapshot::readable(&self) -> core::result::Result<alloc::string::String, amber_core::ffi::CaptureError>
+pub fn amber_core::ffi::Snapshot::render(&self, format: amber_core::output::OutputFormat) -> core::result::Result<alloc::vec::Vec<u8>, amber_core::ffi::CaptureError>
+pub fn amber_core::ffi::Snapshot::save(&self, format: amber_core::output::OutputFormat, dir: alloc::string::String, name: core::option::Option<alloc::string::String>) -> core::result::Result<alloc::string::String, amber_core::ffi::CaptureError>
+pub fn amber_core::ffi::Snapshot::text(&self, format: amber_core::output::OutputFormat) -> core::result::Result<alloc::string::String, amber_core::ffi::CaptureError>
+impl core::fmt::Debug for amber_core::ffi::Snapshot
+pub fn amber_core::ffi::Snapshot::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<UT> uniffi_core::ffi_converter_traits::LiftRef<UT> for amber_core::ffi::Snapshot
+pub type amber_core::ffi::Snapshot::LiftType = alloc::sync::Arc<amber_core::ffi::Snapshot>
+impl<UT> uniffi_core::ffi_converter_traits::LowerError<UT> for amber_core::ffi::Snapshot
+pub fn amber_core::ffi::Snapshot::lower_error(obj: Self) -> uniffi_core::ffi::rustbuffer::RustBuffer
+impl<UT> uniffi_core::ffi_converter_traits::LowerReturn<UT> for amber_core::ffi::Snapshot
+pub type amber_core::ffi::Snapshot::ReturnType = <alloc::sync::Arc<amber_core::ffi::Snapshot> as uniffi_core::ffi_converter_traits::LowerReturn<UniFfiTag>>::ReturnType
+pub fn amber_core::ffi::Snapshot::lower_return(obj: Self) -> core::result::Result<Self::ReturnType, uniffi_core::ffi::rustcalls::RustCallError>
+impl<UT> uniffi_core::ffi_converter_traits::TypeId<UT> for amber_core::ffi::Snapshot
+pub const amber_core::ffi::Snapshot::TYPE_ID_META: uniffi_core::metadata::MetadataBuffer
+impl core::marker::Freeze for amber_core::ffi::Snapshot
+impl core::marker::Send for amber_core::ffi::Snapshot
+impl core::marker::Sync for amber_core::ffi::Snapshot
+impl core::marker::Unpin for amber_core::ffi::Snapshot
+impl core::marker::UnsafeUnpin for amber_core::ffi::Snapshot
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::ffi::Snapshot
+impl core::panic::unwind_safe::UnwindSafe for amber_core::ffi::Snapshot
+pub fn amber_core::ffi::capture(url: alloc::string::String, format: amber_core::output::OutputFormat) -> core::result::Result<alloc::vec::Vec<u8>, amber_core::ffi::CaptureError>
+pub fn amber_core::ffi::capture_markdown(url: alloc::string::String) -> core::result::Result<alloc::string::String, amber_core::ffi::CaptureError>
+pub fn amber_core::ffi::capture_readable(url: alloc::string::String) -> core::result::Result<alloc::string::String, amber_core::ffi::CaptureError>
+pub fn amber_core::ffi::capture_text(url: alloc::string::String, format: amber_core::output::OutputFormat) -> core::result::Result<alloc::string::String, amber_core::ffi::CaptureError>
+pub fn amber_core::ffi::save(url: alloc::string::String, format: amber_core::output::OutputFormat, dir: alloc::string::String, name: core::option::Option<alloc::string::String>) -> core::result::Result<alloc::string::String, amber_core::ffi::CaptureError>
+pub fn amber_core::ffi::snapshot(url: alloc::string::String, formats: alloc::vec::Vec<amber_core::output::OutputFormat>) -> core::result::Result<alloc::sync::Arc<amber_core::ffi::Snapshot>, amber_core::ffi::CaptureError>
+pub mod amber_core::http
+pub enum amber_core::http::FetchError
+pub amber_core::http::FetchError::Request(alloc::string::String)
+pub amber_core::http::FetchError::Status(u16)
+pub amber_core::http::FetchError::Timeout
+pub amber_core::http::FetchError::TooLarge(u64)
+impl core::error::Error for amber_core::http::FetchError
+impl core::fmt::Debug for amber_core::http::FetchError
+pub fn amber_core::http::FetchError::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::fmt::Display for amber_core::http::FetchError
+pub fn amber_core::http::FetchError::fmt(&self, __formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for amber_core::http::FetchError
+impl core::marker::Send for amber_core::http::FetchError
+impl core::marker::Sync for amber_core::http::FetchError
+impl core::marker::Unpin for amber_core::http::FetchError
+impl core::marker::UnsafeUnpin for amber_core::http::FetchError
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::http::FetchError
+impl core::panic::unwind_safe::UnwindSafe for amber_core::http::FetchError
+pub struct amber_core::http::FetchedPage
+pub amber_core::http::FetchedPage::content_type: core::option::Option<alloc::string::String>
+pub amber_core::http::FetchedPage::final_url: url::Url
+pub amber_core::http::FetchedPage::html: alloc::string::String
+pub amber_core::http::FetchedPage::status: u16
+impl core::clone::Clone for amber_core::http::FetchedPage
+pub fn amber_core::http::FetchedPage::clone(&self) -> amber_core::http::FetchedPage
+impl core::fmt::Debug for amber_core::http::FetchedPage
+pub fn amber_core::http::FetchedPage::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for amber_core::http::FetchedPage
+impl core::marker::Send for amber_core::http::FetchedPage
+impl core::marker::Sync for amber_core::http::FetchedPage
+impl core::marker::Unpin for amber_core::http::FetchedPage
+impl core::marker::UnsafeUnpin for amber_core::http::FetchedPage
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::http::FetchedPage
+impl core::panic::unwind_safe::UnwindSafe for amber_core::http::FetchedPage
+pub fn amber_core::http::content_type_is_html(content_type: core::option::Option<&str>) -> bool
+pub fn amber_core::http::decode_html(bytes: &[u8], header_charset: core::option::Option<&str>) -> alloc::string::String
+pub fn amber_core::http::fetch(url: &url::Url) -> core::result::Result<amber_core::http::FetchedPage, amber_core::http::FetchError>
+pub fn amber_core::http::fetch_with_session(url: &url::Url, session: &amber_core::session::SessionState, proxy: core::option::Option<&str>, max_bytes: core::option::Option<u64>) -> core::result::Result<amber_core::http::FetchedPage, amber_core::http::FetchError>
+pub fn amber_core::http::fetch_with_ua(url: &url::Url, user_agent: &str) -> core::result::Result<amber_core::http::FetchedPage, amber_core::http::FetchError>
+pub fn amber_core::http::is_html_mime(essence: &str) -> bool
+pub fn amber_core::http::parse_content_type(value: &str) -> (alloc::string::String, core::option::Option<alloc::string::String>)
+pub mod amber_core::inline
+pub fn amber_core::inline::mhtml_to_single_file_html(mhtml: &str) -> alloc::string::String
+pub mod amber_core::limits
+pub struct amber_core::limits::Deadline
+impl amber_core::limits::Deadline
+pub fn amber_core::limits::Deadline::exceeded(&self) -> bool
+pub fn amber_core::limits::Deadline::new(limit: core::option::Option<core::time::Duration>) -> Self
+pub fn amber_core::limits::Deadline::remaining(&self) -> core::option::Option<core::time::Duration>
+impl core::clone::Clone for amber_core::limits::Deadline
+pub fn amber_core::limits::Deadline::clone(&self) -> amber_core::limits::Deadline
+impl core::fmt::Debug for amber_core::limits::Deadline
+pub fn amber_core::limits::Deadline::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for amber_core::limits::Deadline
+impl core::marker::Freeze for amber_core::limits::Deadline
+impl core::marker::Send for amber_core::limits::Deadline
+impl core::marker::Sync for amber_core::limits::Deadline
+impl core::marker::Unpin for amber_core::limits::Deadline
+impl core::marker::UnsafeUnpin for amber_core::limits::Deadline
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::limits::Deadline
+impl core::panic::unwind_safe::UnwindSafe for amber_core::limits::Deadline
+pub struct amber_core::limits::ResourceLimits
+pub amber_core::limits::ResourceLimits::max_bytes: core::option::Option<u64>
+pub amber_core::limits::ResourceLimits::max_cpu_seconds: core::option::Option<u64>
+pub amber_core::limits::ResourceLimits::max_duration: core::option::Option<core::time::Duration>
+pub amber_core::limits::ResourceLimits::max_memory_bytes: core::option::Option<u64>
+impl amber_core::limits::ResourceLimits
+pub fn amber_core::limits::ResourceLimits::deadline(&self) -> amber_core::limits::Deadline
+pub fn amber_core::limits::ResourceLimits::time_exceeded(&self, elapsed: core::time::Duration) -> bool
+pub fn amber_core::limits::ResourceLimits::within_byte_budget(&self, bytes: u64) -> bool
+impl amber_core::limits::ResourceLimits
+pub fn amber_core::limits::ResourceLimits::has_os_caps(&self) -> bool
+impl core::clone::Clone for amber_core::limits::ResourceLimits
+pub fn amber_core::limits::ResourceLimits::clone(&self) -> amber_core::limits::ResourceLimits
+impl core::default::Default for amber_core::limits::ResourceLimits
+pub fn amber_core::limits::ResourceLimits::default() -> amber_core::limits::ResourceLimits
+impl core::fmt::Debug for amber_core::limits::ResourceLimits
+pub fn amber_core::limits::ResourceLimits::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for amber_core::limits::ResourceLimits
+impl core::marker::Freeze for amber_core::limits::ResourceLimits
+impl core::marker::Send for amber_core::limits::ResourceLimits
+impl core::marker::Sync for amber_core::limits::ResourceLimits
+impl core::marker::Unpin for amber_core::limits::ResourceLimits
+impl core::marker::UnsafeUnpin for amber_core::limits::ResourceLimits
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::limits::ResourceLimits
+impl core::panic::unwind_safe::UnwindSafe for amber_core::limits::ResourceLimits
+pub mod amber_core::mcp
+pub const amber_core::mcp::PROTOCOL_VERSION: &str
+pub fn amber_core::mcp::handle_request<F>(req: &serde_json::value::Value, capture: &F) -> core::option::Option<serde_json::value::Value> where F: core::ops::function::Fn(&str, &str, &[alloc::string::String]) -> core::result::Result<alloc::string::String, alloc::string::String>
+pub fn amber_core::mcp::serve<R, W, F>(reader: R, writer: W, capture: F) -> std::io::error::Result<()> where R: std::io::BufRead, W: std::io::Write, F: core::ops::function::Fn(&str, &str, &[alloc::string::String]) -> core::result::Result<alloc::string::String, alloc::string::String>
+pub mod amber_core::meta
+pub struct amber_core::meta::PageMetadata
+pub amber_core::meta::PageMetadata::canonical: core::option::Option<alloc::string::String>
+pub amber_core::meta::PageMetadata::description: core::option::Option<alloc::string::String>
+pub amber_core::meta::PageMetadata::lang: core::option::Option<alloc::string::String>
+pub amber_core::meta::PageMetadata::links: alloc::vec::Vec<alloc::string::String>
+pub amber_core::meta::PageMetadata::next_page: core::option::Option<alloc::string::String>
+pub amber_core::meta::PageMetadata::open_graph: alloc::collections::btree::map::BTreeMap<alloc::string::String, alloc::string::String>
+pub amber_core::meta::PageMetadata::title: core::option::Option<alloc::string::String>
+impl core::clone::Clone for amber_core::meta::PageMetadata
+pub fn amber_core::meta::PageMetadata::clone(&self) -> amber_core::meta::PageMetadata
+impl core::cmp::Eq for amber_core::meta::PageMetadata
+impl core::cmp::PartialEq for amber_core::meta::PageMetadata
+pub fn amber_core::meta::PageMetadata::eq(&self, other: &amber_core::meta::PageMetadata) -> bool
+impl core::default::Default for amber_core::meta::PageMetadata
+pub fn amber_core::meta::PageMetadata::default() -> amber_core::meta::PageMetadata
+impl core::fmt::Debug for amber_core::meta::PageMetadata
+pub fn amber_core::meta::PageMetadata::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for amber_core::meta::PageMetadata
+impl core::marker::Freeze for amber_core::meta::PageMetadata
+impl core::marker::Send for amber_core::meta::PageMetadata
+impl core::marker::Sync for amber_core::meta::PageMetadata
+impl core::marker::Unpin for amber_core::meta::PageMetadata
+impl core::marker::UnsafeUnpin for amber_core::meta::PageMetadata
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::meta::PageMetadata
+impl core::panic::unwind_safe::UnwindSafe for amber_core::meta::PageMetadata
+pub fn amber_core::meta::extract(html: &str, base_url: &url::Url) -> amber_core::meta::PageMetadata
+pub mod amber_core::metrics
+pub struct amber_core::metrics::Metrics
+impl amber_core::metrics::Metrics
+pub fn amber_core::metrics::Metrics::new() -> Self
+pub fn amber_core::metrics::Metrics::record_cache_hit(&mut self)
+pub fn amber_core::metrics::Metrics::record_cache_miss(&mut self)
+pub fn amber_core::metrics::Metrics::record_fetch(&mut self, bytes: usize, elapsed: core::time::Duration)
+pub fn amber_core::metrics::Metrics::record_render(&mut self)
+pub fn amber_core::metrics::Metrics::snapshot(&self) -> amber_core::metrics::MetricsSnapshot
+pub fn amber_core::metrics::Metrics::to_json(&self) -> alloc::string::String
+impl core::clone::Clone for amber_core::metrics::Metrics
+pub fn amber_core::metrics::Metrics::clone(&self) -> amber_core::metrics::Metrics
+impl core::default::Default for amber_core::metrics::Metrics
+pub fn amber_core::metrics::Metrics::default() -> amber_core::metrics::Metrics
+impl core::fmt::Debug for amber_core::metrics::Metrics
+pub fn amber_core::metrics::Metrics::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for amber_core::metrics::Metrics
+impl core::marker::Send for amber_core::metrics::Metrics
+impl core::marker::Sync for amber_core::metrics::Metrics
+impl core::marker::Unpin for amber_core::metrics::Metrics
+impl core::marker::UnsafeUnpin for amber_core::metrics::Metrics
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::metrics::Metrics
+impl core::panic::unwind_safe::UnwindSafe for amber_core::metrics::Metrics
+pub struct amber_core::metrics::MetricsSnapshot
+pub amber_core::metrics::MetricsSnapshot::avg_fetch_ms: f64
+pub amber_core::metrics::MetricsSnapshot::browser_renders: u64
+pub amber_core::metrics::MetricsSnapshot::bytes_fetched: u64
+pub amber_core::metrics::MetricsSnapshot::cache_hit_rate: f64
+pub amber_core::metrics::MetricsSnapshot::cache_hits: u64
+pub amber_core::metrics::MetricsSnapshot::cache_misses: u64
+pub amber_core::metrics::MetricsSnapshot::pages_fetched: u64
+pub amber_core::metrics::MetricsSnapshot::render_rate: f64
+impl core::clone::Clone for amber_core::metrics::MetricsSnapshot
+pub fn amber_core::metrics::MetricsSnapshot::clone(&self) -> amber_core::metrics::MetricsSnapshot
+impl core::cmp::PartialEq for amber_core::metrics::MetricsSnapshot
+pub fn amber_core::metrics::MetricsSnapshot::eq(&self, other: &amber_core::metrics::MetricsSnapshot) -> bool
+impl core::fmt::Debug for amber_core::metrics::MetricsSnapshot
+pub fn amber_core::metrics::MetricsSnapshot::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for amber_core::metrics::MetricsSnapshot
+impl core::marker::Freeze for amber_core::metrics::MetricsSnapshot
+impl core::marker::Send for amber_core::metrics::MetricsSnapshot
+impl core::marker::Sync for amber_core::metrics::MetricsSnapshot
+impl core::marker::Unpin for amber_core::metrics::MetricsSnapshot
+impl core::marker::UnsafeUnpin for amber_core::metrics::MetricsSnapshot
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::metrics::MetricsSnapshot
+impl core::panic::unwind_safe::UnwindSafe for amber_core::metrics::MetricsSnapshot
+pub mod amber_core::monitor
+pub struct amber_core::monitor::ChangeReport
+pub amber_core::monitor::ChangeReport::content_changed: bool
+pub amber_core::monitor::ChangeReport::content_diff: amber_core::diff::LineDiff
+pub amber_core::monitor::ChangeReport::visual_changed: bool
+impl amber_core::monitor::ChangeReport
+pub fn amber_core::monitor::ChangeReport::any_change(&self) -> bool
+impl core::clone::Clone for amber_core::monitor::ChangeReport
+pub fn amber_core::monitor::ChangeReport::clone(&self) -> amber_core::monitor::ChangeReport
+impl core::fmt::Debug for amber_core::monitor::ChangeReport
+pub fn amber_core::monitor::ChangeReport::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for amber_core::monitor::ChangeReport
+impl core::marker::Send for amber_core::monitor::ChangeReport
+impl core::marker::Sync for amber_core::monitor::ChangeReport
+impl core::marker::Unpin for amber_core::monitor::ChangeReport
+impl core::marker::UnsafeUnpin for amber_core::monitor::ChangeReport
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::monitor::ChangeReport
+impl core::panic::unwind_safe::UnwindSafe for amber_core::monitor::ChangeReport
+pub fn amber_core::monitor::compare(prev_text: &str, cur_text: &str, prev_png: core::option::Option<&[u8]>, cur_png: core::option::Option<&[u8]>) -> amber_core::monitor::ChangeReport
+pub mod amber_core::naming
+pub fn amber_core::naming::default_name(url: &url::Url, now: chrono::datetime::DateTime<chrono::offset::local::Local>) -> alloc::string::String
+pub fn amber_core::naming::safe_url(url: &url::Url) -> alloc::string::String
+pub mod amber_core::output
+pub enum amber_core::output::OutputFormat
+pub amber_core::output::OutputFormat::Html
+pub amber_core::output::OutputFormat::Markdown
+pub amber_core::output::OutputFormat::Mhtml
+pub amber_core::output::OutputFormat::Pdf
+pub amber_core::output::OutputFormat::Readable
+pub amber_core::output::OutputFormat::Screenshot
+pub amber_core::output::OutputFormat::Wacz
+pub amber_core::output::OutputFormat::Warc
+impl amber_core::output::OutputFormat
+pub const amber_core::output::OutputFormat::ALL: [amber_core::output::OutputFormat; 8]
+pub fn amber_core::output::OutputFormat::extension(self) -> &'static str
+pub fn amber_core::output::OutputFormat::requires_browser(self) -> bool
+impl core::clone::Clone for amber_core::output::OutputFormat
+pub fn amber_core::output::OutputFormat::clone(&self) -> amber_core::output::OutputFormat
+impl core::cmp::Eq for amber_core::output::OutputFormat
+impl core::cmp::PartialEq for amber_core::output::OutputFormat
+pub fn amber_core::output::OutputFormat::eq(&self, other: &amber_core::output::OutputFormat) -> bool
+impl core::fmt::Debug for amber_core::output::OutputFormat
+pub fn amber_core::output::OutputFormat::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for amber_core::output::OutputFormat
+pub fn amber_core::output::OutputFormat::hash<__H: core::hash::Hasher>(&self, state: &mut __H)
+impl core::marker::Copy for amber_core::output::OutputFormat
+impl core::marker::StructuralPartialEq for amber_core::output::OutputFormat
+impl<UT> uniffi_core::ffi_converter_traits::ConvertError<UT> for amber_core::output::OutputFormat
+pub fn amber_core::output::OutputFormat::try_convert_unexpected_callback_error(e: uniffi_core::ffi::callbackinterface::UnexpectedUniFFICallbackError) -> anyhow::Result<Self>
+impl<UT> uniffi_core::ffi_converter_traits::FfiConverter<UT> for amber_core::output::OutputFormat
+pub type amber_core::output::OutputFormat::FfiType = uniffi_core::ffi::rustbuffer::RustBuffer
+pub const amber_core::output::OutputFormat::TYPE_ID_META: uniffi_core::metadata::MetadataBuffer
+pub fn amber_core::output::OutputFormat::lower(v: Self) -> uniffi_core::ffi::rustbuffer::RustBuffer
+pub fn amber_core::output::OutputFormat::try_lift(buf: uniffi_core::ffi::rustbuffer::RustBuffer) -> anyhow::Result<Self>
+pub fn amber_core::output::OutputFormat::try_read(buf: &mut &[u8]) -> anyhow::Result<Self>
+pub fn amber_core::output::OutputFormat::write(obj: Self, buf: &mut alloc::vec::Vec<u8>)
+impl<UT> uniffi_core::ffi_converter_traits::Lift<UT> for amber_core::output::OutputFormat
+pub type amber_core::output::OutputFormat::FfiType = <amber_core::output::OutputFormat as uniffi_core::ffi_converter_traits::FfiConverter<UT>>::FfiType
+pub fn amber_core::output::OutputFormat::try_lift(v: Self::FfiType) -> anyhow::Result<Self>
+pub fn amber_core::output::OutputFormat::try_read(buf: &mut &[u8]) -> anyhow::Result<Self>
+impl<UT> uniffi_core::ffi_converter_traits::LiftRef<UT> for amber_core::output::OutputFormat
+pub type amber_core::output::OutputFormat::LiftType = amber_core::output::OutputFormat
+impl<UT> uniffi_core::ffi_converter_traits::LiftReturn<UT> for amber_core::output::OutputFormat
+pub type amber_core::output::OutputFormat::ReturnType = <amber_core::output::OutputFormat as uniffi_core::ffi_converter_traits::Lift<UT>>::FfiType
+pub fn amber_core::output::OutputFormat::try_lift_successful_return(v: Self::ReturnType) -> anyhow::Result<Self>
+impl<UT> uniffi_core::ffi_converter_traits::Lower<UT> for amber_core::output::OutputFormat
+pub type amber_core::output::OutputFormat::FfiType = <amber_core::output::OutputFormat as uniffi_core::ffi_converter_traits::FfiConverter<UT>>::FfiType
+pub fn amber_core::output::OutputFormat::lower(obj: Self) -> Self::FfiType
+pub fn amber_core::output::OutputFormat::write(obj: Self, buf: &mut alloc::vec::Vec<u8>)
+impl<UT> uniffi_core::ffi_converter_traits::LowerError<UT> for amber_core::output::OutputFormat
+pub fn amber_core::output::OutputFormat::lower_error(obj: Self) -> uniffi_core::ffi::rustbuffer::RustBuffer
+impl<UT> uniffi_core::ffi_converter_traits::LowerReturn<UT> for amber_core::output::OutputFormat
+pub type amber_core::output::OutputFormat::ReturnType = <amber_core::output::OutputFormat as uniffi_core::ffi_converter_traits::Lower<UT>>::FfiType
+pub fn amber_core::output::OutputFormat::lower_return(v: Self) -> anyhow::Result<Self::ReturnType, uniffi_core::ffi::rustcalls::RustCallError>
+impl<UT> uniffi_core::ffi_converter_traits::TypeId<UT> for amber_core::output::OutputFormat
+pub const amber_core::output::OutputFormat::TYPE_ID_META: uniffi_core::metadata::MetadataBuffer
+impl core::marker::Freeze for amber_core::output::OutputFormat
+impl core::marker::Send for amber_core::output::OutputFormat
+impl core::marker::Sync for amber_core::output::OutputFormat
+impl core::marker::Unpin for amber_core::output::OutputFormat
+impl core::marker::UnsafeUnpin for amber_core::output::OutputFormat
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::output::OutputFormat
+impl core::panic::unwind_safe::UnwindSafe for amber_core::output::OutputFormat
+pub mod amber_core::pool
+pub struct amber_core::pool::Pool<T>
+impl<T> amber_core::pool::Pool<T>
+pub fn amber_core::pool::Pool<T>::acquire(&self, make: impl core::ops::function::FnOnce() -> T) -> core::option::Option<T>
+pub fn amber_core::pool::Pool<T>::acquire_with<E>(&self, make: impl core::ops::function::FnOnce() -> core::result::Result<T, E>) -> core::result::Result<core::option::Option<T>, E>
+pub fn amber_core::pool::Pool<T>::capacity(&self) -> usize
+pub fn amber_core::pool::Pool<T>::discard(&self)
+pub fn amber_core::pool::Pool<T>::idle_count(&self) -> usize
+pub fn amber_core::pool::Pool<T>::leased_count(&self) -> usize
+pub fn amber_core::pool::Pool<T>::new(capacity: usize) -> Self
+pub fn amber_core::pool::Pool<T>::release(&self, item: T)
+impl<T> !core::marker::Freeze for amber_core::pool::Pool<T>
+impl<T> core::marker::Send for amber_core::pool::Pool<T> where T: core::marker::Send
+impl<T> core::marker::Sync for amber_core::pool::Pool<T> where T: core::marker::Send
+impl<T> core::marker::Unpin for amber_core::pool::Pool<T> where T: core::marker::Unpin
+impl<T> core::marker::UnsafeUnpin for amber_core::pool::Pool<T>
+impl<T> core::panic::unwind_safe::RefUnwindSafe for amber_core::pool::Pool<T>
+impl<T> core::panic::unwind_safe::UnwindSafe for amber_core::pool::Pool<T>
+pub mod amber_core::provenance
+pub struct amber_core::provenance::FieldProvenance
+pub amber_core::provenance::FieldProvenance::anchor: core::option::Option<amber_core::provenance::Provenance>
+pub amber_core::provenance::FieldProvenance::path: alloc::string::String
+pub amber_core::provenance::FieldProvenance::value: alloc::string::String
+impl core::clone::Clone for amber_core::provenance::FieldProvenance
+pub fn amber_core::provenance::FieldProvenance::clone(&self) -> amber_core::provenance::FieldProvenance
+impl core::cmp::Eq for amber_core::provenance::FieldProvenance
+impl core::cmp::PartialEq for amber_core::provenance::FieldProvenance
+pub fn amber_core::provenance::FieldProvenance::eq(&self, other: &amber_core::provenance::FieldProvenance) -> bool
+impl core::fmt::Debug for amber_core::provenance::FieldProvenance
+pub fn amber_core::provenance::FieldProvenance::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for amber_core::provenance::FieldProvenance
+impl core::marker::Freeze for amber_core::provenance::FieldProvenance
+impl core::marker::Send for amber_core::provenance::FieldProvenance
+impl core::marker::Sync for amber_core::provenance::FieldProvenance
+impl core::marker::Unpin for amber_core::provenance::FieldProvenance
+impl core::marker::UnsafeUnpin for amber_core::provenance::FieldProvenance
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::provenance::FieldProvenance
+impl core::panic::unwind_safe::UnwindSafe for amber_core::provenance::FieldProvenance
+pub struct amber_core::provenance::Provenance
+pub amber_core::provenance::Provenance::css_path: alloc::string::String
+pub amber_core::provenance::Provenance::text: alloc::string::String
+pub amber_core::provenance::Provenance::url: alloc::string::String
+impl core::clone::Clone for amber_core::provenance::Provenance
+pub fn amber_core::provenance::Provenance::clone(&self) -> amber_core::provenance::Provenance
+impl core::cmp::Eq for amber_core::provenance::Provenance
+impl core::cmp::PartialEq for amber_core::provenance::Provenance
+pub fn amber_core::provenance::Provenance::eq(&self, other: &amber_core::provenance::Provenance) -> bool
+impl core::fmt::Debug for amber_core::provenance::Provenance
+pub fn amber_core::provenance::Provenance::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for amber_core::provenance::Provenance
+impl core::marker::Freeze for amber_core::provenance::Provenance
+impl core::marker::Send for amber_core::provenance::Provenance
+impl core::marker::Sync for amber_core::provenance::Provenance
+impl core::marker::Unpin for amber_core::provenance::Provenance
+impl core::marker::UnsafeUnpin for amber_core::provenance::Provenance
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::provenance::Provenance
+impl core::panic::unwind_safe::UnwindSafe for amber_core::provenance::Provenance
+pub fn amber_core::provenance::anchor_fields(html: &str, value: &serde_json::value::Value, url: &str) -> alloc::vec::Vec<amber_core::provenance::FieldProvenance>
+pub fn amber_core::provenance::anchor_for(html: &str, needle: &str, url: &str) -> core::option::Option<amber_core::provenance::Provenance>
+pub mod amber_core::recurring
+pub struct amber_core::recurring::Cadence
+impl amber_core::recurring::Cadence
+pub fn amber_core::recurring::Cadence::delay_from(&self, now_epoch_secs: u64) -> u64
+pub fn amber_core::recurring::Cadence::new(start_epoch_secs: u64, interval: core::time::Duration) -> Self
+pub fn amber_core::recurring::Cadence::next_run(&self, now_epoch_secs: u64) -> u64
+impl core::clone::Clone for amber_core::recurring::Cadence
+pub fn amber_core::recurring::Cadence::clone(&self) -> amber_core::recurring::Cadence
+impl core::cmp::Eq for amber_core::recurring::Cadence
+impl core::cmp::PartialEq for amber_core::recurring::Cadence
+pub fn amber_core::recurring::Cadence::eq(&self, other: &amber_core::recurring::Cadence) -> bool
+impl core::fmt::Debug for amber_core::recurring::Cadence
+pub fn amber_core::recurring::Cadence::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for amber_core::recurring::Cadence
+impl core::marker::StructuralPartialEq for amber_core::recurring::Cadence
+impl core::marker::Freeze for amber_core::recurring::Cadence
+impl core::marker::Send for amber_core::recurring::Cadence
+impl core::marker::Sync for amber_core::recurring::Cadence
+impl core::marker::Unpin for amber_core::recurring::Cadence
+impl core::marker::UnsafeUnpin for amber_core::recurring::Cadence
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::recurring::Cadence
+impl core::panic::unwind_safe::UnwindSafe for amber_core::recurring::Cadence
+pub fn amber_core::recurring::run_schedule<F: core::ops::function::FnMut()>(cadence: amber_core::recurring::Cadence, max_runs: usize, capture: F)
+pub fn amber_core::recurring::run_schedule_with<F, S, N>(cadence: amber_core::recurring::Cadence, max_runs: usize, now: N, sleep: S, capture: F) -> usize where F: core::ops::function::FnMut(), S: core::ops::function::FnMut(core::time::Duration), N: core::ops::function::FnMut() -> u64
+pub mod amber_core::render
+pub struct amber_core::render::BrowserPool
+impl amber_core::render::BrowserPool
+pub fn amber_core::render::BrowserPool::capture(&self, url: &url::Url, formats: &[amber_core::output::OutputFormat], opts: &amber_core::capture::CaptureOptions) -> amber_core::error::Result<amber_core::capture::RawCapture>
+pub fn amber_core::render::BrowserPool::idle_count(&self) -> usize
+pub fn amber_core::render::BrowserPool::new(chromium: std::path::PathBuf, capacity: usize) -> Self
+impl !core::marker::Freeze for amber_core::render::BrowserPool
+impl core::marker::Send for amber_core::render::BrowserPool
+impl core::marker::Sync for amber_core::render::BrowserPool
+impl core::marker::Unpin for amber_core::render::BrowserPool
+impl core::marker::UnsafeUnpin for amber_core::render::BrowserPool
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::render::BrowserPool
+impl core::panic::unwind_safe::UnwindSafe for amber_core::render::BrowserPool
+pub mod amber_core::robots
+pub struct amber_core::robots::Robots
+impl amber_core::robots::Robots
+pub fn amber_core::robots::Robots::allows(&self, user_agent: &str, path: &str) -> bool
+pub fn amber_core::robots::Robots::crawl_delay(&self, user_agent: &str) -> core::option::Option<f64>
+pub fn amber_core::robots::Robots::parse(content: &str) -> amber_core::robots::Robots
+impl core::clone::Clone for amber_core::robots::Robots
+pub fn amber_core::robots::Robots::clone(&self) -> amber_core::robots::Robots
+impl core::default::Default for amber_core::robots::Robots
+pub fn amber_core::robots::Robots::default() -> amber_core::robots::Robots
+impl core::fmt::Debug for amber_core::robots::Robots
+pub fn amber_core::robots::Robots::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for amber_core::robots::Robots
+impl core::marker::Send for amber_core::robots::Robots
+impl core::marker::Sync for amber_core::robots::Robots
+impl core::marker::Unpin for amber_core::robots::Robots
+impl core::marker::UnsafeUnpin for amber_core::robots::Robots
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::robots::Robots
+impl core::panic::unwind_safe::UnwindSafe for amber_core::robots::Robots
+pub mod amber_core::secrets
+pub fn amber_core::secrets::redact_proxy_url(proxy: &str) -> alloc::string::String
+pub mod amber_core::selectors
+pub fn amber_core::selectors::select_all_text(html: &str, candidates: &[&str]) -> alloc::vec::Vec<alloc::string::String>
+pub fn amber_core::selectors::select_first_text(html: &str, candidates: &[&str]) -> core::option::Option<alloc::string::String>
+pub mod amber_core::semantic
+pub struct amber_core::semantic::HashingEmbedder
+impl amber_core::semantic::HashingEmbedder
+pub fn amber_core::semantic::HashingEmbedder::new(dim: usize) -> Self
+impl amber_core::semantic::Embedder for amber_core::semantic::HashingEmbedder
+pub fn amber_core::semantic::HashingEmbedder::embed(&self, text: &str) -> alloc::vec::Vec<f32>
+impl core::clone::Clone for amber_core::semantic::HashingEmbedder
+pub fn amber_core::semantic::HashingEmbedder::clone(&self) -> amber_core::semantic::HashingEmbedder
+impl core::default::Default for amber_core::semantic::HashingEmbedder
+pub fn amber_core::semantic::HashingEmbedder::default() -> Self
+impl core::fmt::Debug for amber_core::semantic::HashingEmbedder
+pub fn amber_core::semantic::HashingEmbedder::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for amber_core::semantic::HashingEmbedder
+impl core::marker::Send for amber_core::semantic::HashingEmbedder
+impl core::marker::Sync for amber_core::semantic::HashingEmbedder
+impl core::marker::Unpin for amber_core::semantic::HashingEmbedder
+impl core::marker::UnsafeUnpin for amber_core::semantic::HashingEmbedder
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::semantic::HashingEmbedder
+impl core::panic::unwind_safe::UnwindSafe for amber_core::semantic::HashingEmbedder
+pub struct amber_core::semantic::SemanticIndex<E: amber_core::semantic::Embedder>
+impl<E: amber_core::semantic::Embedder> amber_core::semantic::SemanticIndex<E>
+pub fn amber_core::semantic::SemanticIndex<E>::add(&mut self, id: impl core::convert::Into<alloc::string::String>, text: &str)
+pub fn amber_core::semantic::SemanticIndex<E>::is_empty(&self) -> bool
+pub fn amber_core::semantic::SemanticIndex<E>::len(&self) -> usize
+pub fn amber_core::semantic::SemanticIndex<E>::new(embedder: E) -> Self
+pub fn amber_core::semantic::SemanticIndex<E>::search(&self, query: &str, k: usize) -> alloc::vec::Vec<(alloc::string::String, f32)>
+impl<E> core::marker::Freeze for amber_core::semantic::SemanticIndex<E> where E: core::marker::Freeze
+impl<E> core::marker::Send for amber_core::semantic::SemanticIndex<E> where E: core::marker::Send
+impl<E> core::marker::Sync for amber_core::semantic::SemanticIndex<E> where E: core::marker::Sync
+impl<E> core::marker::Unpin for amber_core::semantic::SemanticIndex<E> where E: core::marker::Unpin
+impl<E> core::marker::UnsafeUnpin for amber_core::semantic::SemanticIndex<E> where E: core::marker::UnsafeUnpin
+impl<E> core::panic::unwind_safe::RefUnwindSafe for amber_core::semantic::SemanticIndex<E> where E: core::panic::unwind_safe::RefUnwindSafe
+impl<E> core::panic::unwind_safe::UnwindSafe for amber_core::semantic::SemanticIndex<E> where E: core::panic::unwind_safe::UnwindSafe
+pub trait amber_core::semantic::Embedder
+pub fn amber_core::semantic::Embedder::embed(&self, text: &str) -> alloc::vec::Vec<f32>
+impl amber_core::semantic::Embedder for amber_core::semantic::HashingEmbedder
+pub fn amber_core::semantic::HashingEmbedder::embed(&self, text: &str) -> alloc::vec::Vec<f32>
+pub fn amber_core::semantic::cosine_similarity(a: &[f32], b: &[f32]) -> f32
+pub mod amber_core::session
+pub struct amber_core::session::SessionState
+pub amber_core::session::SessionState::cookies: alloc::vec::Vec<(alloc::string::String, alloc::string::String)>
+pub amber_core::session::SessionState::headers: alloc::vec::Vec<(alloc::string::String, alloc::string::String)>
+impl amber_core::session::SessionState
+pub fn amber_core::session::SessionState::cookie_header(&self) -> core::option::Option<alloc::string::String>
+pub fn amber_core::session::SessionState::extra_http_headers_command(&self) -> core::option::Option<(&'static str, serde_json::value::Value)>
+pub fn amber_core::session::SessionState::is_empty(&self) -> bool
+pub fn amber_core::session::SessionState::loggable_names(&self) -> alloc::vec::Vec<alloc::string::String>
+pub fn amber_core::session::SessionState::request_headers(&self) -> alloc::vec::Vec<(alloc::string::String, alloc::string::String)>
+impl core::clone::Clone for amber_core::session::SessionState
+pub fn amber_core::session::SessionState::clone(&self) -> amber_core::session::SessionState
+impl core::default::Default for amber_core::session::SessionState
+pub fn amber_core::session::SessionState::default() -> amber_core::session::SessionState
+impl core::fmt::Debug for amber_core::session::SessionState
+pub fn amber_core::session::SessionState::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for amber_core::session::SessionState
+impl core::marker::Send for amber_core::session::SessionState
+impl core::marker::Sync for amber_core::session::SessionState
+impl core::marker::Unpin for amber_core::session::SessionState
+impl core::marker::UnsafeUnpin for amber_core::session::SessionState
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::session::SessionState
+impl core::panic::unwind_safe::UnwindSafe for amber_core::session::SessionState
+pub mod amber_core::sitemap
+pub fn amber_core::sitemap::fetch_sitemap(url: &url::Url) -> alloc::vec::Vec<url::Url>
+pub fn amber_core::sitemap::parse_sitemap(xml: &str) -> alloc::vec::Vec<url::Url>
+pub mod amber_core::store
+pub struct amber_core::store::CrawlStore
+impl amber_core::store::CrawlStore
+pub fn amber_core::store::CrawlStore::export_jsonl(&self, path: &std::path::Path) -> amber_core::error::Result<()>
+pub fn amber_core::store::CrawlStore::from_json(s: &str) -> amber_core::store::CrawlStore
+pub fn amber_core::store::CrawlStore::get(&self, url: &str) -> core::option::Option<&amber_core::store::StoredPage>
+pub fn amber_core::store::CrawlStore::is_empty(&self) -> bool
+pub fn amber_core::store::CrawlStore::len(&self) -> usize
+pub fn amber_core::store::CrawlStore::load(path: &std::path::Path) -> amber_core::error::Result<amber_core::store::CrawlStore>
+pub fn amber_core::store::CrawlStore::new() -> Self
+pub fn amber_core::store::CrawlStore::pages(&self) -> impl core::iter::traits::iterator::Iterator<Item = &amber_core::store::StoredPage>
+pub fn amber_core::store::CrawlStore::record(&mut self, url: &str, body: &[u8])
+pub fn amber_core::store::CrawlStore::save(&self, path: &std::path::Path) -> amber_core::error::Result<()>
+pub fn amber_core::store::CrawlStore::to_json(&self) -> alloc::string::String
+pub fn amber_core::store::CrawlStore::to_jsonl(&self) -> alloc::string::String
+pub fn amber_core::store::CrawlStore::upsert(&mut self, page: amber_core::store::StoredPage)
+impl core::clone::Clone for amber_core::store::CrawlStore
+pub fn amber_core::store::CrawlStore::clone(&self) -> amber_core::store::CrawlStore
+impl core::default::Default for amber_core::store::CrawlStore
+pub fn amber_core::store::CrawlStore::default() -> amber_core::store::CrawlStore
+impl core::fmt::Debug for amber_core::store::CrawlStore
+pub fn amber_core::store::CrawlStore::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for amber_core::store::CrawlStore
+impl core::marker::Send for amber_core::store::CrawlStore
+impl core::marker::Sync for amber_core::store::CrawlStore
+impl core::marker::Unpin for amber_core::store::CrawlStore
+impl core::marker::UnsafeUnpin for amber_core::store::CrawlStore
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::store::CrawlStore
+impl core::panic::unwind_safe::UnwindSafe for amber_core::store::CrawlStore
+pub struct amber_core::store::StoredPage
+pub amber_core::store::StoredPage::content_hash: alloc::string::String
+pub amber_core::store::StoredPage::fetched_at: alloc::string::String
+pub amber_core::store::StoredPage::url: alloc::string::String
+impl core::clone::Clone for amber_core::store::StoredPage
+pub fn amber_core::store::StoredPage::clone(&self) -> amber_core::store::StoredPage
+impl core::cmp::Eq for amber_core::store::StoredPage
+impl core::cmp::PartialEq for amber_core::store::StoredPage
+pub fn amber_core::store::StoredPage::eq(&self, other: &amber_core::store::StoredPage) -> bool
+impl core::fmt::Debug for amber_core::store::StoredPage
+pub fn amber_core::store::StoredPage::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for amber_core::store::StoredPage
+impl core::marker::Freeze for amber_core::store::StoredPage
+impl core::marker::Send for amber_core::store::StoredPage
+impl core::marker::Sync for amber_core::store::StoredPage
+impl core::marker::Unpin for amber_core::store::StoredPage
+impl core::marker::UnsafeUnpin for amber_core::store::StoredPage
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::store::StoredPage
+impl core::panic::unwind_safe::UnwindSafe for amber_core::store::StoredPage
+pub mod amber_core::structured
+pub trait amber_core::structured::LlmClient
+pub fn amber_core::structured::LlmClient::complete(&self, prompt: &str) -> amber_core::error::Result<alloc::string::String>
+pub fn amber_core::structured::extract_nl<C: amber_core::structured::LlmClient>(content: &str, instruction: &str, client: &C) -> amber_core::error::Result<serde_json::value::Value>
+pub fn amber_core::structured::extract_structured<C: amber_core::structured::LlmClient>(content: &str, schema: &str, client: &C) -> amber_core::error::Result<serde_json::value::Value>
+pub fn amber_core::structured::nl_prompt(instruction: &str, content: &str) -> alloc::string::String
+pub fn amber_core::structured::parse_json_response(raw: &str) -> amber_core::error::Result<serde_json::value::Value>
+pub fn amber_core::structured::schema_prompt(schema: &str, content: &str) -> alloc::string::String
+pub mod amber_core::wacz
+pub fn amber_core::wacz::cdxj_index(records: &[amber_core::warc::RecordLoc]) -> alloc::string::String
+pub fn amber_core::wacz::package(warc: &[u8], pages: &[(&str, &str)], records: &[amber_core::warc::RecordLoc]) -> amber_core::error::Result<alloc::vec::Vec<u8>>
+pub mod amber_core::warc
+pub struct amber_core::warc::RecordLoc
+pub amber_core::warc::RecordLoc::block_digest: alloc::string::String
+pub amber_core::warc::RecordLoc::date: alloc::string::String
+pub amber_core::warc::RecordLoc::length: usize
+pub amber_core::warc::RecordLoc::offset: usize
+pub amber_core::warc::RecordLoc::target_uri: alloc::string::String
+impl core::clone::Clone for amber_core::warc::RecordLoc
+pub fn amber_core::warc::RecordLoc::clone(&self) -> amber_core::warc::RecordLoc
+impl core::cmp::Eq for amber_core::warc::RecordLoc
+impl core::cmp::PartialEq for amber_core::warc::RecordLoc
+pub fn amber_core::warc::RecordLoc::eq(&self, other: &amber_core::warc::RecordLoc) -> bool
+impl core::fmt::Debug for amber_core::warc::RecordLoc
+pub fn amber_core::warc::RecordLoc::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for amber_core::warc::RecordLoc
+impl core::marker::Freeze for amber_core::warc::RecordLoc
+impl core::marker::Send for amber_core::warc::RecordLoc
+impl core::marker::Sync for amber_core::warc::RecordLoc
+impl core::marker::Unpin for amber_core::warc::RecordLoc
+impl core::marker::UnsafeUnpin for amber_core::warc::RecordLoc
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::warc::RecordLoc
+impl core::panic::unwind_safe::UnwindSafe for amber_core::warc::RecordLoc
+pub struct amber_core::warc::WarcWriter
+impl amber_core::warc::WarcWriter
+pub fn amber_core::warc::WarcWriter::into_bytes(self) -> alloc::vec::Vec<u8>
+pub fn amber_core::warc::WarcWriter::new() -> Self
+pub fn amber_core::warc::WarcWriter::records(&self) -> &[amber_core::warc::RecordLoc]
+pub fn amber_core::warc::WarcWriter::response(&mut self, target_uri: &str, date: &str, http_response: &[u8])
+pub fn amber_core::warc::WarcWriter::warcinfo(&mut self, date: &str, fields: &str)
+impl core::default::Default for amber_core::warc::WarcWriter
+pub fn amber_core::warc::WarcWriter::default() -> amber_core::warc::WarcWriter
+impl core::fmt::Debug for amber_core::warc::WarcWriter
+pub fn amber_core::warc::WarcWriter::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for amber_core::warc::WarcWriter
+impl core::marker::Send for amber_core::warc::WarcWriter
+impl core::marker::Sync for amber_core::warc::WarcWriter
+impl core::marker::Unpin for amber_core::warc::WarcWriter
+impl core::marker::UnsafeUnpin for amber_core::warc::WarcWriter
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::warc::WarcWriter
+impl core::panic::unwind_safe::UnwindSafe for amber_core::warc::WarcWriter
+pub fn amber_core::warc::http_response_block(status: u16, content_type: &str, body: &[u8]) -> alloc::vec::Vec<u8>
+pub enum amber_core::Action
+pub amber_core::Action::Click(alloc::string::String)
+pub amber_core::Action::Fill
+pub amber_core::Action::Fill::selector: alloc::string::String
+pub amber_core::Action::Fill::value: alloc::string::String
+pub amber_core::Action::Navigate(alloc::string::String)
+pub amber_core::Action::ScrollBy
+pub amber_core::Action::ScrollBy::x: i64
+pub amber_core::Action::ScrollBy::y: i64
+pub amber_core::Action::ScrollToBottom
+impl amber_core::actions::Action
+pub fn amber_core::actions::Action::parse(spec: &str) -> core::result::Result<amber_core::actions::Action, alloc::string::String>
+impl core::clone::Clone for amber_core::actions::Action
+pub fn amber_core::actions::Action::clone(&self) -> amber_core::actions::Action
+impl core::cmp::Eq for amber_core::actions::Action
+impl core::cmp::PartialEq for amber_core::actions::Action
+pub fn amber_core::actions::Action::eq(&self, other: &amber_core::actions::Action) -> bool
+impl core::fmt::Debug for amber_core::actions::Action
+pub fn amber_core::actions::Action::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for amber_core::actions::Action
+impl core::marker::Freeze for amber_core::actions::Action
+impl core::marker::Send for amber_core::actions::Action
+impl core::marker::Sync for amber_core::actions::Action
+impl core::marker::Unpin for amber_core::actions::Action
+impl core::marker::UnsafeUnpin for amber_core::actions::Action
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::actions::Action
+impl core::panic::unwind_safe::UnwindSafe for amber_core::actions::Action
+#[non_exhaustive] pub enum amber_core::Error
+pub amber_core::Error::Browser(alloc::string::String)
+pub amber_core::Error::Extraction(alloc::string::String)
+pub amber_core::Error::Fetch(alloc::string::String)
+pub amber_core::Error::HttpStatus(u16, alloc::string::String)
+pub amber_core::Error::InvalidUrl(alloc::string::String)
+pub amber_core::Error::Io(std::io::error::Error)
+pub amber_core::Error::NoOutputSelected
+pub amber_core::Error::NotImplemented(&'static str)
+impl core::convert::From<std::io::error::Error> for amber_core::error::Error
+pub fn amber_core::error::Error::from(source: std::io::error::Error) -> Self
+impl core::error::Error for amber_core::error::Error
+pub fn amber_core::error::Error::source(&self) -> core::option::Option<&(dyn core::error::Error + 'static)>
+impl core::fmt::Debug for amber_core::error::Error
+pub fn amber_core::error::Error::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::fmt::Display for amber_core::error::Error
+pub fn amber_core::error::Error::fmt(&self, __formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for amber_core::error::Error
+impl core::marker::Send for amber_core::error::Error
+impl core::marker::Sync for amber_core::error::Error
+impl core::marker::Unpin for amber_core::error::Error
+impl core::marker::UnsafeUnpin for amber_core::error::Error
+impl !core::panic::unwind_safe::RefUnwindSafe for amber_core::error::Error
+impl !core::panic::unwind_safe::UnwindSafe for amber_core::error::Error
+pub enum amber_core::OutputFormat
+pub amber_core::OutputFormat::Html
+pub amber_core::OutputFormat::Markdown
+pub amber_core::OutputFormat::Mhtml
+pub amber_core::OutputFormat::Pdf
+pub amber_core::OutputFormat::Readable
+pub amber_core::OutputFormat::Screenshot
+pub amber_core::OutputFormat::Wacz
+pub amber_core::OutputFormat::Warc
+impl amber_core::output::OutputFormat
+pub const amber_core::output::OutputFormat::ALL: [amber_core::output::OutputFormat; 8]
+pub fn amber_core::output::OutputFormat::extension(self) -> &'static str
+pub fn amber_core::output::OutputFormat::requires_browser(self) -> bool
+impl core::clone::Clone for amber_core::output::OutputFormat
+pub fn amber_core::output::OutputFormat::clone(&self) -> amber_core::output::OutputFormat
+impl core::cmp::Eq for amber_core::output::OutputFormat
+impl core::cmp::PartialEq for amber_core::output::OutputFormat
+pub fn amber_core::output::OutputFormat::eq(&self, other: &amber_core::output::OutputFormat) -> bool
+impl core::fmt::Debug for amber_core::output::OutputFormat
+pub fn amber_core::output::OutputFormat::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for amber_core::output::OutputFormat
+pub fn amber_core::output::OutputFormat::hash<__H: core::hash::Hasher>(&self, state: &mut __H)
+impl core::marker::Copy for amber_core::output::OutputFormat
+impl core::marker::StructuralPartialEq for amber_core::output::OutputFormat
+impl<UT> uniffi_core::ffi_converter_traits::ConvertError<UT> for amber_core::output::OutputFormat
+pub fn amber_core::output::OutputFormat::try_convert_unexpected_callback_error(e: uniffi_core::ffi::callbackinterface::UnexpectedUniFFICallbackError) -> anyhow::Result<Self>
+impl<UT> uniffi_core::ffi_converter_traits::FfiConverter<UT> for amber_core::output::OutputFormat
+pub type amber_core::output::OutputFormat::FfiType = uniffi_core::ffi::rustbuffer::RustBuffer
+pub const amber_core::output::OutputFormat::TYPE_ID_META: uniffi_core::metadata::MetadataBuffer
+pub fn amber_core::output::OutputFormat::lower(v: Self) -> uniffi_core::ffi::rustbuffer::RustBuffer
+pub fn amber_core::output::OutputFormat::try_lift(buf: uniffi_core::ffi::rustbuffer::RustBuffer) -> anyhow::Result<Self>
+pub fn amber_core::output::OutputFormat::try_read(buf: &mut &[u8]) -> anyhow::Result<Self>
+pub fn amber_core::output::OutputFormat::write(obj: Self, buf: &mut alloc::vec::Vec<u8>)
+impl<UT> uniffi_core::ffi_converter_traits::Lift<UT> for amber_core::output::OutputFormat
+pub type amber_core::output::OutputFormat::FfiType = <amber_core::output::OutputFormat as uniffi_core::ffi_converter_traits::FfiConverter<UT>>::FfiType
+pub fn amber_core::output::OutputFormat::try_lift(v: Self::FfiType) -> anyhow::Result<Self>
+pub fn amber_core::output::OutputFormat::try_read(buf: &mut &[u8]) -> anyhow::Result<Self>
+impl<UT> uniffi_core::ffi_converter_traits::LiftRef<UT> for amber_core::output::OutputFormat
+pub type amber_core::output::OutputFormat::LiftType = amber_core::output::OutputFormat
+impl<UT> uniffi_core::ffi_converter_traits::LiftReturn<UT> for amber_core::output::OutputFormat
+pub type amber_core::output::OutputFormat::ReturnType = <amber_core::output::OutputFormat as uniffi_core::ffi_converter_traits::Lift<UT>>::FfiType
+pub fn amber_core::output::OutputFormat::try_lift_successful_return(v: Self::ReturnType) -> anyhow::Result<Self>
+impl<UT> uniffi_core::ffi_converter_traits::Lower<UT> for amber_core::output::OutputFormat
+pub type amber_core::output::OutputFormat::FfiType = <amber_core::output::OutputFormat as uniffi_core::ffi_converter_traits::FfiConverter<UT>>::FfiType
+pub fn amber_core::output::OutputFormat::lower(obj: Self) -> Self::FfiType
+pub fn amber_core::output::OutputFormat::write(obj: Self, buf: &mut alloc::vec::Vec<u8>)
+impl<UT> uniffi_core::ffi_converter_traits::LowerError<UT> for amber_core::output::OutputFormat
+pub fn amber_core::output::OutputFormat::lower_error(obj: Self) -> uniffi_core::ffi::rustbuffer::RustBuffer
+impl<UT> uniffi_core::ffi_converter_traits::LowerReturn<UT> for amber_core::output::OutputFormat
+pub type amber_core::output::OutputFormat::ReturnType = <amber_core::output::OutputFormat as uniffi_core::ffi_converter_traits::Lower<UT>>::FfiType
+pub fn amber_core::output::OutputFormat::lower_return(v: Self) -> anyhow::Result<Self::ReturnType, uniffi_core::ffi::rustcalls::RustCallError>
+impl<UT> uniffi_core::ffi_converter_traits::TypeId<UT> for amber_core::output::OutputFormat
+pub const amber_core::output::OutputFormat::TYPE_ID_META: uniffi_core::metadata::MetadataBuffer
+impl core::marker::Freeze for amber_core::output::OutputFormat
+impl core::marker::Send for amber_core::output::OutputFormat
+impl core::marker::Sync for amber_core::output::OutputFormat
+impl core::marker::Unpin for amber_core::output::OutputFormat
+impl core::marker::UnsafeUnpin for amber_core::output::OutputFormat
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::output::OutputFormat
+impl core::panic::unwind_safe::UnwindSafe for amber_core::output::OutputFormat
+pub enum amber_core::RenderMode
+pub amber_core::RenderMode::Always
+pub amber_core::RenderMode::Auto
+pub amber_core::RenderMode::Never
+impl core::clone::Clone for amber_core::fetch::RenderMode
+pub fn amber_core::fetch::RenderMode::clone(&self) -> amber_core::fetch::RenderMode
+impl core::cmp::Eq for amber_core::fetch::RenderMode
+impl core::cmp::PartialEq for amber_core::fetch::RenderMode
+pub fn amber_core::fetch::RenderMode::eq(&self, other: &amber_core::fetch::RenderMode) -> bool
+impl core::default::Default for amber_core::fetch::RenderMode
+pub fn amber_core::fetch::RenderMode::default() -> amber_core::fetch::RenderMode
+impl core::fmt::Debug for amber_core::fetch::RenderMode
+pub fn amber_core::fetch::RenderMode::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for amber_core::fetch::RenderMode
+impl core::marker::StructuralPartialEq for amber_core::fetch::RenderMode
+impl core::marker::Freeze for amber_core::fetch::RenderMode
+impl core::marker::Send for amber_core::fetch::RenderMode
+impl core::marker::Sync for amber_core::fetch::RenderMode
+impl core::marker::Unpin for amber_core::fetch::RenderMode
+impl core::marker::UnsafeUnpin for amber_core::fetch::RenderMode
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::fetch::RenderMode
+impl core::panic::unwind_safe::UnwindSafe for amber_core::fetch::RenderMode
+pub enum amber_core::ResourceType
+pub amber_core::ResourceType::Document
+pub amber_core::ResourceType::Font
+pub amber_core::ResourceType::Image
+pub amber_core::ResourceType::Media
+pub amber_core::ResourceType::Other
+pub amber_core::ResourceType::Script
+pub amber_core::ResourceType::Stylesheet
+pub amber_core::ResourceType::Xhr
+impl core::clone::Clone for amber_core::blocking::ResourceType
+pub fn amber_core::blocking::ResourceType::clone(&self) -> amber_core::blocking::ResourceType
+impl core::cmp::Eq for amber_core::blocking::ResourceType
+impl core::cmp::PartialEq for amber_core::blocking::ResourceType
+pub fn amber_core::blocking::ResourceType::eq(&self, other: &amber_core::blocking::ResourceType) -> bool
+impl core::fmt::Debug for amber_core::blocking::ResourceType
+pub fn amber_core::blocking::ResourceType::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for amber_core::blocking::ResourceType
+impl core::marker::StructuralPartialEq for amber_core::blocking::ResourceType
+impl core::marker::Freeze for amber_core::blocking::ResourceType
+impl core::marker::Send for amber_core::blocking::ResourceType
+impl core::marker::Sync for amber_core::blocking::ResourceType
+impl core::marker::Unpin for amber_core::blocking::ResourceType
+impl core::marker::UnsafeUnpin for amber_core::blocking::ResourceType
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::blocking::ResourceType
+impl core::panic::unwind_safe::UnwindSafe for amber_core::blocking::ResourceType
+pub struct amber_core::BlockPolicy
+pub amber_core::BlockPolicy::block_fonts: bool
+pub amber_core::BlockPolicy::block_images: bool
+pub amber_core::BlockPolicy::block_media: bool
+pub amber_core::BlockPolicy::blocked_url_substrings: alloc::vec::Vec<alloc::string::String>
+impl amber_core::blocking::BlockPolicy
+pub fn amber_core::blocking::BlockPolicy::blocked_url_patterns(&self) -> alloc::vec::Vec<alloc::string::String>
+pub fn amber_core::blocking::BlockPolicy::set_blocked_urls_command(&self) -> core::option::Option<(&'static str, serde_json::value::Value)>
+pub fn amber_core::blocking::BlockPolicy::should_block(&self, url: &str, kind: amber_core::blocking::ResourceType) -> bool
+pub fn amber_core::blocking::BlockPolicy::with_ad_trackers(self) -> Self
+impl core::clone::Clone for amber_core::blocking::BlockPolicy
+pub fn amber_core::blocking::BlockPolicy::clone(&self) -> amber_core::blocking::BlockPolicy
+impl core::default::Default for amber_core::blocking::BlockPolicy
+pub fn amber_core::blocking::BlockPolicy::default() -> amber_core::blocking::BlockPolicy
+impl core::fmt::Debug for amber_core::blocking::BlockPolicy
+pub fn amber_core::blocking::BlockPolicy::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for amber_core::blocking::BlockPolicy
+impl core::marker::Send for amber_core::blocking::BlockPolicy
+impl core::marker::Sync for amber_core::blocking::BlockPolicy
+impl core::marker::Unpin for amber_core::blocking::BlockPolicy
+impl core::marker::UnsafeUnpin for amber_core::blocking::BlockPolicy
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::blocking::BlockPolicy
+impl core::panic::unwind_safe::UnwindSafe for amber_core::blocking::BlockPolicy
+pub struct amber_core::BrowserPool
+impl amber_core::render::BrowserPool
+pub fn amber_core::render::BrowserPool::capture(&self, url: &url::Url, formats: &[amber_core::output::OutputFormat], opts: &amber_core::capture::CaptureOptions) -> amber_core::error::Result<amber_core::capture::RawCapture>
+pub fn amber_core::render::BrowserPool::idle_count(&self) -> usize
+pub fn amber_core::render::BrowserPool::new(chromium: std::path::PathBuf, capacity: usize) -> Self
+impl !core::marker::Freeze for amber_core::render::BrowserPool
+impl core::marker::Send for amber_core::render::BrowserPool
+impl core::marker::Sync for amber_core::render::BrowserPool
+impl core::marker::Unpin for amber_core::render::BrowserPool
+impl core::marker::UnsafeUnpin for amber_core::render::BrowserPool
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::render::BrowserPool
+impl core::panic::unwind_safe::UnwindSafe for amber_core::render::BrowserPool
+pub struct amber_core::Cache
+impl amber_core::cache::Cache
+pub fn amber_core::cache::Cache::conditional_headers(&self, url: &str) -> alloc::vec::Vec<(&'static str, alloc::string::String)>
+pub fn amber_core::cache::Cache::get(&self, url: &str) -> core::option::Option<&amber_core::cache::CacheEntry>
+pub fn amber_core::cache::Cache::is_unchanged(&self, url: &str, body: &[u8]) -> bool
+pub fn amber_core::cache::Cache::new() -> Self
+pub fn amber_core::cache::Cache::record(&mut self, url: &str, body: &[u8], etag: core::option::Option<alloc::string::String>, last_modified: core::option::Option<alloc::string::String>)
+impl core::default::Default for amber_core::cache::Cache
+pub fn amber_core::cache::Cache::default() -> amber_core::cache::Cache
+impl core::fmt::Debug for amber_core::cache::Cache
+pub fn amber_core::cache::Cache::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for amber_core::cache::Cache
+impl core::marker::Send for amber_core::cache::Cache
+impl core::marker::Sync for amber_core::cache::Cache
+impl core::marker::Unpin for amber_core::cache::Cache
+impl core::marker::UnsafeUnpin for amber_core::cache::Cache
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::cache::Cache
+impl core::panic::unwind_safe::UnwindSafe for amber_core::cache::Cache
+pub struct amber_core::CacheEntry
+pub amber_core::CacheEntry::content_hash: alloc::string::String
+pub amber_core::CacheEntry::etag: core::option::Option<alloc::string::String>
+pub amber_core::CacheEntry::last_modified: core::option::Option<alloc::string::String>
+impl core::clone::Clone for amber_core::cache::CacheEntry
+pub fn amber_core::cache::CacheEntry::clone(&self) -> amber_core::cache::CacheEntry
+impl core::cmp::Eq for amber_core::cache::CacheEntry
+impl core::cmp::PartialEq for amber_core::cache::CacheEntry
+pub fn amber_core::cache::CacheEntry::eq(&self, other: &amber_core::cache::CacheEntry) -> bool
+impl core::default::Default for amber_core::cache::CacheEntry
+pub fn amber_core::cache::CacheEntry::default() -> amber_core::cache::CacheEntry
+impl core::fmt::Debug for amber_core::cache::CacheEntry
+pub fn amber_core::cache::CacheEntry::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for amber_core::cache::CacheEntry
+impl core::marker::Freeze for amber_core::cache::CacheEntry
+impl core::marker::Send for amber_core::cache::CacheEntry
+impl core::marker::Sync for amber_core::cache::CacheEntry
+impl core::marker::Unpin for amber_core::cache::CacheEntry
+impl core::marker::UnsafeUnpin for amber_core::cache::CacheEntry
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::cache::CacheEntry
+impl core::panic::unwind_safe::UnwindSafe for amber_core::cache::CacheEntry
+pub struct amber_core::Cadence
+impl amber_core::recurring::Cadence
+pub fn amber_core::recurring::Cadence::delay_from(&self, now_epoch_secs: u64) -> u64
+pub fn amber_core::recurring::Cadence::new(start_epoch_secs: u64, interval: core::time::Duration) -> Self
+pub fn amber_core::recurring::Cadence::next_run(&self, now_epoch_secs: u64) -> u64
+impl core::clone::Clone for amber_core::recurring::Cadence
+pub fn amber_core::recurring::Cadence::clone(&self) -> amber_core::recurring::Cadence
+impl core::cmp::Eq for amber_core::recurring::Cadence
+impl core::cmp::PartialEq for amber_core::recurring::Cadence
+pub fn amber_core::recurring::Cadence::eq(&self, other: &amber_core::recurring::Cadence) -> bool
+impl core::fmt::Debug for amber_core::recurring::Cadence
+pub fn amber_core::recurring::Cadence::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for amber_core::recurring::Cadence
+impl core::marker::StructuralPartialEq for amber_core::recurring::Cadence
+impl core::marker::Freeze for amber_core::recurring::Cadence
+impl core::marker::Send for amber_core::recurring::Cadence
+impl core::marker::Sync for amber_core::recurring::Cadence
+impl core::marker::Unpin for amber_core::recurring::Cadence
+impl core::marker::UnsafeUnpin for amber_core::recurring::Cadence
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::recurring::Cadence
+impl core::panic::unwind_safe::UnwindSafe for amber_core::recurring::Cadence
+pub struct amber_core::CaptureOptions
+pub amber_core::CaptureOptions::accessibility: bool
+pub amber_core::CaptureOptions::actions: alloc::vec::Vec<amber_core::actions::Action>
+pub amber_core::CaptureOptions::block: amber_core::blocking::BlockPolicy
+pub amber_core::CaptureOptions::emulation: amber_core::emulation::EmulationConfig
+pub amber_core::CaptureOptions::headed: bool
+pub amber_core::CaptureOptions::limits: amber_core::limits::ResourceLimits
+pub amber_core::CaptureOptions::min_content: core::option::Option<usize>
+pub amber_core::CaptureOptions::proxy: core::option::Option<alloc::string::String>
+pub amber_core::CaptureOptions::render: amber_core::fetch::RenderMode
+pub amber_core::CaptureOptions::session: amber_core::session::SessionState
+pub amber_core::CaptureOptions::settle: amber_core::browser::SettlePolicy
+pub amber_core::CaptureOptions::wait_for: core::option::Option<alloc::string::String>
+impl core::clone::Clone for amber_core::capture::CaptureOptions
+pub fn amber_core::capture::CaptureOptions::clone(&self) -> amber_core::capture::CaptureOptions
+impl core::default::Default for amber_core::capture::CaptureOptions
+pub fn amber_core::capture::CaptureOptions::default() -> amber_core::capture::CaptureOptions
+impl core::fmt::Debug for amber_core::capture::CaptureOptions
+pub fn amber_core::capture::CaptureOptions::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for amber_core::capture::CaptureOptions
+impl core::marker::Send for amber_core::capture::CaptureOptions
+impl core::marker::Sync for amber_core::capture::CaptureOptions
+impl core::marker::Unpin for amber_core::capture::CaptureOptions
+impl core::marker::UnsafeUnpin for amber_core::capture::CaptureOptions
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::capture::CaptureOptions
+impl core::panic::unwind_safe::UnwindSafe for amber_core::capture::CaptureOptions
+pub struct amber_core::ChangeReport
+pub amber_core::ChangeReport::content_changed: bool
+pub amber_core::ChangeReport::content_diff: amber_core::diff::LineDiff
+pub amber_core::ChangeReport::visual_changed: bool
+impl amber_core::monitor::ChangeReport
+pub fn amber_core::monitor::ChangeReport::any_change(&self) -> bool
+impl core::clone::Clone for amber_core::monitor::ChangeReport
+pub fn amber_core::monitor::ChangeReport::clone(&self) -> amber_core::monitor::ChangeReport
+impl core::fmt::Debug for amber_core::monitor::ChangeReport
+pub fn amber_core::monitor::ChangeReport::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for amber_core::monitor::ChangeReport
+impl core::marker::Send for amber_core::monitor::ChangeReport
+impl core::marker::Sync for amber_core::monitor::ChangeReport
+impl core::marker::Unpin for amber_core::monitor::ChangeReport
+impl core::marker::UnsafeUnpin for amber_core::monitor::ChangeReport
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::monitor::ChangeReport
+impl core::panic::unwind_safe::UnwindSafe for amber_core::monitor::ChangeReport
+pub struct amber_core::CrawlLimits
+pub amber_core::CrawlLimits::max_depth: usize
+pub amber_core::CrawlLimits::max_pages: usize
+pub amber_core::CrawlLimits::min_delay_ms: u64
+impl core::clone::Clone for amber_core::crawl::CrawlLimits
+pub fn amber_core::crawl::CrawlLimits::clone(&self) -> amber_core::crawl::CrawlLimits
+impl core::default::Default for amber_core::crawl::CrawlLimits
+pub fn amber_core::crawl::CrawlLimits::default() -> Self
+impl core::fmt::Debug for amber_core::crawl::CrawlLimits
+pub fn amber_core::crawl::CrawlLimits::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for amber_core::crawl::CrawlLimits
+impl core::marker::Freeze for amber_core::crawl::CrawlLimits
+impl core::marker::Send for amber_core::crawl::CrawlLimits
+impl core::marker::Sync for amber_core::crawl::CrawlLimits
+impl core::marker::Unpin for amber_core::crawl::CrawlLimits
+impl core::marker::UnsafeUnpin for amber_core::crawl::CrawlLimits
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::crawl::CrawlLimits
+impl core::panic::unwind_safe::UnwindSafe for amber_core::crawl::CrawlLimits
+pub struct amber_core::CrawlScope
+impl amber_core::crawl::CrawlScope
+pub fn amber_core::crawl::CrawlScope::in_scope(&self, url: &url::Url) -> bool
+pub fn amber_core::crawl::CrawlScope::including_subdomains(self, yes: bool) -> Self
+pub fn amber_core::crawl::CrawlScope::same_host(seed: &url::Url) -> Self
+pub fn amber_core::crawl::CrawlScope::under_path(self, prefix: impl core::convert::Into<alloc::string::String>) -> Self
+impl core::clone::Clone for amber_core::crawl::CrawlScope
+pub fn amber_core::crawl::CrawlScope::clone(&self) -> amber_core::crawl::CrawlScope
+impl core::fmt::Debug for amber_core::crawl::CrawlScope
+pub fn amber_core::crawl::CrawlScope::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for amber_core::crawl::CrawlScope
+impl core::marker::Send for amber_core::crawl::CrawlScope
+impl core::marker::Sync for amber_core::crawl::CrawlScope
+impl core::marker::Unpin for amber_core::crawl::CrawlScope
+impl core::marker::UnsafeUnpin for amber_core::crawl::CrawlScope
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::crawl::CrawlScope
+impl core::panic::unwind_safe::UnwindSafe for amber_core::crawl::CrawlScope
+pub struct amber_core::CrawlStore
+impl amber_core::store::CrawlStore
+pub fn amber_core::store::CrawlStore::export_jsonl(&self, path: &std::path::Path) -> amber_core::error::Result<()>
+pub fn amber_core::store::CrawlStore::from_json(s: &str) -> amber_core::store::CrawlStore
+pub fn amber_core::store::CrawlStore::get(&self, url: &str) -> core::option::Option<&amber_core::store::StoredPage>
+pub fn amber_core::store::CrawlStore::is_empty(&self) -> bool
+pub fn amber_core::store::CrawlStore::len(&self) -> usize
+pub fn amber_core::store::CrawlStore::load(path: &std::path::Path) -> amber_core::error::Result<amber_core::store::CrawlStore>
+pub fn amber_core::store::CrawlStore::new() -> Self
+pub fn amber_core::store::CrawlStore::pages(&self) -> impl core::iter::traits::iterator::Iterator<Item = &amber_core::store::StoredPage>
+pub fn amber_core::store::CrawlStore::record(&mut self, url: &str, body: &[u8])
+pub fn amber_core::store::CrawlStore::save(&self, path: &std::path::Path) -> amber_core::error::Result<()>
+pub fn amber_core::store::CrawlStore::to_json(&self) -> alloc::string::String
+pub fn amber_core::store::CrawlStore::to_jsonl(&self) -> alloc::string::String
+pub fn amber_core::store::CrawlStore::upsert(&mut self, page: amber_core::store::StoredPage)
+impl core::clone::Clone for amber_core::store::CrawlStore
+pub fn amber_core::store::CrawlStore::clone(&self) -> amber_core::store::CrawlStore
+impl core::default::Default for amber_core::store::CrawlStore
+pub fn amber_core::store::CrawlStore::default() -> amber_core::store::CrawlStore
+impl core::fmt::Debug for amber_core::store::CrawlStore
+pub fn amber_core::store::CrawlStore::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for amber_core::store::CrawlStore
+impl core::marker::Send for amber_core::store::CrawlStore
+impl core::marker::Sync for amber_core::store::CrawlStore
+impl core::marker::Unpin for amber_core::store::CrawlStore
+impl core::marker::UnsafeUnpin for amber_core::store::CrawlStore
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::store::CrawlStore
+impl core::panic::unwind_safe::UnwindSafe for amber_core::store::CrawlStore
+pub struct amber_core::Deadline
+impl amber_core::limits::Deadline
+pub fn amber_core::limits::Deadline::exceeded(&self) -> bool
+pub fn amber_core::limits::Deadline::new(limit: core::option::Option<core::time::Duration>) -> Self
+pub fn amber_core::limits::Deadline::remaining(&self) -> core::option::Option<core::time::Duration>
+impl core::clone::Clone for amber_core::limits::Deadline
+pub fn amber_core::limits::Deadline::clone(&self) -> amber_core::limits::Deadline
+impl core::fmt::Debug for amber_core::limits::Deadline
+pub fn amber_core::limits::Deadline::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for amber_core::limits::Deadline
+impl core::marker::Freeze for amber_core::limits::Deadline
+impl core::marker::Send for amber_core::limits::Deadline
+impl core::marker::Sync for amber_core::limits::Deadline
+impl core::marker::Unpin for amber_core::limits::Deadline
+impl core::marker::UnsafeUnpin for amber_core::limits::Deadline
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::limits::Deadline
+impl core::panic::unwind_safe::UnwindSafe for amber_core::limits::Deadline
+pub struct amber_core::EmulationConfig
+pub amber_core::EmulationConfig::dark_mode: bool
+pub amber_core::EmulationConfig::locale: core::option::Option<alloc::string::String>
+pub amber_core::EmulationConfig::timezone: core::option::Option<alloc::string::String>
+pub amber_core::EmulationConfig::user_agent: core::option::Option<alloc::string::String>
+pub amber_core::EmulationConfig::viewport: core::option::Option<amber_core::emulation::Viewport>
+impl core::clone::Clone for amber_core::emulation::EmulationConfig
+pub fn amber_core::emulation::EmulationConfig::clone(&self) -> amber_core::emulation::EmulationConfig
+impl core::default::Default for amber_core::emulation::EmulationConfig
+pub fn amber_core::emulation::EmulationConfig::default() -> amber_core::emulation::EmulationConfig
+impl core::fmt::Debug for amber_core::emulation::EmulationConfig
+pub fn amber_core::emulation::EmulationConfig::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for amber_core::emulation::EmulationConfig
+impl core::marker::Send for amber_core::emulation::EmulationConfig
+impl core::marker::Sync for amber_core::emulation::EmulationConfig
+impl core::marker::Unpin for amber_core::emulation::EmulationConfig
+impl core::marker::UnsafeUnpin for amber_core::emulation::EmulationConfig
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::emulation::EmulationConfig
+impl core::panic::unwind_safe::UnwindSafe for amber_core::emulation::EmulationConfig
+pub struct amber_core::EvidenceEntry
+pub amber_core::EvidenceEntry::bytes: usize
+pub amber_core::EvidenceEntry::format: alloc::string::String
+pub amber_core::EvidenceEntry::sha256: alloc::string::String
+impl core::clone::Clone for amber_core::evidence::EvidenceEntry
+pub fn amber_core::evidence::EvidenceEntry::clone(&self) -> amber_core::evidence::EvidenceEntry
+impl core::cmp::Eq for amber_core::evidence::EvidenceEntry
+impl core::cmp::PartialEq for amber_core::evidence::EvidenceEntry
+pub fn amber_core::evidence::EvidenceEntry::eq(&self, other: &amber_core::evidence::EvidenceEntry) -> bool
+impl core::fmt::Debug for amber_core::evidence::EvidenceEntry
+pub fn amber_core::evidence::EvidenceEntry::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for amber_core::evidence::EvidenceEntry
+impl core::marker::Freeze for amber_core::evidence::EvidenceEntry
+impl core::marker::Send for amber_core::evidence::EvidenceEntry
+impl core::marker::Sync for amber_core::evidence::EvidenceEntry
+impl core::marker::Unpin for amber_core::evidence::EvidenceEntry
+impl core::marker::UnsafeUnpin for amber_core::evidence::EvidenceEntry
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::evidence::EvidenceEntry
+impl core::panic::unwind_safe::UnwindSafe for amber_core::evidence::EvidenceEntry
+pub struct amber_core::EvidenceManifest
+pub amber_core::EvidenceManifest::captured_at: alloc::string::String
+pub amber_core::EvidenceManifest::outputs: alloc::vec::Vec<amber_core::evidence::EvidenceEntry>
+pub amber_core::EvidenceManifest::url: alloc::string::String
+impl amber_core::evidence::EvidenceManifest
+pub fn amber_core::evidence::EvidenceManifest::digest(&self) -> alloc::string::String
+pub fn amber_core::evidence::EvidenceManifest::sign(&self, secret_seed: &[u8; 32]) -> amber_core::evidence::SignedEvidence
+pub fn amber_core::evidence::EvidenceManifest::to_json(&self) -> alloc::string::String
+impl core::clone::Clone for amber_core::evidence::EvidenceManifest
+pub fn amber_core::evidence::EvidenceManifest::clone(&self) -> amber_core::evidence::EvidenceManifest
+impl core::cmp::Eq for amber_core::evidence::EvidenceManifest
+impl core::cmp::PartialEq for amber_core::evidence::EvidenceManifest
+pub fn amber_core::evidence::EvidenceManifest::eq(&self, other: &amber_core::evidence::EvidenceManifest) -> bool
+impl core::fmt::Debug for amber_core::evidence::EvidenceManifest
+pub fn amber_core::evidence::EvidenceManifest::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for amber_core::evidence::EvidenceManifest
+impl core::marker::Freeze for amber_core::evidence::EvidenceManifest
+impl core::marker::Send for amber_core::evidence::EvidenceManifest
+impl core::marker::Sync for amber_core::evidence::EvidenceManifest
+impl core::marker::Unpin for amber_core::evidence::EvidenceManifest
+impl core::marker::UnsafeUnpin for amber_core::evidence::EvidenceManifest
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::evidence::EvidenceManifest
+impl core::panic::unwind_safe::UnwindSafe for amber_core::evidence::EvidenceManifest
+pub struct amber_core::FieldProvenance
+pub amber_core::FieldProvenance::anchor: core::option::Option<amber_core::provenance::Provenance>
+pub amber_core::FieldProvenance::path: alloc::string::String
+pub amber_core::FieldProvenance::value: alloc::string::String
+impl core::clone::Clone for amber_core::provenance::FieldProvenance
+pub fn amber_core::provenance::FieldProvenance::clone(&self) -> amber_core::provenance::FieldProvenance
+impl core::cmp::Eq for amber_core::provenance::FieldProvenance
+impl core::cmp::PartialEq for amber_core::provenance::FieldProvenance
+pub fn amber_core::provenance::FieldProvenance::eq(&self, other: &amber_core::provenance::FieldProvenance) -> bool
+impl core::fmt::Debug for amber_core::provenance::FieldProvenance
+pub fn amber_core::provenance::FieldProvenance::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for amber_core::provenance::FieldProvenance
+impl core::marker::Freeze for amber_core::provenance::FieldProvenance
+impl core::marker::Send for amber_core::provenance::FieldProvenance
+impl core::marker::Sync for amber_core::provenance::FieldProvenance
+impl core::marker::Unpin for amber_core::provenance::FieldProvenance
+impl core::marker::UnsafeUnpin for amber_core::provenance::FieldProvenance
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::provenance::FieldProvenance
+impl core::panic::unwind_safe::UnwindSafe for amber_core::provenance::FieldProvenance
+pub struct amber_core::Frontier
+impl amber_core::crawl::Frontier
+pub fn amber_core::crawl::Frontier::add_links<I>(&mut self, parent_depth: usize, links: I) -> usize where I: core::iter::traits::collect::IntoIterator<Item = url::Url>
+pub fn amber_core::crawl::Frontier::dispatched(&self) -> usize
+pub fn amber_core::crawl::Frontier::enqueue(&mut self, url: url::Url, depth: usize) -> bool
+pub fn amber_core::crawl::Frontier::new(seed: url::Url, scope: amber_core::crawl::CrawlScope, limits: amber_core::crawl::CrawlLimits) -> Self
+pub fn amber_core::crawl::Frontier::next_url(&mut self) -> core::option::Option<(url::Url, usize)>
+impl core::fmt::Debug for amber_core::crawl::Frontier
+pub fn amber_core::crawl::Frontier::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for amber_core::crawl::Frontier
+impl core::marker::Send for amber_core::crawl::Frontier
+impl core::marker::Sync for amber_core::crawl::Frontier
+impl core::marker::Unpin for amber_core::crawl::Frontier
+impl core::marker::UnsafeUnpin for amber_core::crawl::Frontier
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::crawl::Frontier
+impl core::panic::unwind_safe::UnwindSafe for amber_core::crawl::Frontier
+pub struct amber_core::HashingEmbedder
+impl amber_core::semantic::HashingEmbedder
+pub fn amber_core::semantic::HashingEmbedder::new(dim: usize) -> Self
+impl amber_core::semantic::Embedder for amber_core::semantic::HashingEmbedder
+pub fn amber_core::semantic::HashingEmbedder::embed(&self, text: &str) -> alloc::vec::Vec<f32>
+impl core::clone::Clone for amber_core::semantic::HashingEmbedder
+pub fn amber_core::semantic::HashingEmbedder::clone(&self) -> amber_core::semantic::HashingEmbedder
+impl core::default::Default for amber_core::semantic::HashingEmbedder
+pub fn amber_core::semantic::HashingEmbedder::default() -> Self
+impl core::fmt::Debug for amber_core::semantic::HashingEmbedder
+pub fn amber_core::semantic::HashingEmbedder::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for amber_core::semantic::HashingEmbedder
+impl core::marker::Send for amber_core::semantic::HashingEmbedder
+impl core::marker::Sync for amber_core::semantic::HashingEmbedder
+impl core::marker::Unpin for amber_core::semantic::HashingEmbedder
+impl core::marker::UnsafeUnpin for amber_core::semantic::HashingEmbedder
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::semantic::HashingEmbedder
+impl core::panic::unwind_safe::UnwindSafe for amber_core::semantic::HashingEmbedder
+pub struct amber_core::LineDiff
+pub amber_core::LineDiff::added: alloc::vec::Vec<alloc::string::String>
+pub amber_core::LineDiff::removed: alloc::vec::Vec<alloc::string::String>
+impl amber_core::diff::LineDiff
+pub fn amber_core::diff::LineDiff::is_changed(&self) -> bool
+impl core::clone::Clone for amber_core::diff::LineDiff
+pub fn amber_core::diff::LineDiff::clone(&self) -> amber_core::diff::LineDiff
+impl core::cmp::Eq for amber_core::diff::LineDiff
+impl core::cmp::PartialEq for amber_core::diff::LineDiff
+pub fn amber_core::diff::LineDiff::eq(&self, other: &amber_core::diff::LineDiff) -> bool
+impl core::default::Default for amber_core::diff::LineDiff
+pub fn amber_core::diff::LineDiff::default() -> amber_core::diff::LineDiff
+impl core::fmt::Debug for amber_core::diff::LineDiff
+pub fn amber_core::diff::LineDiff::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for amber_core::diff::LineDiff
+impl core::marker::Freeze for amber_core::diff::LineDiff
+impl core::marker::Send for amber_core::diff::LineDiff
+impl core::marker::Sync for amber_core::diff::LineDiff
+impl core::marker::Unpin for amber_core::diff::LineDiff
+impl core::marker::UnsafeUnpin for amber_core::diff::LineDiff
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::diff::LineDiff
+impl core::panic::unwind_safe::UnwindSafe for amber_core::diff::LineDiff
+pub struct amber_core::Metrics
+impl amber_core::metrics::Metrics
+pub fn amber_core::metrics::Metrics::new() -> Self
+pub fn amber_core::metrics::Metrics::record_cache_hit(&mut self)
+pub fn amber_core::metrics::Metrics::record_cache_miss(&mut self)
+pub fn amber_core::metrics::Metrics::record_fetch(&mut self, bytes: usize, elapsed: core::time::Duration)
+pub fn amber_core::metrics::Metrics::record_render(&mut self)
+pub fn amber_core::metrics::Metrics::snapshot(&self) -> amber_core::metrics::MetricsSnapshot
+pub fn amber_core::metrics::Metrics::to_json(&self) -> alloc::string::String
+impl core::clone::Clone for amber_core::metrics::Metrics
+pub fn amber_core::metrics::Metrics::clone(&self) -> amber_core::metrics::Metrics
+impl core::default::Default for amber_core::metrics::Metrics
+pub fn amber_core::metrics::Metrics::default() -> amber_core::metrics::Metrics
+impl core::fmt::Debug for amber_core::metrics::Metrics
+pub fn amber_core::metrics::Metrics::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for amber_core::metrics::Metrics
+impl core::marker::Send for amber_core::metrics::Metrics
+impl core::marker::Sync for amber_core::metrics::Metrics
+impl core::marker::Unpin for amber_core::metrics::Metrics
+impl core::marker::UnsafeUnpin for amber_core::metrics::Metrics
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::metrics::Metrics
+impl core::panic::unwind_safe::UnwindSafe for amber_core::metrics::Metrics
+pub struct amber_core::MetricsSnapshot
+pub amber_core::MetricsSnapshot::avg_fetch_ms: f64
+pub amber_core::MetricsSnapshot::browser_renders: u64
+pub amber_core::MetricsSnapshot::bytes_fetched: u64
+pub amber_core::MetricsSnapshot::cache_hit_rate: f64
+pub amber_core::MetricsSnapshot::cache_hits: u64
+pub amber_core::MetricsSnapshot::cache_misses: u64
+pub amber_core::MetricsSnapshot::pages_fetched: u64
+pub amber_core::MetricsSnapshot::render_rate: f64
+impl core::clone::Clone for amber_core::metrics::MetricsSnapshot
+pub fn amber_core::metrics::MetricsSnapshot::clone(&self) -> amber_core::metrics::MetricsSnapshot
+impl core::cmp::PartialEq for amber_core::metrics::MetricsSnapshot
+pub fn amber_core::metrics::MetricsSnapshot::eq(&self, other: &amber_core::metrics::MetricsSnapshot) -> bool
+impl core::fmt::Debug for amber_core::metrics::MetricsSnapshot
+pub fn amber_core::metrics::MetricsSnapshot::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for amber_core::metrics::MetricsSnapshot
+impl core::marker::Freeze for amber_core::metrics::MetricsSnapshot
+impl core::marker::Send for amber_core::metrics::MetricsSnapshot
+impl core::marker::Sync for amber_core::metrics::MetricsSnapshot
+impl core::marker::Unpin for amber_core::metrics::MetricsSnapshot
+impl core::marker::UnsafeUnpin for amber_core::metrics::MetricsSnapshot
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::metrics::MetricsSnapshot
+impl core::panic::unwind_safe::UnwindSafe for amber_core::metrics::MetricsSnapshot
+pub struct amber_core::PageMetadata
+pub amber_core::PageMetadata::canonical: core::option::Option<alloc::string::String>
+pub amber_core::PageMetadata::description: core::option::Option<alloc::string::String>
+pub amber_core::PageMetadata::lang: core::option::Option<alloc::string::String>
+pub amber_core::PageMetadata::links: alloc::vec::Vec<alloc::string::String>
+pub amber_core::PageMetadata::next_page: core::option::Option<alloc::string::String>
+pub amber_core::PageMetadata::open_graph: alloc::collections::btree::map::BTreeMap<alloc::string::String, alloc::string::String>
+pub amber_core::PageMetadata::title: core::option::Option<alloc::string::String>
+impl core::clone::Clone for amber_core::meta::PageMetadata
+pub fn amber_core::meta::PageMetadata::clone(&self) -> amber_core::meta::PageMetadata
+impl core::cmp::Eq for amber_core::meta::PageMetadata
+impl core::cmp::PartialEq for amber_core::meta::PageMetadata
+pub fn amber_core::meta::PageMetadata::eq(&self, other: &amber_core::meta::PageMetadata) -> bool
+impl core::default::Default for amber_core::meta::PageMetadata
+pub fn amber_core::meta::PageMetadata::default() -> amber_core::meta::PageMetadata
+impl core::fmt::Debug for amber_core::meta::PageMetadata
+pub fn amber_core::meta::PageMetadata::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for amber_core::meta::PageMetadata
+impl core::marker::Freeze for amber_core::meta::PageMetadata
+impl core::marker::Send for amber_core::meta::PageMetadata
+impl core::marker::Sync for amber_core::meta::PageMetadata
+impl core::marker::Unpin for amber_core::meta::PageMetadata
+impl core::marker::UnsafeUnpin for amber_core::meta::PageMetadata
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::meta::PageMetadata
+impl core::panic::unwind_safe::UnwindSafe for amber_core::meta::PageMetadata
+pub struct amber_core::Pool<T>
+impl<T> amber_core::pool::Pool<T>
+pub fn amber_core::pool::Pool<T>::acquire(&self, make: impl core::ops::function::FnOnce() -> T) -> core::option::Option<T>
+pub fn amber_core::pool::Pool<T>::acquire_with<E>(&self, make: impl core::ops::function::FnOnce() -> core::result::Result<T, E>) -> core::result::Result<core::option::Option<T>, E>
+pub fn amber_core::pool::Pool<T>::capacity(&self) -> usize
+pub fn amber_core::pool::Pool<T>::discard(&self)
+pub fn amber_core::pool::Pool<T>::idle_count(&self) -> usize
+pub fn amber_core::pool::Pool<T>::leased_count(&self) -> usize
+pub fn amber_core::pool::Pool<T>::new(capacity: usize) -> Self
+pub fn amber_core::pool::Pool<T>::release(&self, item: T)
+impl<T> !core::marker::Freeze for amber_core::pool::Pool<T>
+impl<T> core::marker::Send for amber_core::pool::Pool<T> where T: core::marker::Send
+impl<T> core::marker::Sync for amber_core::pool::Pool<T> where T: core::marker::Send
+impl<T> core::marker::Unpin for amber_core::pool::Pool<T> where T: core::marker::Unpin
+impl<T> core::marker::UnsafeUnpin for amber_core::pool::Pool<T>
+impl<T> core::panic::unwind_safe::RefUnwindSafe for amber_core::pool::Pool<T>
+impl<T> core::panic::unwind_safe::UnwindSafe for amber_core::pool::Pool<T>
+pub struct amber_core::Provenance
+pub amber_core::Provenance::css_path: alloc::string::String
+pub amber_core::Provenance::text: alloc::string::String
+pub amber_core::Provenance::url: alloc::string::String
+impl core::clone::Clone for amber_core::provenance::Provenance
+pub fn amber_core::provenance::Provenance::clone(&self) -> amber_core::provenance::Provenance
+impl core::cmp::Eq for amber_core::provenance::Provenance
+impl core::cmp::PartialEq for amber_core::provenance::Provenance
+pub fn amber_core::provenance::Provenance::eq(&self, other: &amber_core::provenance::Provenance) -> bool
+impl core::fmt::Debug for amber_core::provenance::Provenance
+pub fn amber_core::provenance::Provenance::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for amber_core::provenance::Provenance
+impl core::marker::Freeze for amber_core::provenance::Provenance
+impl core::marker::Send for amber_core::provenance::Provenance
+impl core::marker::Sync for amber_core::provenance::Provenance
+impl core::marker::Unpin for amber_core::provenance::Provenance
+impl core::marker::UnsafeUnpin for amber_core::provenance::Provenance
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::provenance::Provenance
+impl core::panic::unwind_safe::UnwindSafe for amber_core::provenance::Provenance
+pub struct amber_core::ProvenanceRecord
+pub amber_core::ProvenanceRecord::anchors: alloc::vec::Vec<amber_core::provenance::FieldProvenance>
+pub amber_core::ProvenanceRecord::captured_at: alloc::string::String
+pub amber_core::ProvenanceRecord::url: alloc::string::String
+pub amber_core::ProvenanceRecord::value: serde_json::value::Value
+impl amber_core::corpus::ProvenanceRecord
+pub fn amber_core::corpus::ProvenanceRecord::to_json(&self) -> serde_json::value::Value
+impl core::clone::Clone for amber_core::corpus::ProvenanceRecord
+pub fn amber_core::corpus::ProvenanceRecord::clone(&self) -> amber_core::corpus::ProvenanceRecord
+impl core::fmt::Debug for amber_core::corpus::ProvenanceRecord
+pub fn amber_core::corpus::ProvenanceRecord::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for amber_core::corpus::ProvenanceRecord
+impl core::marker::Send for amber_core::corpus::ProvenanceRecord
+impl core::marker::Sync for amber_core::corpus::ProvenanceRecord
+impl core::marker::Unpin for amber_core::corpus::ProvenanceRecord
+impl core::marker::UnsafeUnpin for amber_core::corpus::ProvenanceRecord
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::corpus::ProvenanceRecord
+impl core::panic::unwind_safe::UnwindSafe for amber_core::corpus::ProvenanceRecord
+pub struct amber_core::RawCapture
+pub amber_core::RawCapture::accessibility_tree: core::option::Option<serde_json::value::Value>
+pub amber_core::RawCapture::captured_at: core::option::Option<alloc::string::String>
+pub amber_core::RawCapture::final_url: alloc::string::String
+pub amber_core::RawCapture::mhtml: core::option::Option<alloc::string::String>
+pub amber_core::RawCapture::pdf: core::option::Option<alloc::vec::Vec<u8>>
+pub amber_core::RawCapture::rendered_html: core::option::Option<alloc::string::String>
+pub amber_core::RawCapture::screenshot_png: core::option::Option<alloc::vec::Vec<u8>>
+pub amber_core::RawCapture::static_html: core::option::Option<alloc::string::String>
+pub amber_core::RawCapture::used_browser: bool
+impl core::default::Default for amber_core::capture::RawCapture
+pub fn amber_core::capture::RawCapture::default() -> amber_core::capture::RawCapture
+impl core::fmt::Debug for amber_core::capture::RawCapture
+pub fn amber_core::capture::RawCapture::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for amber_core::capture::RawCapture
+impl core::marker::Send for amber_core::capture::RawCapture
+impl core::marker::Sync for amber_core::capture::RawCapture
+impl core::marker::Unpin for amber_core::capture::RawCapture
+impl core::marker::UnsafeUnpin for amber_core::capture::RawCapture
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::capture::RawCapture
+impl core::panic::unwind_safe::UnwindSafe for amber_core::capture::RawCapture
+pub struct amber_core::ResourceLimits
+pub amber_core::ResourceLimits::max_bytes: core::option::Option<u64>
+pub amber_core::ResourceLimits::max_cpu_seconds: core::option::Option<u64>
+pub amber_core::ResourceLimits::max_duration: core::option::Option<core::time::Duration>
+pub amber_core::ResourceLimits::max_memory_bytes: core::option::Option<u64>
+impl amber_core::limits::ResourceLimits
+pub fn amber_core::limits::ResourceLimits::deadline(&self) -> amber_core::limits::Deadline
+pub fn amber_core::limits::ResourceLimits::time_exceeded(&self, elapsed: core::time::Duration) -> bool
+pub fn amber_core::limits::ResourceLimits::within_byte_budget(&self, bytes: u64) -> bool
+impl amber_core::limits::ResourceLimits
+pub fn amber_core::limits::ResourceLimits::has_os_caps(&self) -> bool
+impl core::clone::Clone for amber_core::limits::ResourceLimits
+pub fn amber_core::limits::ResourceLimits::clone(&self) -> amber_core::limits::ResourceLimits
+impl core::default::Default for amber_core::limits::ResourceLimits
+pub fn amber_core::limits::ResourceLimits::default() -> amber_core::limits::ResourceLimits
+impl core::fmt::Debug for amber_core::limits::ResourceLimits
+pub fn amber_core::limits::ResourceLimits::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for amber_core::limits::ResourceLimits
+impl core::marker::Freeze for amber_core::limits::ResourceLimits
+impl core::marker::Send for amber_core::limits::ResourceLimits
+impl core::marker::Sync for amber_core::limits::ResourceLimits
+impl core::marker::Unpin for amber_core::limits::ResourceLimits
+impl core::marker::UnsafeUnpin for amber_core::limits::ResourceLimits
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::limits::ResourceLimits
+impl core::panic::unwind_safe::UnwindSafe for amber_core::limits::ResourceLimits
+pub struct amber_core::Robots
+impl amber_core::robots::Robots
+pub fn amber_core::robots::Robots::allows(&self, user_agent: &str, path: &str) -> bool
+pub fn amber_core::robots::Robots::crawl_delay(&self, user_agent: &str) -> core::option::Option<f64>
+pub fn amber_core::robots::Robots::parse(content: &str) -> amber_core::robots::Robots
+impl core::clone::Clone for amber_core::robots::Robots
+pub fn amber_core::robots::Robots::clone(&self) -> amber_core::robots::Robots
+impl core::default::Default for amber_core::robots::Robots
+pub fn amber_core::robots::Robots::default() -> amber_core::robots::Robots
+impl core::fmt::Debug for amber_core::robots::Robots
+pub fn amber_core::robots::Robots::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for amber_core::robots::Robots
+impl core::marker::Send for amber_core::robots::Robots
+impl core::marker::Sync for amber_core::robots::Robots
+impl core::marker::Unpin for amber_core::robots::Robots
+impl core::marker::UnsafeUnpin for amber_core::robots::Robots
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::robots::Robots
+impl core::panic::unwind_safe::UnwindSafe for amber_core::robots::Robots
+pub struct amber_core::SemanticIndex<E: amber_core::semantic::Embedder>
+impl<E: amber_core::semantic::Embedder> amber_core::semantic::SemanticIndex<E>
+pub fn amber_core::semantic::SemanticIndex<E>::add(&mut self, id: impl core::convert::Into<alloc::string::String>, text: &str)
+pub fn amber_core::semantic::SemanticIndex<E>::is_empty(&self) -> bool
+pub fn amber_core::semantic::SemanticIndex<E>::len(&self) -> usize
+pub fn amber_core::semantic::SemanticIndex<E>::new(embedder: E) -> Self
+pub fn amber_core::semantic::SemanticIndex<E>::search(&self, query: &str, k: usize) -> alloc::vec::Vec<(alloc::string::String, f32)>
+impl<E> core::marker::Freeze for amber_core::semantic::SemanticIndex<E> where E: core::marker::Freeze
+impl<E> core::marker::Send for amber_core::semantic::SemanticIndex<E> where E: core::marker::Send
+impl<E> core::marker::Sync for amber_core::semantic::SemanticIndex<E> where E: core::marker::Sync
+impl<E> core::marker::Unpin for amber_core::semantic::SemanticIndex<E> where E: core::marker::Unpin
+impl<E> core::marker::UnsafeUnpin for amber_core::semantic::SemanticIndex<E> where E: core::marker::UnsafeUnpin
+impl<E> core::panic::unwind_safe::RefUnwindSafe for amber_core::semantic::SemanticIndex<E> where E: core::panic::unwind_safe::RefUnwindSafe
+impl<E> core::panic::unwind_safe::UnwindSafe for amber_core::semantic::SemanticIndex<E> where E: core::panic::unwind_safe::UnwindSafe
+pub struct amber_core::SessionState
+pub amber_core::SessionState::cookies: alloc::vec::Vec<(alloc::string::String, alloc::string::String)>
+pub amber_core::SessionState::headers: alloc::vec::Vec<(alloc::string::String, alloc::string::String)>
+impl amber_core::session::SessionState
+pub fn amber_core::session::SessionState::cookie_header(&self) -> core::option::Option<alloc::string::String>
+pub fn amber_core::session::SessionState::extra_http_headers_command(&self) -> core::option::Option<(&'static str, serde_json::value::Value)>
+pub fn amber_core::session::SessionState::is_empty(&self) -> bool
+pub fn amber_core::session::SessionState::loggable_names(&self) -> alloc::vec::Vec<alloc::string::String>
+pub fn amber_core::session::SessionState::request_headers(&self) -> alloc::vec::Vec<(alloc::string::String, alloc::string::String)>
+impl core::clone::Clone for amber_core::session::SessionState
+pub fn amber_core::session::SessionState::clone(&self) -> amber_core::session::SessionState
+impl core::default::Default for amber_core::session::SessionState
+pub fn amber_core::session::SessionState::default() -> amber_core::session::SessionState
+impl core::fmt::Debug for amber_core::session::SessionState
+pub fn amber_core::session::SessionState::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for amber_core::session::SessionState
+impl core::marker::Send for amber_core::session::SessionState
+impl core::marker::Sync for amber_core::session::SessionState
+impl core::marker::Unpin for amber_core::session::SessionState
+impl core::marker::UnsafeUnpin for amber_core::session::SessionState
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::session::SessionState
+impl core::panic::unwind_safe::UnwindSafe for amber_core::session::SessionState
+pub struct amber_core::SignedEvidence
+pub amber_core::SignedEvidence::algorithm: alloc::string::String
+pub amber_core::SignedEvidence::manifest: amber_core::evidence::EvidenceManifest
+pub amber_core::SignedEvidence::public_key: alloc::string::String
+pub amber_core::SignedEvidence::signature: alloc::string::String
+impl amber_core::evidence::SignedEvidence
+pub fn amber_core::evidence::SignedEvidence::to_json(&self) -> alloc::string::String
+pub fn amber_core::evidence::SignedEvidence::verify(&self) -> bool
+impl core::clone::Clone for amber_core::evidence::SignedEvidence
+pub fn amber_core::evidence::SignedEvidence::clone(&self) -> amber_core::evidence::SignedEvidence
+impl core::cmp::Eq for amber_core::evidence::SignedEvidence
+impl core::cmp::PartialEq for amber_core::evidence::SignedEvidence
+pub fn amber_core::evidence::SignedEvidence::eq(&self, other: &amber_core::evidence::SignedEvidence) -> bool
+impl core::fmt::Debug for amber_core::evidence::SignedEvidence
+pub fn amber_core::evidence::SignedEvidence::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for amber_core::evidence::SignedEvidence
+impl core::marker::Freeze for amber_core::evidence::SignedEvidence
+impl core::marker::Send for amber_core::evidence::SignedEvidence
+impl core::marker::Sync for amber_core::evidence::SignedEvidence
+impl core::marker::Unpin for amber_core::evidence::SignedEvidence
+impl core::marker::UnsafeUnpin for amber_core::evidence::SignedEvidence
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::evidence::SignedEvidence
+impl core::panic::unwind_safe::UnwindSafe for amber_core::evidence::SignedEvidence
+pub struct amber_core::Snapshot
+impl amber_core::Snapshot
+pub fn amber_core::Snapshot::accessibility_tree(&self) -> core::option::Option<&serde_json::value::Value>
+pub fn amber_core::Snapshot::changes_from(&self, previous: &amber_core::Snapshot) -> amber_core::monitor::ChangeReport
+pub fn amber_core::Snapshot::detected_language(&self) -> core::option::Option<alloc::string::String>
+pub fn amber_core::Snapshot::evidence_manifest(&self, formats: &[amber_core::output::OutputFormat]) -> amber_core::error::Result<amber_core::evidence::EvidenceManifest>
+pub fn amber_core::Snapshot::extract<C: amber_core::structured::LlmClient>(&self, schema: &str, client: &C) -> amber_core::error::Result<serde_json::value::Value>
+pub fn amber_core::Snapshot::extract_nl<C: amber_core::structured::LlmClient>(&self, instruction: &str, client: &C) -> amber_core::error::Result<serde_json::value::Value>
+pub fn amber_core::Snapshot::extract_with_provenance<C: amber_core::structured::LlmClient>(&self, schema: &str, client: &C) -> amber_core::error::Result<(serde_json::value::Value, alloc::vec::Vec<amber_core::provenance::FieldProvenance>)>
+pub fn amber_core::Snapshot::markdown_within(&self, max_tokens: usize) -> amber_core::error::Result<(alloc::string::String, usize)>
+pub fn amber_core::Snapshot::metadata(&self) -> amber_core::meta::PageMetadata
+pub fn amber_core::Snapshot::provenance_record<C: amber_core::structured::LlmClient>(&self, schema: &str, client: &C) -> amber_core::error::Result<amber_core::corpus::ProvenanceRecord>
+pub fn amber_core::Snapshot::readable_deduped(&self) -> amber_core::error::Result<alloc::string::String>
+pub fn amber_core::Snapshot::readable_within(&self, max_tokens: usize) -> amber_core::error::Result<(alloc::string::String, usize)>
+pub fn amber_core::Snapshot::render(&self, format: amber_core::output::OutputFormat) -> amber_core::error::Result<alloc::vec::Vec<u8>>
+pub fn amber_core::Snapshot::save(&self, format: amber_core::output::OutputFormat, dir: &std::path::Path, name: core::option::Option<&str>) -> amber_core::error::Result<std::path::PathBuf>
+pub fn amber_core::Snapshot::sign_evidence(&self, formats: &[amber_core::output::OutputFormat], secret_seed: &[u8; 32]) -> amber_core::error::Result<amber_core::evidence::SignedEvidence>
+pub fn amber_core::Snapshot::token_accounting(&self) -> amber_core::budget::TokenAccounting
+impl core::fmt::Debug for amber_core::Snapshot
+pub fn amber_core::Snapshot::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for amber_core::Snapshot
+impl core::marker::Send for amber_core::Snapshot
+impl core::marker::Sync for amber_core::Snapshot
+impl core::marker::Unpin for amber_core::Snapshot
+impl core::marker::UnsafeUnpin for amber_core::Snapshot
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::Snapshot
+impl core::panic::unwind_safe::UnwindSafe for amber_core::Snapshot
+pub struct amber_core::StoredPage
+pub amber_core::StoredPage::content_hash: alloc::string::String
+pub amber_core::StoredPage::fetched_at: alloc::string::String
+pub amber_core::StoredPage::url: alloc::string::String
+impl core::clone::Clone for amber_core::store::StoredPage
+pub fn amber_core::store::StoredPage::clone(&self) -> amber_core::store::StoredPage
+impl core::cmp::Eq for amber_core::store::StoredPage
+impl core::cmp::PartialEq for amber_core::store::StoredPage
+pub fn amber_core::store::StoredPage::eq(&self, other: &amber_core::store::StoredPage) -> bool
+impl core::fmt::Debug for amber_core::store::StoredPage
+pub fn amber_core::store::StoredPage::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for amber_core::store::StoredPage
+impl core::marker::Freeze for amber_core::store::StoredPage
+impl core::marker::Send for amber_core::store::StoredPage
+impl core::marker::Sync for amber_core::store::StoredPage
+impl core::marker::Unpin for amber_core::store::StoredPage
+impl core::marker::UnsafeUnpin for amber_core::store::StoredPage
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::store::StoredPage
+impl core::panic::unwind_safe::UnwindSafe for amber_core::store::StoredPage
+pub struct amber_core::TokenAccounting
+pub amber_core::TokenAccounting::markdown: usize
+pub amber_core::TokenAccounting::readable: usize
+impl amber_core::budget::TokenAccounting
+pub fn amber_core::budget::TokenAccounting::markdown_cost(&self, usd_per_1k_tokens: f64) -> f64
+pub fn amber_core::budget::TokenAccounting::readable_cost(&self, usd_per_1k_tokens: f64) -> f64
+impl core::clone::Clone for amber_core::budget::TokenAccounting
+pub fn amber_core::budget::TokenAccounting::clone(&self) -> amber_core::budget::TokenAccounting
+impl core::cmp::Eq for amber_core::budget::TokenAccounting
+impl core::cmp::PartialEq for amber_core::budget::TokenAccounting
+pub fn amber_core::budget::TokenAccounting::eq(&self, other: &amber_core::budget::TokenAccounting) -> bool
+impl core::default::Default for amber_core::budget::TokenAccounting
+pub fn amber_core::budget::TokenAccounting::default() -> amber_core::budget::TokenAccounting
+impl core::fmt::Debug for amber_core::budget::TokenAccounting
+pub fn amber_core::budget::TokenAccounting::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for amber_core::budget::TokenAccounting
+impl core::marker::StructuralPartialEq for amber_core::budget::TokenAccounting
+impl core::marker::Freeze for amber_core::budget::TokenAccounting
+impl core::marker::Send for amber_core::budget::TokenAccounting
+impl core::marker::Sync for amber_core::budget::TokenAccounting
+impl core::marker::Unpin for amber_core::budget::TokenAccounting
+impl core::marker::UnsafeUnpin for amber_core::budget::TokenAccounting
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::budget::TokenAccounting
+impl core::panic::unwind_safe::UnwindSafe for amber_core::budget::TokenAccounting
+pub struct amber_core::Viewport
+pub amber_core::Viewport::device_scale_factor: f64
+pub amber_core::Viewport::height: u32
+pub amber_core::Viewport::mobile: bool
+pub amber_core::Viewport::width: u32
+impl amber_core::emulation::Viewport
+pub fn amber_core::emulation::Viewport::desktop(width: u32, height: u32) -> Self
+impl core::clone::Clone for amber_core::emulation::Viewport
+pub fn amber_core::emulation::Viewport::clone(&self) -> amber_core::emulation::Viewport
+impl core::cmp::PartialEq for amber_core::emulation::Viewport
+pub fn amber_core::emulation::Viewport::eq(&self, other: &amber_core::emulation::Viewport) -> bool
+impl core::fmt::Debug for amber_core::emulation::Viewport
+pub fn amber_core::emulation::Viewport::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for amber_core::emulation::Viewport
+impl core::marker::StructuralPartialEq for amber_core::emulation::Viewport
+impl core::marker::Freeze for amber_core::emulation::Viewport
+impl core::marker::Send for amber_core::emulation::Viewport
+impl core::marker::Sync for amber_core::emulation::Viewport
+impl core::marker::Unpin for amber_core::emulation::Viewport
+impl core::marker::UnsafeUnpin for amber_core::emulation::Viewport
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::emulation::Viewport
+impl core::panic::unwind_safe::UnwindSafe for amber_core::emulation::Viewport
+pub struct amber_core::WarcWriter
+impl amber_core::warc::WarcWriter
+pub fn amber_core::warc::WarcWriter::into_bytes(self) -> alloc::vec::Vec<u8>
+pub fn amber_core::warc::WarcWriter::new() -> Self
+pub fn amber_core::warc::WarcWriter::records(&self) -> &[amber_core::warc::RecordLoc]
+pub fn amber_core::warc::WarcWriter::response(&mut self, target_uri: &str, date: &str, http_response: &[u8])
+pub fn amber_core::warc::WarcWriter::warcinfo(&mut self, date: &str, fields: &str)
+impl core::default::Default for amber_core::warc::WarcWriter
+pub fn amber_core::warc::WarcWriter::default() -> amber_core::warc::WarcWriter
+impl core::fmt::Debug for amber_core::warc::WarcWriter
+pub fn amber_core::warc::WarcWriter::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for amber_core::warc::WarcWriter
+impl core::marker::Send for amber_core::warc::WarcWriter
+impl core::marker::Sync for amber_core::warc::WarcWriter
+impl core::marker::Unpin for amber_core::warc::WarcWriter
+impl core::marker::UnsafeUnpin for amber_core::warc::WarcWriter
+impl core::panic::unwind_safe::RefUnwindSafe for amber_core::warc::WarcWriter
+impl core::panic::unwind_safe::UnwindSafe for amber_core::warc::WarcWriter
+pub trait amber_core::Embedder
+pub fn amber_core::Embedder::embed(&self, text: &str) -> alloc::vec::Vec<f32>
+impl amber_core::semantic::Embedder for amber_core::semantic::HashingEmbedder
+pub fn amber_core::semantic::HashingEmbedder::embed(&self, text: &str) -> alloc::vec::Vec<f32>
+pub trait amber_core::LlmClient
+pub fn amber_core::LlmClient::complete(&self, prompt: &str) -> amber_core::error::Result<alloc::string::String>
+pub fn amber_core::anchor_fields(html: &str, value: &serde_json::value::Value, url: &str) -> alloc::vec::Vec<amber_core::provenance::FieldProvenance>
+pub fn amber_core::anchor_for(html: &str, needle: &str, url: &str) -> core::option::Option<amber_core::provenance::Provenance>
+pub fn amber_core::capture_paginated(start: &str, formats: &[amber_core::output::OutputFormat], opts: &amber_core::capture::CaptureOptions, max_pages: usize) -> amber_core::error::Result<alloc::vec::Vec<amber_core::Snapshot>>
+pub fn amber_core::chunk_text(text: &str, max_tokens: usize) -> alloc::vec::Vec<alloc::string::String>
+pub fn amber_core::compare_captures(prev_text: &str, cur_text: &str, prev_png: core::option::Option<&[u8]>, cur_png: core::option::Option<&[u8]>) -> amber_core::monitor::ChangeReport
+pub fn amber_core::content_hash(bytes: &[u8]) -> alloc::string::String
+pub fn amber_core::corpus_to_jsonl(records: &[amber_core::corpus::ProvenanceRecord]) -> alloc::string::String
+pub fn amber_core::cosine_similarity(a: &[f32], b: &[f32]) -> f32
+pub fn amber_core::crawl(seed: url::Url, scope: amber_core::crawl::CrawlScope, limits: amber_core::crawl::CrawlLimits) -> alloc::vec::Vec<url::Url>
+pub fn amber_core::crawl_incremental(seed: url::Url, scope: amber_core::crawl::CrawlScope, limits: amber_core::crawl::CrawlLimits, cache: &mut amber_core::cache::Cache) -> alloc::vec::Vec<url::Url>
+pub fn amber_core::crawl_incremental_with<F>(seed: url::Url, scope: amber_core::crawl::CrawlScope, limits: amber_core::crawl::CrawlLimits, cache: &mut amber_core::cache::Cache, fetch: F) -> alloc::vec::Vec<url::Url> where F: core::ops::function::FnMut(&url::Url) -> (alloc::vec::Vec<u8>, alloc::vec::Vec<url::Url>)
+pub fn amber_core::crawl_with<F>(seed: url::Url, scope: amber_core::crawl::CrawlScope, limits: amber_core::crawl::CrawlLimits, fetch_links: F) -> alloc::vec::Vec<url::Url> where F: core::ops::function::FnMut(&url::Url) -> alloc::vec::Vec<url::Url>
+pub fn amber_core::dedup_text(text: &str) -> alloc::string::String
+pub fn amber_core::diff_lines(old: &str, new: &str) -> amber_core::diff::LineDiff
+pub fn amber_core::estimate_cost(tokens: usize, usd_per_1k_tokens: f64) -> f64
+pub fn amber_core::estimate_tokens(text: &str) -> usize
+pub fn amber_core::extract_nl<C: amber_core::structured::LlmClient>(content: &str, instruction: &str, client: &C) -> amber_core::error::Result<serde_json::value::Value>
+pub fn amber_core::extract_structured<C: amber_core::structured::LlmClient>(content: &str, schema: &str, client: &C) -> amber_core::error::Result<serde_json::value::Value>
+pub fn amber_core::fetch_sitemap(url: &url::Url) -> alloc::vec::Vec<url::Url>
+pub fn amber_core::http_response_block(status: u16, content_type: &str, body: &[u8]) -> alloc::vec::Vec<u8>
+pub fn amber_core::package_wacz(warc: &[u8], pages: &[(&str, &str)], records: &[amber_core::warc::RecordLoc]) -> amber_core::error::Result<alloc::vec::Vec<u8>>
+pub fn amber_core::parse_sitemap(xml: &str) -> alloc::vec::Vec<url::Url>
+pub fn amber_core::run_schedule<F: core::ops::function::FnMut()>(cadence: amber_core::recurring::Cadence, max_runs: usize, capture: F)
+pub fn amber_core::select_all_text(html: &str, candidates: &[&str]) -> alloc::vec::Vec<alloc::string::String>
+pub fn amber_core::select_first_text(html: &str, candidates: &[&str]) -> core::option::Option<alloc::string::String>
+pub fn amber_core::snapshot(url: &str, formats: &[amber_core::output::OutputFormat], opts: amber_core::capture::CaptureOptions) -> amber_core::error::Result<amber_core::Snapshot>
+pub fn amber_core::truncate_to_tokens(text: &str, max_tokens: usize) -> (alloc::string::String, usize)
+pub type amber_core::Result<T> = core::result::Result<T, amber_core::error::Error>

@@ -77,6 +77,37 @@ jobs:
           cd bindings/csharp
           dotnet build
 
+      # --- Node (napi-rs): build the addon + run the hermetic smoke (the smoke
+      #     only asserts the export surface + that a bad URL throws). ---
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Node binding loads
+        run: |
+          cargo build -p amber-node --release
+          cp target/release/libamber_node.so crates/amber-node/amber.node
+          node crates/amber-node/__test__/smoke.test.js
+
+      # --- Python (UniFFI): generate the module, then import + assert a bad URL
+      #     raises (hermetic; no browser). ---
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Python binding loads
+        run: |
+          cargo build -p amber-core --release --lib
+          cargo run -q -p uniffi-bindgen -- generate \
+            --library target/release/libamber_core.so --language python --out-dir /tmp/amberpy
+          cp target/release/libamber_core.so /tmp/amberpy/
+          PYTHONPATH=/tmp/amberpy python - <<'PY'
+          import amber_core
+          try:
+              amber_core.capture_markdown("not a url")
+              raise SystemExit("expected a CaptureError for a bad URL")
+          except amber_core.CaptureError:
+              print("ok")
+          PY
+
   swift-binding:
     name: swift (build)
     runs-on: macos-latest
@@ -89,3 +120,60 @@ jobs:
           bindings/swift/generate.sh
           cd bindings/swift
           swift build
+
+  # Long-tail C-ABI / NIF bindings (Plans.md 11). Hermetic: each step
+  # loads/compiles the binding and exercises the bad-URL path (which fails at URL
+  # parse, before any browser), so no pinned Chromium is needed — mirroring the
+  # other jobs. Full capture smokes run locally against a real browser.
+  long-tail-bindings:
+    name: php · lua · dart · elixir (build/load)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+
+      # PHP (FFI): load the library + assert a bad URL throws.
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: ffi
+          ini-values: ffi.enable=1
+      - name: PHP binding loads
+        run: |
+          bindings/php/generate.sh
+          php -r 'require "bindings/php/src/Amber.php"; try { Amber\Amber::captureMarkdown("not a url"); exit(1); } catch (Amber\CaptureException $e) { echo "ok\n"; }'
+
+      # Lua (LuaJIT FFI): load the module + assert a bad URL errors.
+      - name: Install LuaJIT
+        run: sudo apt-get update && sudo apt-get install -y luajit
+      - name: Lua binding loads
+        run: |
+          bindings/lua/generate.sh
+          cd bindings/lua
+          luajit -e 'local a = require("amber"); assert(not pcall(function() a.capture_markdown("not a url") end), "bad URL should error"); print("ok")'
+
+      # Dart (dart:ffi): resolve deps + static analysis (compile-check).
+      - uses: dart-lang/setup-dart@v1
+      - name: Dart binding analyzes
+        run: |
+          bindings/dart/generate.sh
+          cd bindings/dart
+          dart pub get
+          dart analyze
+
+      # Elixir (rustler NIF): compile the Elixir wrapper + the Rust NIF.
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: "27"
+          elixir-version: "1.17"
+      - name: Elixir binding compiles
+        run: |
+          cd bindings/elixir
+          mix deps.get
+          mix compile
+
+      # NOTE: R (bindings/r) is intentionally not wired here. Its .Call shim
+      # links amber-core as an external dylib, whose rpath/loader resolution is
+      # environment-specific and unvalidated (no R locally). Rather than add a
+      # non-blocking "fake green" step, R's CI coverage is a documented gap
+      # (Plans.md 11.4 / 13.3) pending an R + linking environment to validate it.

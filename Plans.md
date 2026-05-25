@@ -151,8 +151,8 @@ panic is removed and Windows artifacts are gated so nothing ships broken.
 | Task | 内容 | DoD | Depends | Status |
 |------|------|-----|---------|--------|
 | 12.1 | **No-panic Windows path** — browser capture returns a clean typed `CdpError` (`ErrorKind::Unsupported`) instead of `unimplemented!()`; the static HTTP-fetch path is unaffected | No reachable panic on Windows; static captures still work | - | cc:完了 |
-| 12.2 | **Windows pipe handle-inheritance** — `CreateProcessW` + the CRT `lpReserved2` fd-3/4 block; real screenshot capture on a `windows-latest` CI runner | A browser capture succeeds end-to-end on Windows CI | 12.1 | blocked (needs a Windows dev/CI env; no local Windows runtime and `ring` won't cross-compile-check from macOS) |
-| 12.3 | **Gate Windows release artifacts** — drop Windows from the binaries/wheels/npm matrices until 12.2 is green; document the Windows status | No shipped Windows artifact panics; status documented in README | 12.1 | cc:完了 |
+| 12.2 | **Windows pipe handle-inheritance** — `CreateProcessW` + the CRT `lpReserved2` fd-3/4 block (`cdp.rs::win_spawn` + `WinChild`); real screenshot capture on a `windows-latest` CI runner | A browser capture succeeds end-to-end on Windows CI | 12.1 | cc:WIP (implemented; can't build/run off-Windows — `ci.yml` `windows-capture` job is the gate; awaiting a green run) |
+| 12.3 | **Gate Windows release artifacts** — drop Windows from the binaries/wheels/npm matrices until 12.2 is green; document the Windows status | No shipped Windows artifact panics; status documented in README | 12.1 | cc:完了 (still gated — **re-enable Windows in `release.yml` once the `windows-capture` job is consistently green**) |
 
 ## Phase 13: Release-blocking docs & CI hardening (P0/P1)
 

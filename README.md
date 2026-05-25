@@ -9,10 +9,10 @@
 > **Status: v0.1 — feature-complete, pre-release.** The engine and all output
 > formats work today on Linux and macOS; bindings span Python, Node, a C ABI,
 > Ruby, Swift, Kotlin/JVM, Go, C#, PHP, Dart, Lua, R, and Elixir. **Windows:**
-> static captures (Markdown/readable/HTML on server-rendered pages) work, but
-> browser-backed capture isn't supported yet — the CDP debug pipe is Unix-only
-> (tracked in [Plans.md](Plans.md) Phase 12). The first published packages are
-> in progress.
+> static captures work, and browser-backed capture is now implemented (the CDP
+> debug pipe via `CreateProcessW`) — it's under validation on a Windows CI
+> runner before Windows artifacts are shipped (tracked in [Plans.md](Plans.md)
+> Phase 12). The first published packages are in progress.
 
 ## What it is
 

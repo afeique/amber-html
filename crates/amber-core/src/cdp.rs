@@ -27,15 +27,18 @@
 //! timeout. The write end (fd 3) is guarded by its own `Mutex` so concurrent
 //! sends serialize their frames without interleaving bytes.
 //!
-//! **Platform:** Unix only for now (fd inheritance via `command-fds`). On
-//! Windows, browser capture returns a typed `Unsupported` error rather than
-//! spawning (the CRT `lpReserved2` fd-3/4 handover is not implemented yet —
-//! Plans.md 12); the static HTTP-fetch path is unaffected.
+//! **Platform:** on Unix the pipe ends are mapped to fd 3/4 via `command-fds`;
+//! on Windows they're handed over with a raw `CreateProcessW` spawn that fills
+//! the MSVCRT `lpReserved2` block of `STARTUPINFOW` (see `win_spawn`; Plans.md
+//! 12.2). The Windows path is awaiting validation on a Windows CI runner.
 
 use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::path::Path;
-use std::process::{Child, Command, Stdio};
+// `Command`/`Stdio` drive the Unix spawn path; the Windows path uses raw
+// `CreateProcessW` (see `win_spawn`), so these are Unix-only.
+#[cfg(unix)]
+use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::mpsc::{self, Receiver, RecvTimeoutError, Sender};
 use std::sync::{Arc, Mutex};
@@ -237,6 +240,15 @@ pub struct ProcessLimits {
     pub max_cpu_seconds: Option<u64>,
 }
 
+/// The spawned browser process. On Unix this is [`std::process::Child`]; on
+/// Windows it's a hand-rolled [`win_spawn::WinChild`] from the `CreateProcessW`
+/// path (the CRT fd-3/4 handover can't go through `std::process::Command`).
+/// Both expose the `kill`/`wait` surface `PipeCdp`'s `Drop` uses.
+#[cfg(unix)]
+type ChildProc = std::process::Child;
+#[cfg(windows)]
+type ChildProc = win_spawn::WinChild;
+
 /// Hand-rolled CDP client over Chromium's debug pipe — the only transport.
 ///
 /// Owns the spawned Chromium child, the write end of fd 3, the correlation
@@ -244,7 +256,7 @@ pub struct ProcessLimits {
 /// the child (see [`Drop`]).
 pub struct PipeCdp {
     /// The spawned Chromium process.
-    child: Child,
+    child: ChildProc,
     /// Write end of fd-3 (browser-reads); guarded so concurrent sends do not
     /// interleave bytes. `&PipeWriter: Write`, so we never need `&mut`.
     writer: Mutex<os_pipe::PipeWriter>,
@@ -275,9 +287,8 @@ impl PipeCdp {
     /// and another to **fd 4** (browser writes responses/events). A background
     /// thread starts reading fd 4 immediately.
     ///
-    /// On Windows, browser capture currently returns an `Unsupported` error
-    /// (see [`configure_pipe_fds`](PipeCdp::configure_pipe_fds)); the static
-    /// fetch path is unaffected.
+    /// Cross-platform: Unix maps fd 3/4 via `command-fds`; Windows hands the
+    /// pipe ends to the child through `CreateProcessW` (see `win_spawn`).
     pub fn spawn(chromium: &Path, extra_args: &[String]) -> Result<PipeCdp, CdpError> {
         Self::spawn_with_limits(
             chromium,
@@ -330,25 +341,39 @@ impl PipeCdp {
         ));
         std::fs::create_dir_all(&user_data_dir).map_err(CdpError::Io)?;
 
-        let mut cmd = Command::new(chromium);
-        cmd.arg("--headless=new")
-            .arg("--remote-debugging-pipe")
-            .arg("--no-first-run")
-            .arg("--no-default-browser-check")
-            .arg(format!("--user-data-dir={}", user_data_dir.display()))
-            .args(extra_args)
+        // The Chromium argv (after the binary), shared by both platforms.
+        let mut args: Vec<String> = vec![
+            "--headless=new".to_string(),
+            "--remote-debugging-pipe".to_string(),
+            "--no-first-run".to_string(),
+            "--no-default-browser-check".to_string(),
+            format!("--user-data-dir={}", user_data_dir.display()),
+        ];
+        args.extend(extra_args.iter().cloned());
+
+        // Hand `cmd_read` to the child as fd 3 and `resp_write` as fd 4, then
+        // spawn. The mechanism differs by platform — `command-fds` dup2 on Unix,
+        // the MSVCRT `lpReserved2` handle block via `CreateProcessW` on Windows
+        // (`win_spawn`) — but both consume those two ends, leaving us holding
+        // `cmd_write` (to send) and `resp_read` (to receive).
+        #[cfg(unix)]
+        let child: ChildProc = {
+            let mut cmd = Command::new(chromium);
             // We never use the child's stdio for protocol traffic; keep stdin
             // closed and let stdout/stderr go to the parent's (Chromium logs to
             // stderr). The pipe lives entirely on fd 3/4.
-            .stdin(Stdio::null());
-
-        Self::configure_pipe_fds(&mut cmd, cmd_read, resp_write)?;
-        Self::apply_rlimits(&mut cmd, limits);
-
-        let child = cmd.spawn().map_err(CdpError::Spawn)?;
-        // The child now owns the inherited copies of cmd_read/resp_write; our
-        // originals were consumed by `configure_pipe_fds`. We keep cmd_write
-        // (to send) and resp_read (to receive).
+            cmd.args(&args).stdin(Stdio::null());
+            Self::configure_pipe_fds(&mut cmd, cmd_read, resp_write)?;
+            Self::apply_rlimits(&mut cmd, limits);
+            cmd.spawn().map_err(CdpError::Spawn)?
+        };
+        #[cfg(windows)]
+        let child: ChildProc = {
+            // OS resource caps (`limits`) are Unix-only for now (task 7.4);
+            // ignore them on Windows rather than fail the spawn.
+            let _ = &limits;
+            win_spawn::spawn(chromium, &args, cmd_read, resp_write)?
+        };
 
         let (event_tx, event_rx) = mpsc::channel::<Value>();
         let shared = Arc::new(Shared {
@@ -403,30 +428,6 @@ impl PipeCdp {
         cmd.fd_mappings(mappings)
             .map_err(|e| CdpError::Io(std::io::Error::other(e.to_string())))?;
         Ok(())
-    }
-
-    #[cfg(not(unix))]
-    fn configure_pipe_fds(
-        _cmd: &mut Command,
-        _cmd_read: os_pipe::PipeReader,
-        _resp_write: os_pipe::PipeWriter,
-    ) -> Result<(), CdpError> {
-        // On Windows, Chromium's `--remote-debugging-pipe` reads the pipe ends as
-        // CRT file descriptors 3/4, which must be handed over through the MSVCRT
-        // `lpReserved2` block of `STARTUPINFOW` (a raw `CreateProcessW` spawn) —
-        // `std::process::Command` can't express that. Until that spawn path is
-        // implemented and validated on a Windows CI runner (Plans.md 12.2),
-        // browser capture returns a clean, typed error here rather than
-        // panicking. The static HTTP-fetch path (Markdown / readable / plain
-        // HTML on server-rendered pages) never touches the browser and is
-        // unaffected.
-        Err(CdpError::Io(std::io::Error::new(
-            std::io::ErrorKind::Unsupported,
-            "browser capture is not yet supported on Windows (CDP debug-pipe \
-             handle inheritance is unimplemented); request a static-friendly \
-             format (--markdown/--readable/--html on a server-rendered page) or \
-             run on Linux/macOS",
-        )))
     }
 
     /// Apply per-capture OS resource caps to the child before exec via
@@ -636,6 +637,217 @@ fn interpret_response(mut msg: Value) -> ResponseResult {
 fn next_instance_seq() -> u64 {
     static SEQ: AtomicU64 = AtomicU64::new(0);
     SEQ.fetch_add(1, Ordering::Relaxed)
+}
+
+/// Windows `--remote-debugging-pipe` spawn (Plans.md 12.2).
+///
+/// `std::process::Command` can't hand inherited pipe ends to a child as CRT
+/// file descriptors 3/4 — which is exactly what Chromium's pipe transport reads
+/// (`_get_osfhandle(3/4)`). So we spawn via raw `CreateProcessW`, passing the
+/// pipe + std handles through the MSVCRT `lpReserved2` block of `STARTUPINFOW`
+/// (the same mechanism Node/libuv use for extra stdio). The child's CRT
+/// reconstructs fds 0..=4 from that block: fd 3 = our command-read end, fd 4 =
+/// the response-write end.
+///
+/// Untested on a real Windows host from this repo's dev machine; validated by
+/// the `windows-capture` CI job (a real screenshot capture on `windows-latest`).
+#[cfg(windows)]
+mod win_spawn {
+    use std::os::windows::io::AsRawHandle;
+    use std::path::Path;
+
+    use windows_sys::Win32::Foundation::{
+        CloseHandle, SetHandleInformation, HANDLE, HANDLE_FLAG_INHERIT, INVALID_HANDLE_VALUE,
+    };
+    use windows_sys::Win32::System::Console::{GetStdHandle, STD_ERROR_HANDLE, STD_OUTPUT_HANDLE};
+    use windows_sys::Win32::System::Threading::{
+        CreateProcessW, TerminateProcess, WaitForSingleObject, PROCESS_INFORMATION, STARTUPINFOW,
+    };
+
+    use super::CdpError;
+
+    // MSVCRT `ioinfo` flag bits used in the lpReserved2 fd table.
+    const FOPEN: u8 = 0x01;
+    const FPIPE: u8 = 0x08;
+    const FDEV: u8 = 0x40;
+
+    // Win32 constants used as plain `u32` (windows-sys flag types are aliases),
+    // inlined to avoid depending on their exact module path.
+    const INFINITE: u32 = 0xFFFF_FFFF;
+    const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+
+    /// A spawned browser process owned via its Win32 process handle. Mirrors the
+    /// `std::process::Child` surface `PipeCdp` relies on (`kill` / `wait`).
+    pub struct WinChild {
+        process: HANDLE,
+    }
+
+    // The process handle is owned by us and safe to use from any thread.
+    unsafe impl Send for WinChild {}
+    unsafe impl Sync for WinChild {}
+
+    impl WinChild {
+        pub fn kill(&mut self) -> std::io::Result<()> {
+            // SAFETY: `process` is a live handle from CreateProcessW.
+            if unsafe { TerminateProcess(self.process, 1) } == 0 {
+                return Err(std::io::Error::last_os_error());
+            }
+            Ok(())
+        }
+
+        pub fn wait(&mut self) -> std::io::Result<()> {
+            // SAFETY: waits for the owned process to exit.
+            unsafe { WaitForSingleObject(self.process, INFINITE) };
+            Ok(())
+        }
+    }
+
+    impl Drop for WinChild {
+        fn drop(&mut self) {
+            // SAFETY: close the owned process handle exactly once.
+            unsafe { CloseHandle(self.process) };
+        }
+    }
+
+    /// UTF-16, NUL-terminated.
+    fn to_wide(s: &str) -> Vec<u16> {
+        s.encode_utf16().chain(std::iter::once(0)).collect()
+    }
+
+    /// Append `arg` to `out` using the `CommandLineToArgvW` quoting rules.
+    fn append_quoted(arg: &str, out: &mut Vec<u16>) {
+        if !arg.is_empty() && !arg.contains([' ', '\t', '"']) {
+            out.extend(arg.encode_utf16());
+            return;
+        }
+        out.push(b'"' as u16);
+        let mut backslashes = 0usize;
+        for c in arg.chars() {
+            match c {
+                '\\' => backslashes += 1,
+                '"' => {
+                    for _ in 0..(backslashes * 2 + 1) {
+                        out.push(b'\\' as u16);
+                    }
+                    backslashes = 0;
+                    out.push(b'"' as u16);
+                }
+                _ => {
+                    for _ in 0..backslashes {
+                        out.push(b'\\' as u16);
+                    }
+                    backslashes = 0;
+                    let mut buf = [0u16; 2];
+                    out.extend_from_slice(c.encode_utf16(&mut buf));
+                }
+            }
+        }
+        for _ in 0..(backslashes * 2) {
+            out.push(b'\\' as u16);
+        }
+        out.push(b'"' as u16);
+    }
+
+    /// Build the MSVCRT `lpReserved2` block for the given fd table:
+    /// `[u32 count][u8 flags; count][isize handles; count]`, packed contiguously.
+    fn build_crt_block(entries: &[(u8, HANDLE)]) -> Vec<u8> {
+        let count = entries.len() as u32;
+        let mut block = Vec::with_capacity(4 + entries.len() * (1 + std::mem::size_of::<isize>()));
+        block.extend_from_slice(&count.to_ne_bytes());
+        for &(flags, _) in entries {
+            block.push(flags);
+        }
+        for &(_, h) in entries {
+            block.extend_from_slice(&(h as isize).to_ne_bytes());
+        }
+        block
+    }
+
+    /// Mark `h` inheritable so `bInheritHandles = TRUE` passes it to the child.
+    /// Best-effort: a null/invalid handle simply fails here and is ignored.
+    fn make_inheritable(h: HANDLE) {
+        // SAFETY: SetHandleInformation tolerates a bad handle (returns 0).
+        unsafe { SetHandleInformation(h, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT) };
+    }
+
+    /// Spawn `chromium` with `args`, handing `cmd_read` to the child as fd 3 and
+    /// `resp_write` as fd 4. Consumes both pipe ends — the parent's copies close
+    /// when this returns, so the child owns the live ends.
+    pub fn spawn(
+        chromium: &Path,
+        args: &[String],
+        cmd_read: os_pipe::PipeReader,
+        resp_write: os_pipe::PipeWriter,
+    ) -> Result<WinChild, CdpError> {
+        let cmd_read_h = cmd_read.as_raw_handle() as HANDLE;
+        let resp_write_h = resp_write.as_raw_handle() as HANDLE;
+        // SAFETY: GetStdHandle returns the process-wide std handles (or null).
+        let stdout_h = unsafe { GetStdHandle(STD_OUTPUT_HANDLE) };
+        let stderr_h = unsafe { GetStdHandle(STD_ERROR_HANDLE) };
+
+        // Everything inherited must carry HANDLE_FLAG_INHERIT.
+        for h in [cmd_read_h, resp_write_h, stdout_h, stderr_h] {
+            make_inheritable(h);
+        }
+
+        // CRT fd table: 0 closed; 1/2 → our stdout/stderr (Chromium logs there);
+        // 3 = command-read pipe; 4 = response-write pipe.
+        let entries: [(u8, HANDLE); 5] = [
+            (0, INVALID_HANDLE_VALUE),
+            (FOPEN | FDEV, stdout_h),
+            (FOPEN | FDEV, stderr_h),
+            (FOPEN | FPIPE, cmd_read_h),
+            (FOPEN | FPIPE, resp_write_h),
+        ];
+        let mut block = build_crt_block(&entries);
+
+        let app = to_wide(&chromium.to_string_lossy());
+        let mut cmdline: Vec<u16> = Vec::new();
+        append_quoted(&chromium.to_string_lossy(), &mut cmdline); // argv[0]
+        for a in args {
+            cmdline.push(b' ' as u16);
+            append_quoted(a, &mut cmdline);
+        }
+        cmdline.push(0);
+
+        // SAFETY: a zeroed STARTUPINFOW is valid; we set `cb` and the reserved2
+        // block and leave the rest default.
+        let mut si: STARTUPINFOW = unsafe { std::mem::zeroed() };
+        si.cb = std::mem::size_of::<STARTUPINFOW>() as u32;
+        si.cbReserved2 = block.len() as u16;
+        si.lpReserved2 = block.as_mut_ptr();
+
+        let mut pi: PROCESS_INFORMATION = unsafe { std::mem::zeroed() };
+
+        // SAFETY: all pointers are valid for the call; the inherited handles are
+        // marked inheritable and `bInheritHandles = TRUE` (1). `lpCommandLine`
+        // is writable (CreateProcessW may modify it in place).
+        let ok = unsafe {
+            CreateProcessW(
+                app.as_ptr(),
+                cmdline.as_mut_ptr(),
+                std::ptr::null(),
+                std::ptr::null(),
+                1, // bInheritHandles = TRUE
+                CREATE_NO_WINDOW,
+                std::ptr::null(),
+                std::ptr::null(),
+                &si,
+                &mut pi,
+            )
+        };
+        if ok == 0 {
+            return Err(CdpError::Spawn(std::io::Error::last_os_error()));
+        }
+        // We don't use the thread handle; keep the process handle for kill/wait.
+        // `cmd_read`/`resp_write` drop here, closing our copies of the child's
+        // ends (so EOF propagates correctly when Chromium exits).
+        // SAFETY: hThread is a valid handle from a successful CreateProcessW.
+        unsafe { CloseHandle(pi.hThread) };
+        Ok(WinChild {
+            process: pi.hProcess,
+        })
+    }
 }
 
 // ---------------------------------------------------------------------------

@@ -42,3 +42,13 @@ uniffi.workspace = true
 
 [dev-dependencies]
 tracing-subscriber.workspace = true
+
+# Windows-only: the CDP debug-pipe spawn uses raw CreateProcessW + the MSVCRT
+# lpReserved2 handle block to hand the pipe ends to Chromium as fd 3/4 (Plans.md
+# 12.2). Not pulled in on Unix, which uses command-fds instead.
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = [
+    "Win32_Foundation",
+    "Win32_System_Threading",
+    "Win32_System_Console",
+] }

@@ -78,3 +78,29 @@ jobs:
             echo "  cargo +nightly-2026-05-24 public-api -p amber-core --simplified > crates/amber-core/public-api.txt"
             exit 1
           fi
+
+  # Validates the Windows CDP pipe spawn end-to-end (Plans.md 12.2): builds the
+  # CLI (which compiles the cfg(windows) `win_spawn` path) and drives a real
+  # capture — a data: URL with --screenshot forces a browser, so this exercises
+  # CreateProcessW + the lpReserved2 fd-3/4 handover by downloading a pinned
+  # Chrome for Testing and screenshotting. The cfg(windows) code can't be built
+  # or run off-Windows, so this job is its only gate. Re-enable Windows in
+  # release.yml's matrices once this is consistently green.
+  windows-capture:
+    name: Windows browser capture
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build CLI (compiles the Windows pipe spawn)
+        run: cargo build --release -p amber-cli --locked
+      - name: Capture a page (downloads Chrome for Testing; drives the pipe)
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./target/release/amber.exe "data:text/html,<h1>Smoke</h1><p>hi</p>" \
+            --screenshot --markdown -o out -n win
+          test -s out/win.png || { echo "no screenshot produced"; exit 1; }
+          test -s out/win.md  || { echo "no markdown produced"; exit 1; }
+          echo "Windows browser capture OK"

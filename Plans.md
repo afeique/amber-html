@@ -136,20 +136,23 @@ browser/network (matching the C/Go/Ruby pattern already in the repo).
 | 11.4 | **R** binding (C interface via `.Call`/FFI) + package skeleton + smoke | `amber::capture_markdown(url)`; smoke green; `bindings/r` | 10.1 | cc:完了 (CI-validated — no R locally; least-validated, see notes) |
 | 11.5 | **Elixir** binding (rustler NIF on amber-core, dirty IO) + `mix.exs` + smoke | `Amber.capture_markdown/1`; `mix test` smoke green; `bindings/elixir` | 10.1 | cc:完了 (NIF compiles+clippy locally; mix test CI-gated — no Elixir) |
 
-## Phase 12: Windows compatibility (P0 — release blocker; CI-validated)
+## Phase 12: Windows compatibility (P0 — release blocker)
 
-The CDP pipe transport is Unix-only (`cdp.rs` Windows branch is
-`unimplemented!()` — fd 3/4 inheritance has no POSIX equivalent on Windows). Any
-browser capture **panics** on Windows, yet `release.yml` ships Windows binaries,
-wheels, and npm prebuilds. **Sequenced after the verifiable FFI/long-tail work
-because it cannot be run on this macOS host** — validation is `cargo check
---target x86_64-pc-windows-msvc` here + a real capture on a Windows CI runner.
+The CDP pipe transport is Unix-only: Chromium's `--remote-debugging-pipe` reads
+the pipe ends as CRT fds 3/4, which on Windows must be passed via the MSVCRT
+`lpReserved2` block of `STARTUPINFOW` (a raw `CreateProcessW` spawn) —
+`std::process::Command` can't express that. **This cannot be developed safely on
+the current macOS host:** there is no Windows runtime to validate the unsafe
+spawn, and it can't even be cross-compile-checked (`ring`/rustls' C build script
+fails for `x86_64-pc-windows-msvc` without a Windows cross-toolchain). So the
+full implementation is **blocked on a Windows dev/CI environment**; meanwhile the
+panic is removed and Windows artifacts are gated so nothing ships broken.
 
 | Task | 内容 | DoD | Depends | Status |
 |------|------|-----|---------|--------|
-| 12.1 | **Windows pipe spawn + handle inheritance** — pass the pipe ends to Chromium as fd 3/4 via the CRT `lpReserved2`/`STARTUPINFO` handle block (raw `CreateProcessW`); remove the `unimplemented!()` | `cargo check --target x86_64-pc-windows-msvc` clean; codec/framing unit tests pass; no reachable `unimplemented!` on Windows | - | cc:TODO |
-| 12.2 | **Windows render-path validation in CI** — an `#[ignore]` browser test runs on a `windows-latest` runner and captures a screenshot | CI windows job captures a real page end-to-end | 12.1 | cc:TODO |
-| 12.3 | **Gate Windows release artifacts on 12.2** — until green, drop Windows from the binaries/wheels/npm matrices and document it unsupported | No shipped Windows artifact panics; Windows support state documented | 12.2 | cc:TODO |
+| 12.1 | **No-panic Windows path** — browser capture returns a clean typed `CdpError` (`ErrorKind::Unsupported`) instead of `unimplemented!()`; the static HTTP-fetch path is unaffected | No reachable panic on Windows; static captures still work | - | cc:完了 |
+| 12.2 | **Windows pipe handle-inheritance** — `CreateProcessW` + the CRT `lpReserved2` fd-3/4 block; real screenshot capture on a `windows-latest` CI runner | A browser capture succeeds end-to-end on Windows CI | 12.1 | blocked (needs a Windows dev/CI env; no local Windows runtime and `ring` won't cross-compile-check from macOS) |
+| 12.3 | **Gate Windows release artifacts** — drop Windows from the binaries/wheels/npm matrices until 12.2 is green; document the Windows status | No shipped Windows artifact panics; status documented in README | 12.1 | cc:完了 |
 
 ## Phase 13: Release-blocking docs & CI hardening (P0/P1)
 

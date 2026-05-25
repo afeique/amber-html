@@ -7,9 +7,12 @@
 > WARC/WACZ, screenshot, and PDF.
 
 > **Status: v0.1 — feature-complete, pre-release.** The engine and all output
-> formats work today; bindings span Python, Node, a C ABI, Ruby, Swift,
-> Kotlin/JVM, Go, and C#. Windows browser capture and the first published
-> packages are in progress (see [Plans.md](Plans.md)).
+> formats work today on Linux and macOS; bindings span Python, Node, a C ABI,
+> Ruby, Swift, Kotlin/JVM, Go, C#, PHP, Dart, Lua, R, and Elixir. **Windows:**
+> static captures (Markdown/readable/HTML on server-rendered pages) work, but
+> browser-backed capture isn't supported yet — the CDP debug pipe is Unix-only
+> (tracked in [Plans.md](Plans.md) Phase 12). The first published packages are
+> in progress.
 
 ## What it is
 

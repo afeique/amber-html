@@ -46,7 +46,9 @@ jobs:
           - { target: aarch64-unknown-linux-gnu, os: ubuntu-latest, cross: true }
           - { target: x86_64-apple-darwin, os: macos-13, cross: false }
           - { target: aarch64-apple-darwin, os: macos-14, cross: false }
-          - { target: x86_64-pc-windows-msvc, os: windows-latest, cross: false }
+          # Windows is gated until browser capture works there (Plans.md 12):
+          # the CDP debug pipe is Unix-only today, so a Windows build would only
+          # do static captures. Re-add once 12.2 is green on a Windows runner.
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -126,7 +128,7 @@ jobs:
           - { os: ubuntu-latest, target: aarch64 }
           - { os: macos-13, target: x86_64 }
           - { os: macos-14, target: aarch64 }
-          - { os: windows-latest, target: x64 }
+          # Windows gated until browser capture works there (Plans.md 12).
     steps:
       - uses: actions/checkout@v4
       - uses: PyO3/maturin-action@v1
@@ -166,7 +168,8 @@ jobs:
           - { target: x86_64-unknown-linux-gnu, os: ubuntu-latest }
           - { target: x86_64-apple-darwin, os: macos-13 }
           - { target: aarch64-apple-darwin, os: macos-14 }
-          - { target: x86_64-pc-windows-msvc, os: windows-latest }
+          # Windows gated until browser capture works there (Plans.md 12);
+          # package.json's napi.targets already omit it.
     defaults:
       run:
         working-directory: crates/amber-node

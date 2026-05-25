@@ -27,8 +27,10 @@
 //! timeout. The write end (fd 3) is guarded by its own `Mutex` so concurrent
 //! sends serialize their frames without interleaving bytes.
 //!
-//! **Platform:** Unix only for now (fd inheritance via `command-fds`); the
-//! Windows branch is a clearly-marked `unimplemented!`.
+//! **Platform:** Unix only for now (fd inheritance via `command-fds`). On
+//! Windows, browser capture returns a typed `Unsupported` error rather than
+//! spawning (the CRT `lpReserved2` fd-3/4 handover is not implemented yet —
+//! Plans.md 12); the static HTTP-fetch path is unaffected.
 
 use std::collections::HashMap;
 use std::io::{Read, Write};
@@ -273,7 +275,9 @@ impl PipeCdp {
     /// and another to **fd 4** (browser writes responses/events). A background
     /// thread starts reading fd 4 immediately.
     ///
-    /// Unix only; the Windows path is `unimplemented!`.
+    /// On Windows, browser capture currently returns an `Unsupported` error
+    /// (see [`configure_pipe_fds`](PipeCdp::configure_pipe_fds)); the static
+    /// fetch path is unaffected.
     pub fn spawn(chromium: &Path, extra_args: &[String]) -> Result<PipeCdp, CdpError> {
         Self::spawn_with_limits(
             chromium,
@@ -407,11 +411,22 @@ impl PipeCdp {
         _cmd_read: os_pipe::PipeReader,
         _resp_write: os_pipe::PipeWriter,
     ) -> Result<(), CdpError> {
-        // Windows uses inherited HANDLEs (lpReserved2 / STARTUPINFO) rather than
-        // numbered fds; Chromium's pipe transport reads HANDLEs passed at
-        // positions 3/4. This requires a Windows-specific spawn path that is not
-        // yet implemented (Unix first — see Plans.md).
-        unimplemented!("CDP debug pipe on Windows: fd 3/4 HANDLE inheritance not yet implemented");
+        // On Windows, Chromium's `--remote-debugging-pipe` reads the pipe ends as
+        // CRT file descriptors 3/4, which must be handed over through the MSVCRT
+        // `lpReserved2` block of `STARTUPINFOW` (a raw `CreateProcessW` spawn) —
+        // `std::process::Command` can't express that. Until that spawn path is
+        // implemented and validated on a Windows CI runner (Plans.md 12.2),
+        // browser capture returns a clean, typed error here rather than
+        // panicking. The static HTTP-fetch path (Markdown / readable / plain
+        // HTML on server-rendered pages) never touches the browser and is
+        // unaffected.
+        Err(CdpError::Io(std::io::Error::new(
+            std::io::ErrorKind::Unsupported,
+            "browser capture is not yet supported on Windows (CDP debug-pipe \
+             handle inheritance is unimplemented); request a static-friendly \
+             format (--markdown/--readable/--html on a server-rendered page) or \
+             run on Linux/macOS",
+        )))
     }
 
     /// Apply per-capture OS resource caps to the child before exec via

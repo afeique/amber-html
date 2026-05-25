@@ -75,7 +75,9 @@ jobs:
         run: |
           bindings/csharp/generate.sh
           cd bindings/csharp
-          dotnet build
+          # No solution file here; build the library + test projects explicitly
+          # (the test project's ProjectReference pulls in the library too).
+          dotnet build tests/AmberHtml.Tests/AmberHtml.Tests.csproj
 
       # --- Node (napi-rs): build the addon + run the hermetic smoke (the smoke
       #     only asserts the export surface + that a bad URL throws). ---

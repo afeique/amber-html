@@ -29,8 +29,6 @@ ureq.workspace = true
 zip.workspace = true
 dirs.workspace = true
 os_pipe.workspace = true
-command-fds.workspace = true
-libc.workspace = true
 base64.workspace = true
 sha2.workspace = true
 ed25519-dalek.workspace = true
@@ -42,6 +40,13 @@ uniffi.workspace = true
 
 [dev-dependencies]
 tracing-subscriber.workspace = true
+
+# Unix-only: fd-3/4 inheritance for the CDP pipe spawn (command-fds) and the
+# setrlimit resource caps (libc). The crate `command-fds` is Unix-only and must
+# not be built on Windows, which uses the CreateProcessW path below instead.
+[target.'cfg(unix)'.dependencies]
+command-fds.workspace = true
+libc.workspace = true
 
 # Windows-only: the CDP debug-pipe spawn uses raw CreateProcessW + the MSVCRT
 # lpReserved2 handle block to hand the pipe ends to Chromium as fd 3/4 (Plans.md

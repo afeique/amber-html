@@ -465,9 +465,6 @@ impl PipeCdp {
         }
     }
 
-    #[cfg(not(unix))]
-    fn apply_rlimits(_cmd: &mut Command, _limits: ProcessLimits) {}
-
     /// Send a CDP command and block until its response arrives.
     ///
     /// Assigns the next id, writes `{"id":N,"method":..,"params":..}` + `\0` to

@@ -171,7 +171,7 @@ credential/account → marked `(user)`; the agent prepares all config/manifests.
 
 | Task | 内容 | DoD | Depends | Status |
 |------|------|-----|---------|--------|
-| 14.1 | **Registry name reservation/verification** — crates.io, PyPI, npm, RubyGems, NuGet, Maven coords | Each name confirmed free/reserved | - | cc:TODO (user) |
+| 14.1 | **Registry name reservation/verification** — crates.io, PyPI, npm, RubyGems, NuGet, Maven coords | Each name confirmed free/reserved | - | cc:完了 (verified free 2026-05-24, recorded in RELEASING.md; claiming happens at first publish) |
 | 14.2 | **GA the wired channels** — crates.io · PyPI · npm · GHCR · GitHub binaries · Homebrew tap (`afeique/homebrew-amber`, fill `sha256`) | Installable from each; smoke-install verified | 14.1, 12.3 | cc:TODO (user) |
 | 14.3 | **RubyGems + NuGet publish** — release jobs exist; add secrets | `gem install amber-html` / `dotnet add package` work | 14.2 | cc:TODO (user) |
 | 14.4 | **Maven Central · SwiftPM/CocoaPods · Go module tag · conda-forge** | Installable from each ecosystem | 10.3 | cc:TODO |

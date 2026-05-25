@@ -33,8 +33,35 @@ Secrets and variables → Actions**.
 | **RubyGems** | Sign in at rubygems.org → **Settings → API keys → New** (scope: push). Confirm `amber-html` is free. | `RUBYGEMS_API_KEY` |
 | **NuGet** | Sign in at nuget.org → **API Keys → Create** (scope: push). Confirm the `AmberHtml` id is free. | `NUGET_API_KEY` |
 
-Check the names are available before the first release:
-`cargo search amber-core`, `npm view amber-html`, and the PyPI project page.
+### Name availability — verified 2026-05-24
+
+All target names were **free** when checked against each registry's API (method
+verified against known-taken names, which correctly returned 200):
+
+| Registry | Name | Status |
+|---|---|---|
+| crates.io | `amber-core`, `amber-cli` (and `amber-html`) | free |
+| PyPI | `amber-html` | free |
+| npm | `amber-html` | free |
+| RubyGems | `amber-html` | free |
+| NuGet | `AmberHtml` (case-insensitive) | free |
+
+Re-check just before publishing (names can be taken at any time):
+
+```sh
+for u in https://crates.io/api/v1/crates/amber-core \
+         https://crates.io/api/v1/crates/amber-cli \
+         https://pypi.org/pypi/amber-html/json \
+         https://registry.npmjs.org/amber-html \
+         https://rubygems.org/api/v1/gems/amber-html.json \
+         https://api.nuget.org/v3-flatcontainer/amberhtml/index.json; do
+  printf '%s  %s\n' "$(curl -s -o /dev/null -w '%{http_code}' -A amber-name-check "$u")" "$u"
+done   # 404 = free, 200 = taken
+```
+
+**Maven Central** (`io.github.afeique:amber-html`): not API-checkable the same
+way — the `io.github.afeique` namespace is claimed through Sonatype (tied to the
+GitHub account), a one-time user step; the artifact is free until first publish.
 
 ## 2. Cut a release
 

@@ -299,3 +299,38 @@ jobs:
             -p:AMBER_VERSION="${GITHUB_REF_NAME#v}" -o nupkg
           dotnet nuget push "nupkg/*.nupkg" --api-key "$NUGET_API_KEY" \
             --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+  # ── Provenance: CycloneDX SBOM + keyless (sigstore) signature ────────────
+  sbom:
+    name: SBOM + cosign signature
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # attach SBOM + signatures to the GitHub Release
+      id-token: write # cosign keyless signing via OIDC
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: sigstore/cosign-installer@v3
+      - name: Generate CycloneDX SBOMs (core + cli)
+        run: |
+          set -euo pipefail
+          cargo install cargo-cyclonedx --locked
+          # cargo-cyclonedx writes one <override>.json per workspace member into
+          # its crate dir; collect the published crates' SBOMs under release names.
+          cargo cyclonedx --format json --override-filename amber-sbom
+          cp crates/amber-core/amber-sbom.json amber-html-core.cdx.json
+          cp crates/amber-cli/amber-sbom.json amber-html-cli.cdx.json
+      - name: Sign the SBOMs (keyless)
+        run: |
+          set -euo pipefail
+          for f in amber-html-core.cdx.json amber-html-cli.cdx.json; do
+            cosign sign-blob --yes "$f" \
+              --output-signature "$f.sig" --output-certificate "$f.crt"
+          done
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            amber-html-core.cdx.json
+            amber-html-cli.cdx.json
+            *.cdx.json.sig
+            *.cdx.json.crt

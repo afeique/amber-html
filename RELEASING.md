@@ -80,6 +80,16 @@ GitHub account), a one-time user step; the artifact is free until first publish.
 ## 3. After the run
 
 - **crates.io / PyPI / npm / GHCR / GitHub binaries** publish automatically.
+- **Provenance** (automatic): the `sbom` job attaches CycloneDX SBOMs
+  (`amber-html-core.cdx.json`, `amber-html-cli.cdx.json`) plus keyless
+  (sigstore) `.sig`/`.crt` signatures to the Release. Verify a download with:
+  ```sh
+  cosign verify-blob amber-html-cli.cdx.json \
+    --signature amber-html-cli.cdx.json.sig \
+    --certificate amber-html-cli.cdx.json.crt \
+    --certificate-identity-regexp 'https://github.com/afeique/amber-html/.*' \
+    --certificate-oidc-issuer https://token.actions.githubusercontent.com
+  ```
 - **Homebrew** (manual, one extra step): the source tarball's hash isn't known
   until the GitHub Release exists. Compute it and update the tap's formula:
   ```sh

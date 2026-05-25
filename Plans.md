@@ -159,7 +159,7 @@ panic is removed and Windows artifacts are gated so nothing ships broken.
 | Task | 内容 | DoD | Depends | Status |
 |------|------|-----|---------|--------|
 | 13.1 | **README/docs accuracy** — drop the "early development" banner; reflect feature-complete v0.1 (front page for crates.io/PyPI/npm) | README has no stale "just beginning" copy | - | cc:完了 |
-| 13.2 | **cbindgen header-drift gate** in CI — regenerate `include/amber.h` and fail on diff | CI fails if the committed header ≠ regenerated | - | cc:TODO |
+| 13.2 | **C-ABI header consistency gate** in CI — compile + link + run `examples/c` against `include/amber.h` (robust vs. a brittle cbindgen text-diff: proves the header matches the exported symbols) | CI fails if the header drifts from the ABI; validated locally (links + runs) | - | cc:完了 |
 | 13.3 | **Binding smoke matrix** — extend `bindings.yml` to import/require + run each binding's smoke (py/node/ruby/go/c#/swift/kotlin + new long-tail) | Each binding compiles and smokes per push | 11.x | cc:WIP |
 | 13.4 | **MSRV + publish dry-run gates** — pin MSRV and check it; `cargo publish --dry-run` for core+cli; a `release.yml` `workflow_dispatch` dry-run path | Pre-tag gates pass; first real publish is de-risked | - | cc:TODO |
 

@@ -21,6 +21,16 @@ jobs:
       - uses: actions/checkout@v4
       - uses: Swatinem/rust-cache@v2
 
+      # --- C ABI: build the cdylib, then compile + link + run the C example
+      #     against include/amber.h. This proves the hand-maintained header
+      #     matches the exported symbols (catches drift; Plans.md 13.2). The
+      #     example uses a bad URL, so it stays browser-free. ---
+      - name: C ABI header + example
+        run: |
+          cargo build -p amber-core --release --lib
+          cc examples/c/example.c -I include -L target/release -lamber_core -o /tmp/amber_c
+          LD_LIBRARY_PATH=target/release /tmp/amber_c
+
       # --- Ruby (UniFFI + ffi): generate, then load the library (binds symbols
       #     via dlopen) without capturing. ---
       - uses: ruby/setup-ruby@v1
